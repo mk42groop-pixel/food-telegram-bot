@@ -1,6 +1,5 @@
 import os
 import requests
-import schedule
 import time
 import random
 from datetime import datetime, timedelta, timezone
@@ -9,6 +8,9 @@ from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 import json
 import logging
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+import pytz
 
 # Настройка логирования
 logging.basicConfig(
@@ -67,7 +69,7 @@ class YandexGPT:
                 result = response.json()
                 return result['result']['alternatives'][0]['message']['text']
             else:
-                print(f"❌ Ошибка Yandex GPT API: {response.status_code}")
+                print(f"❌ Ошибка Yandex GPT API: {response.status_code} - {response.text}")
                 return None
         except Exception as e:
             print(f"❌ Ошибка соединения с Yandex GPT: {e}")
@@ -118,7 +120,7 @@ class DeepSeekGPT:
                 result = response.json()
                 return result['choices'][0]['message']['content']
             else:
-                print(f"❌ Ошибка DeepSeek API: {response.status_code}")
+                print(f"❌ Ошибка DeepSeek API: {response.status_code} - {response.text}")
                 return None
         except Exception as e:
             print(f"❌ Ошибка соединения с DeepSeek: {e}")
@@ -285,6 +287,7 @@ class EliteContentManager:
         self.webhook_manager = TelegramWebhookManager(self.token, self.comment_manager)
         self.content_strategy = self._initialize_content_strategy()
         self.last_sent_times = {}
+        self.scheduler = None
         
     def get_kemerovo_time(self):
         """Получаем текущее время в Кемерово (UTC+7)"""
@@ -324,11 +327,12 @@ class EliteContentManager:
     def _try_ai_generation(self, content_type, weekday, theme):
         """Попытка генерации контента через AI"""
         prompts = {
-            'breakfast': f"Создай рецепт полезного завтрака на тему: {theme}.",
-            'lunch': f"Создай рецепт обеда для продуктивности на тему: {theme}.",
-            'dinner': f"Создай рецепт легкого ужина для восстановления на тему: {theme}.",
-            'science': f"Объясни научную концепцию питания на тему: {theme}.",
-            'expert_advice': f"Дай совет от команды экспертов на тему: {theme}."
+            'breakfast': f"Создай рецепт полезного завтрака на тему: {theme}. Включи ингредиенты, приготовление и КБЖУ.",
+            'lunch': f"Создай рецепт обеда для продуктивности на тему: {theme}. Включи ингредиенты, приготовление и КБЖУ.",
+            'dinner': f"Создай рецепт легкого ужина для восстановления на тему: {theme}. Включи ингредиенты, приготовление и КБЖУ.",
+            'science': f"Объясни научную концепцию питания на тему: {theme}. Сделай это простым и понятным языком.",
+            'expert_advice': f"Дай практический совет от команды экспертов на тему: {theme}. Включи мнение нутрициолога, шефа и тренера.",
+            'interactive': f"Создай интерактивный пост для обсуждения на тему: {theme}. Задай вопрос аудитории."
         }
         
         prompt = prompts.get(content_type)
@@ -371,6 +375,9 @@ class EliteContentManager:
             'science': [
                 "🧬 НАУКА: Циркадные ритмы\n\n📚 Факт: Прием пищи в правильное время ускоряет метаболизм\n\n💡 Практика: Завтракайте в течение часа после пробуждения"
             ],
+            'interactive': [
+                "💬 ИНТЕРАКТИВ: Ваш опыт\n\n❓ Как вы планируете свое питание на неделю?\n\n👇 Поделитесь в комментариях!\n\n❤️ - Планирую заранее\n🔥 - Импровизирую\n📚 - Слежу за КБЖУ"
+            ],
             'expert_advice': [
                 "🌟 СОВЕТ ЭКСПЕРТОВ\n\n🧬 Нутрициолог: 'Пейте воду за 30 минут до еды'\n👨‍🍳 Шеф: 'Используйте свежие травы'\n💪 Тренер: 'Сочетайте кардио и силовые'"
             ]
@@ -401,19 +408,57 @@ class EliteContentManager:
 """
 
     def run_elite_scheduler(self):
-        """Запуск расписания публикаций"""
-        schedule.clear()
+        """Запуск расписания публикаций с учетом часового пояса"""
+        if self.scheduler and self.scheduler.running:
+            self.scheduler.shutdown()
+            
+        self.scheduler = BackgroundScheduler()
+        # Часовой пояс Кемерово (Asia/Novokuznetsk или Asia/Krasnoyarsk)
+        self.scheduler.configure(timezone='Asia/Novokuznetsk')
         
-        schedule.every().day.at("07:00").do(lambda: self.publish_content('breakfast'))
-        schedule.every().day.at("12:00").do(lambda: self.publish_content('lunch')) 
-        schedule.every().day.at("15:00").do(lambda: self.publish_content('science'))
-        schedule.every().day.at("18:00").do(lambda: self.publish_content('interactive'))
-        schedule.every().day.at("19:00").do(lambda: self.publish_content('dinner'))
-        schedule.every().day.at("21:00").do(lambda: self.publish_content('expert_advice'))
+        # Добавляем задания с учетом часового пояса
+        self.scheduler.add_job(
+            lambda: self.publish_content('breakfast'),
+            trigger=CronTrigger(hour=7, minute=0),
+            id='breakfast',
+            replace_existing=True
+        )
+        self.scheduler.add_job(
+            lambda: self.publish_content('lunch'),
+            trigger=CronTrigger(hour=12, minute=0),
+            id='lunch',
+            replace_existing=True
+        )
+        self.scheduler.add_job(
+            lambda: self.publish_content('science'),
+            trigger=CronTrigger(hour=15, minute=0),
+            id='science',
+            replace_existing=True
+        )
+        self.scheduler.add_job(
+            lambda: self.publish_content('interactive'),
+            trigger=CronTrigger(hour=18, minute=0),
+            id='interactive',
+            replace_existing=True
+        )
+        self.scheduler.add_job(
+            lambda: self.publish_content('dinner'),
+            trigger=CronTrigger(hour=19, minute=0),
+            id='dinner',
+            replace_existing=True
+        )
+        self.scheduler.add_job(
+            lambda: self.publish_content('expert_advice'),
+            trigger=CronTrigger(hour=21, minute=0),
+            id='expert_advice',
+            replace_existing=True
+        )
+        
+        self.scheduler.start()
         
         kemerovo_time = self.get_kemerovo_time()
         print(f"🎯 РАСПИСАНИЕ АКТИВИРОВАНО!")
-        print(f"📍 Кемерово: {kemerovo_time.strftime('%H:%M')}")
+        print(f"📍 Кемерово: {kemerovo_time.strftime('%d.%m.%Y %H:%M')}")
         print("📊 Расписание:")
         print("🥞 07:00 - Завтрак")
         print("🍽️ 12:00 - Обед") 
@@ -423,16 +468,11 @@ class EliteContentManager:
         print("🌟 21:00 - Советы экспертов")
         print("=" * 50)
         
+        # Тестовый запуск
         print("🧪 Тест системы...")
         self.publish_content('breakfast')
         
-        while True:
-            try:
-                schedule.run_pending()
-                time.sleep(60)
-            except Exception as e:
-                print(f"❌ Ошибка в планировщике: {e}")
-                time.sleep(60)
+        return self.scheduler
     
     def publish_content(self, content_type):
         """Публикация контента"""
@@ -441,12 +481,16 @@ class EliteContentManager:
             
             last_sent = self.last_sent_times.get(content_type)
             if last_sent and (kemerovo_time - last_sent).total_seconds() < 300:
-                print(f"⏰ Пропускаем {content_type}")
+                print(f"⏰ Пропускаем {content_type} - уже отправляли недавно")
                 return
                 
             print(f"📤 Публикация {content_type}... ({kemerovo_time.strftime('%H:%M')})")
             
             message = self.generate_elite_content(content_type)
+            if not message:
+                print(f"❌ Не удалось сгенерировать контент для {content_type}")
+                return
+                
             message += self._get_elite_call_to_action()
             
             success = self.send_to_telegram(message)
@@ -463,6 +507,7 @@ class EliteContentManager:
     def send_to_telegram(self, message):
         """Отправка сообщения в Telegram"""
         if not self.token or not self.channel:
+            print("❌ Не настроен токен или канал")
             return False
             
         url = f"https://api.telegram.org/bot{self.token}/sendMessage"
@@ -474,24 +519,21 @@ class EliteContentManager:
         }
         
         try:
-            response = requests.post(url, json=payload, timeout=10)
-            return response.status_code == 200
+            response = requests.post(url, json=payload, timeout=30)
+            if response.status_code == 200:
+                return True
+            else:
+                print(f"❌ Ошибка Telegram API: {response.status_code} - {response.text}")
+                return False
         except Exception as e:
-            print(f"❌ Ошибка соединения: {e}")
+            print(f"❌ Ошибка соединения с Telegram: {e}")
             return False
 
 # Инициализация системы
 elite_channel = EliteContentManager()
 
-def start_elite_scheduler():
-    try:
-        elite_channel.run_elite_scheduler()
-    except Exception as e:
-        print(f"❌ Ошибка планировщика: {e}")
-
-scheduler_thread = Thread(target=start_elite_scheduler)
-scheduler_thread.daemon = True
-scheduler_thread.start()
+# Запускаем планировщик при старте приложения
+scheduler = elite_channel.run_elite_scheduler()
 
 @app.route('/')
 def home():
@@ -512,6 +554,13 @@ def home():
         
         webhook_status = "✅ Активен" if elite_channel.webhook_manager.webhook_url else "❌ Не настроен"
         
+        # Получаем статус заданий планировщика
+        scheduler_jobs = []
+        if elite_channel.scheduler:
+            for job in elite_channel.scheduler.get_jobs():
+                next_run = job.next_run_time.astimezone(pytz.timezone('Asia/Novokuznetsk')) if job.next_run_time else "Не запланировано"
+                scheduler_jobs.append(f"{job.id}: {next_run}")
+        
         return f"""
         <html>
             <head>
@@ -528,6 +577,7 @@ def home():
                     .time {{ font-weight: bold; width: 80px; }}
                     .emoji {{ font-size: 20px; margin-right: 10px; }}
                     .btn {{ display: inline-block; padding: 10px 15px; margin: 5px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }}
+                    .jobs {{ background: #f8f9fa; padding: 10px; border-radius: 5px; margin: 10px 0; font-family: monospace; font-size: 12px; }}
                 </style>
             </head>
             <body>
@@ -535,7 +585,7 @@ def home():
                     <h1>🍳 @ppsupershef - Система управления</h1>
                     
                     <div class="status success">
-                        <strong>📍 Кемерово:</strong> {kemerovo_time.strftime('%d.%m %H:%M')} | 
+                        <strong>📍 Кемерово:</strong> {kemerovo_time.strftime('%d.%m.%Y %H:%M')} | 
                         <strong>🎯 Тема:</strong> {theme} |
                         <strong>📱 Канал:</strong> @ppsupershef
                     </div>
@@ -549,7 +599,7 @@ def home():
                     </div>
                     
                     <div class="schedule">
-                        <h3>📅 Расписание:</h3>
+                        <h3>📅 Расписание публикаций:</h3>
                         <div class="schedule-item"><span class="emoji">🥞</span><span class="time">07:00</span> Завтрак {schedule_status['breakfast']}</div>
                         <div class="schedule-item"><span class="emoji">🍽️</span><span class="time">12:00</span> Обед {schedule_status['lunch']}</div>
                         <div class="schedule-item"><span class="emoji">🧬</span><span class="time">15:00</span> Наука {schedule_status['science']}</div>
@@ -558,9 +608,15 @@ def home():
                         <div class="schedule-item"><span class="emoji">🌟</span><span class="time">21:00</span> Советы экспертов {schedule_status['expert_advice']}</div>
                     </div>
                     
+                    <div class="jobs">
+                        <strong>📋 Задания планировщика:</strong><br>
+                        {('<br>'.join(scheduler_jobs)) if scheduler_jobs else 'Планировщик не активен'}
+                    </div>
+                    
                     <div>
                         <a href="/test" class="btn">🧪 Тест системы</a>
                         <a href="/setup-webhook" class="btn">🔗 Настроить Webhook</a>
+                        <a href="/restart-scheduler" class="btn">🔄 Перезапуск расписания</a>
                         <a href="/debug" class="btn">🔧 Диагностика</a>
                     </div>
                 </div>
@@ -614,23 +670,51 @@ def setup_webhook():
     else:
         return f"<h2>❌ Ошибка настройки webhook</h2><a href='/'>← Назад</a>"
 
+@app.route('/restart-scheduler')
+def restart_scheduler():
+    try:
+        global scheduler
+        if elite_channel.scheduler:
+            elite_channel.scheduler.shutdown()
+        
+        scheduler = elite_channel.run_elite_scheduler()
+        return "<h2>✅ Планировщик перезапущен!</h2><a href='/'>← Назад</a>"
+    except Exception as e:
+        return f"<h2>❌ Ошибка перезапуска: {e}</h2><a href='/'>← Назад</a>"
+
 @app.route('/test')
 def test():
-    test_message = "🧪 ТЕСТ СИСТЕМЫ\n\nСистема @ppsupershef работает! ✅\nВремя: " + elite_channel.get_kemerovo_time().strftime('%H:%M')
+    test_message = "🧪 ТЕСТ СИСТЕМЫ\n\nСистема @ppsupershef работает корректно! ✅\nВремя Кемерово: " + elite_channel.get_kemerovo_time().strftime('%d.%m.%Y %H:%M') + "\n\n🤖 AI системы активны и готовы к работе!"
     success = elite_channel.send_to_telegram(test_message)
-    return f"Тест отправлен: {'✅ Успешно' if success else '❌ Ошибка'}"
+    return f"Тест отправлен: {'✅ Успешно' if success else '❌ Ошибка'}<br><a href='/'>← Назад</a>"
 
 @app.route('/debug')
 def debug():
     kemerovo_time = elite_channel.get_kemerovo_time()
+    
+    # Проверяем доступность Telegram API
+    telegram_status = "✅ Доступен"
+    try:
+        response = requests.get(f"https://api.telegram.org/bot{elite_channel.token}/getMe", timeout=10)
+        if response.status_code != 200:
+            telegram_status = f"❌ Ошибка: {response.status_code}"
+    except Exception as e:
+        telegram_status = f"❌ Ошибка: {e}"
+    
     return jsonify({
         "system": "@ppsupershef",
         "status": "active",
         "kemerovo_time": kemerovo_time.strftime('%Y-%m-%d %H:%M:%S'),
+        "telegram_api": telegram_status,
         "ai_services": {
             "yandex_gpt": elite_channel.ai_generator.yandex_gpt.is_active,
             "deepseek": elite_channel.ai_generator.deepseek_gpt.is_active
-        }
+        },
+        "scheduler": {
+            "running": elite_channel.scheduler.running if elite_channel.scheduler else False,
+            "jobs": len(elite_channel.scheduler.get_jobs()) if elite_channel.scheduler else 0
+        },
+        "last_sent": {k: v.strftime('%H:%M') for k, v in elite_channel.last_sent_times.items()}
     })
 
 if __name__ == '__main__':
@@ -641,5 +725,8 @@ if __name__ == '__main__':
     elite_channel.webhook_manager.setup_webhook(webhook_url)
     
     print(f"🚀 Запуск системы @ppsupershef на порту {port}")
-    print(f"📍 Время Кемерово: {elite_channel.get_kemerovo_time().strftime('%d.%m %H:%M')}")
+    print(f"📍 Время Кемерово: {elite_channel.get_kemerovo_time().strftime('%d.%m.%Y %H:%M')}")
+    print(f"🤖 AI сервисы: YandexGPT - {'✅' if elite_channel.ai_generator.yandex_gpt.is_active else '❌'}, DeepSeek - {'✅' if elite_channel.ai_generator.deepseek_gpt.is_active else '❌'}")
+    print(f"📅 Планировщик: {'✅ Активен' if scheduler.running else '❌ Не активен'}")
+    
     app.run(host='0.0.0.0', port=port, debug=False)
