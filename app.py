@@ -24,7 +24,7 @@ app = Flask(__name__)
 
 # Ключи из вашего проекта
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '8459555322:AAHeddx-gWdcYXYkQHzyb9w7he9AHmZLhmA')
-TELEGRAM_CHANNEL = os.getenv('TELEGRAM_CHANNEL', '@ppsupershef')
+TELEGRAM_CHANNEL = os.getenv('TELEGRAM_CHANNEL', '-1003152210862')
 TELEGRAM_GROUP = os.getenv('TELEGRAM_GROUP', '@ppsupershef_chat')
 YANDEX_API_KEY = os.getenv('YANDEX_GPT_API_KEY', 'AQVN3PPgJleV36f1uQeT6F_Ph5oI5xTyFPNf18h-')
 YANDEX_FOLDER_ID = os.getenv('YANDEX_FOLDER_ID', 'b1gb6o9sk0ajjfdaoev8')
@@ -730,3 +730,4 @@ if __name__ == '__main__':
     print(f"📅 Планировщик: {'✅ Активен' if scheduler.running else '❌ Не активен'}")
     
     app.run(host='0.0.0.0', port=port, debug=False)
+
