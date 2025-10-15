@@ -24,7 +24,7 @@ app = Flask(__name__)
 
 # Ключи из вашего проекта
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '8459555322:AAHeddx-gWdcYXYkQHzyb9w7he9AHmZLhmA')
-TELEGRAM_CHANNEL = os.getenv('TELEGRAM_CHANNEL', '-1003152210862')
+TELEGRAM_CHANNEL = os.getenv('TELEGRAM_CHANNEL', '-1003152210862')  # ИСПРАВЛЕНО: числовой ID канала
 TELEGRAM_GROUP = os.getenv('TELEGRAM_GROUP', '@ppsupershef_chat')
 YANDEX_API_KEY = os.getenv('YANDEX_GPT_API_KEY', 'AQVN3PPgJleV36f1uQeT6F_Ph5oI5xTyFPNf18h-')
 YANDEX_FOLDER_ID = os.getenv('YANDEX_FOLDER_ID', 'b1gb6o9sk0ajjfdaoev8')
@@ -280,7 +280,7 @@ class TelegramWebhookManager:
 class EliteContentManager:
     def __init__(self):
         self.token = TELEGRAM_TOKEN
-        self.channel = TELEGRAM_CHANNEL
+        self.channel = TELEGRAM_CHANNEL  # Теперь используется числовой ID
         self.timezone_offset = 7
         self.ai_generator = AIContentGenerator()
         self.comment_manager = CommentManager(self.ai_generator)
@@ -413,10 +413,10 @@ class EliteContentManager:
             self.scheduler.shutdown()
             
         self.scheduler = BackgroundScheduler()
-        # Часовой пояс Кемерово (Asia/Novokuznetsk или Asia/Krasnoyarsk)
+        # Часовой пояс Кемерово
         self.scheduler.configure(timezone='Asia/Novokuznetsk')
         
-        # Добавляем задания с учетом часового пояса
+        # Добавляем задания с учетом часового пояса Кемерово
         self.scheduler.add_job(
             lambda: self.publish_content('breakfast'),
             trigger=CronTrigger(hour=7, minute=0),
@@ -459,6 +459,7 @@ class EliteContentManager:
         kemerovo_time = self.get_kemerovo_time()
         print(f"🎯 РАСПИСАНИЕ АКТИВИРОВАНО!")
         print(f"📍 Кемерово: {kemerovo_time.strftime('%d.%m.%Y %H:%M')}")
+        print(f"📺 Канал: {self.channel}")
         print("📊 Расписание:")
         print("🥞 07:00 - Завтрак")
         print("🍽️ 12:00 - Обед") 
@@ -475,7 +476,7 @@ class EliteContentManager:
         return self.scheduler
     
     def publish_content(self, content_type):
-        """Публикация контента"""
+        """Публикация контента с улучшенным логированием"""
         try:
             kemerovo_time = self.get_kemerovo_time()
             
@@ -485,6 +486,7 @@ class EliteContentManager:
                 return
                 
             print(f"📤 Публикация {content_type}... ({kemerovo_time.strftime('%H:%M')})")
+            print(f"📺 Отправка в канал: {self.channel}")
             
             message = self.generate_elite_content(content_type)
             if not message:
@@ -496,7 +498,7 @@ class EliteContentManager:
             success = self.send_to_telegram(message)
             
             if success:
-                print(f"✅ {content_type.upper()} отправлен!")
+                print(f"✅ {content_type.upper()} отправлен в канал!")
                 self.last_sent_times[content_type] = kemerovo_time
             else:
                 print(f"❌ Ошибка отправки {content_type}")
@@ -505,28 +507,40 @@ class EliteContentManager:
             print(f"❌ Ошибка в publish_content: {e}")
     
     def send_to_telegram(self, message):
-        """Отправка сообщения в Telegram"""
-        if not self.token or not self.channel:
-            print("❌ Не настроен токен или канал")
+        """Отправка сообщения в Telegram с улучшенной диагностикой"""
+        if not self.token:
+            print("❌ Токен бота не настроен!")
             return False
             
+        if not self.channel:
+            print("❌ ID канала не настроен!")
+            return False
+            
+        print(f"🔗 Отправка в канал ID: {self.channel}")
+        print(f"📝 Длина сообщения: {len(message)} символов")
+        
         url = f"https://api.telegram.org/bot{self.token}/sendMessage"
         payload = {
             'chat_id': self.channel,
-            'text': message,
+            'text': message[:4090],  # Ограничение Telegram
             'parse_mode': 'Markdown',
             'disable_web_page_preview': True
         }
         
         try:
+            print("🔄 Выполняем запрос к Telegram API...")
             response = requests.post(url, json=payload, timeout=30)
+            print(f"📡 Ответ Telegram: {response.status_code}")
+            
             if response.status_code == 200:
+                print("✅ Сообщение отправлено успешно!")
                 return True
             else:
-                print(f"❌ Ошибка Telegram API: {response.status_code} - {response.text}")
+                print(f"❌ Ошибка Telegram API: {response.status_code}")
+                print(f"📄 Текст ответа: {response.text}")
                 return False
         except Exception as e:
-            print(f"❌ Ошибка соединения с Telegram: {e}")
+            print(f"🌐 Ошибка сети: {e}")
             return False
 
 # Инициализация системы
@@ -578,16 +592,22 @@ def home():
                     .emoji {{ font-size: 20px; margin-right: 10px; }}
                     .btn {{ display: inline-block; padding: 10px 15px; margin: 5px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }}
                     .jobs {{ background: #f8f9fa; padding: 10px; border-radius: 5px; margin: 10px 0; font-family: monospace; font-size: 12px; }}
+                    .channel-info {{ background: #d1ecf1; padding: 10px; border-radius: 5px; margin: 10px 0; }}
                 </style>
             </head>
             <body>
                 <div class="container">
                     <h1>🍳 @ppsupershef - Система управления</h1>
                     
+                    <div class="channel-info">
+                        <strong>📺 Канал:</strong> {elite_channel.channel} | 
+                        <strong>🔗 Username:</strong> @ppsupershef
+                    </div>
+                    
                     <div class="status success">
                         <strong>📍 Кемерово:</strong> {kemerovo_time.strftime('%d.%m.%Y %H:%M')} | 
                         <strong>🎯 Тема:</strong> {theme} |
-                        <strong>📱 Канал:</strong> @ppsupershef
+                        <strong>🤖 Бот:</strong> @ppsupershef_bot
                     </div>
                     
                     <div class="status {'success' if elite_channel.ai_generator.yandex_gpt.is_active or elite_channel.ai_generator.deepseek_gpt.is_active else 'warning'}">
@@ -599,7 +619,7 @@ def home():
                     </div>
                     
                     <div class="schedule">
-                        <h3>📅 Расписание публикаций:</h3>
+                        <h3>📅 Расписание публикаций (время Кемерово):</h3>
                         <div class="schedule-item"><span class="emoji">🥞</span><span class="time">07:00</span> Завтрак {schedule_status['breakfast']}</div>
                         <div class="schedule-item"><span class="emoji">🍽️</span><span class="time">12:00</span> Обед {schedule_status['lunch']}</div>
                         <div class="schedule-item"><span class="emoji">🧬</span><span class="time">15:00</span> Наука {schedule_status['science']}</div>
@@ -615,6 +635,7 @@ def home():
                     
                     <div>
                         <a href="/test" class="btn">🧪 Тест системы</a>
+                        <a href="/send-now/expert_advice" class="btn" style="background: #28a745;">🚀 Отправить сейчас</a>
                         <a href="/setup-webhook" class="btn">🔗 Настроить Webhook</a>
                         <a href="/restart-scheduler" class="btn">🔄 Перезапуск расписания</a>
                         <a href="/debug" class="btn">🔧 Диагностика</a>
@@ -682,6 +703,26 @@ def restart_scheduler():
     except Exception as e:
         return f"<h2>❌ Ошибка перезапуска: {e}</h2><a href='/'>← Назад</a>"
 
+@app.route('/send-now/<content_type>')
+def send_now(content_type):
+    """Немедленная отправка сообщения"""
+    try:
+        print(f"🚀 РУЧНАЯ ОТПРАВКА: {content_type}")
+        success = elite_channel.publish_content(content_type)
+        
+        if success:
+            return jsonify({
+                "status": "success",
+                "message": f"Сообщение {content_type} отправлено в канал @ppsupershef!"
+            })
+        else:
+            return jsonify({
+                "status": "error", 
+                "message": f"Не удалось отправить {content_type}. Проверьте логи."
+            })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
 @app.route('/test')
 def test():
     test_message = "🧪 ТЕСТ СИСТЕМЫ\n\nСистема @ppsupershef работает корректно! ✅\nВремя Кемерово: " + elite_channel.get_kemerovo_time().strftime('%d.%m.%Y %H:%M') + "\n\n🤖 AI системы активны и готовы к работе!"
@@ -705,6 +746,7 @@ def debug():
         "system": "@ppsupershef",
         "status": "active",
         "kemerovo_time": kemerovo_time.strftime('%Y-%m-%d %H:%M:%S'),
+        "telegram_channel_id": elite_channel.channel,
         "telegram_api": telegram_status,
         "ai_services": {
             "yandex_gpt": elite_channel.ai_generator.yandex_gpt.is_active,
@@ -726,8 +768,8 @@ if __name__ == '__main__':
     
     print(f"🚀 Запуск системы @ppsupershef на порту {port}")
     print(f"📍 Время Кемерово: {elite_channel.get_kemerovo_time().strftime('%d.%m.%Y %H:%M')}")
+    print(f"📺 Канал: {elite_channel.channel}")
     print(f"🤖 AI сервисы: YandexGPT - {'✅' if elite_channel.ai_generator.yandex_gpt.is_active else '❌'}, DeepSeek - {'✅' if elite_channel.ai_generator.deepseek_gpt.is_active else '❌'}")
     print(f"📅 Планировщик: {'✅ Активен' if scheduler.running else '❌ Не активен'}")
     
     app.run(host='0.0.0.0', port=port, debug=False)
-
