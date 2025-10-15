@@ -22,9 +22,9 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 app = Flask(__name__)
 
-# Ключи из вашего проекта
+# Ключи из вашего проекта - ИСПРАВЛЕН КАНАЛ!
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '8459555322:AAHeddx-gWdcYXYkQHzyb9w7he9AHmZLhmA')
-TELEGRAM_CHANNEL = os.getenv('TELEGRAM_CHANNEL', '-1003152210862')  # ИСПРАВЛЕНО: числовой ID канала
+TELEGRAM_CHANNEL = os.getenv('TELEGRAM_CHANNEL', '-1003152210862')  # ИСПРАВЛЕНО!
 TELEGRAM_GROUP = os.getenv('TELEGRAM_GROUP', '@ppsupershef_chat')
 YANDEX_API_KEY = os.getenv('YANDEX_GPT_API_KEY', 'AQVN3PPgJleV36f1uQeT6F_Ph5oI5xTyFPNf18h-')
 YANDEX_FOLDER_ID = os.getenv('YANDEX_FOLDER_ID', 'b1gb6o9sk0ajjfdaoev8')
@@ -134,15 +134,16 @@ class AIContentGenerator:
         
     def generate_content(self, prompt, content_type="recipe"):
         """Умная генерация контента с использованием доступных AI"""
-        # Пробуем DeepSeek
-        if self.deepseek_gpt.is_active:
-            content = self.deepseek_gpt.generate_content(prompt, content_type)
+        # Сначала пробуем Yandex GPT (DeepSeek не работает)
+        if self.yandex_gpt.is_active:
+            content = self.yandex_gpt.generate_text(prompt)
             if content:
                 return content
         
-        # Пробуем Yandex GPT
-        if self.yandex_gpt.is_active:
-            content = self.yandex_gpt.generate_text(prompt)
+        # Только если Yandex не работает, пробуем DeepSeek
+        if self.deepseek_gpt.is_active:
+            print("⚠️  Пробуем DeepSeek (Yandex не сработал)...")
+            content = self.deepseek_gpt.generate_content(prompt, content_type)
             if content:
                 return content
         
@@ -395,14 +396,14 @@ class EliteContentManager:
 
 ═══════════════════════════════
 
-💎 **ПОДПИСЫВАЙТЕСЬ!** 👉 @ppsupershef
+💎 ПОДПИСЫВАЙТЕСЬ! 👉 @ppsupershef
 
-💬 **ОБСУЖДАЕМ В КОММЕНТАРИЯХ!**
+💬 ОБСУЖДАЕМ В КОММЕНТАРИЯХ!
 
-👇 **РЕАКЦИИ:**
+👇 РЕАКЦИИ:
 ❤️ - Вкусно | 🔥 - Приготовлю | 📚 - Полезно
 
-📤 **ПОДЕЛИТЕСЬ** с друзьями!
+📤 ПОДЕЛИТЕСЬ с друзьями!
 
 🏷️ #ppsupershef #ЗдоровоеПитание
 """
@@ -459,7 +460,7 @@ class EliteContentManager:
         kemerovo_time = self.get_kemerovo_time()
         print(f"🎯 РАСПИСАНИЕ АКТИВИРОВАНО!")
         print(f"📍 Кемерово: {kemerovo_time.strftime('%d.%m.%Y %H:%M')}")
-        print(f"📺 Канал: {self.channel}")
+        print(f"📺 Канал ID: {self.channel}")
         print("📊 Расписание:")
         print("🥞 07:00 - Завтрак")
         print("🍽️ 12:00 - Обед") 
@@ -486,7 +487,7 @@ class EliteContentManager:
                 return
                 
             print(f"📤 Публикация {content_type}... ({kemerovo_time.strftime('%H:%M')})")
-            print(f"📺 Отправка в канал: {self.channel}")
+            print(f"📺 Отправка в канал ID: {self.channel}")
             
             message = self.generate_elite_content(content_type)
             if not message:
@@ -507,7 +508,7 @@ class EliteContentManager:
             print(f"❌ Ошибка в publish_content: {e}")
     
     def send_to_telegram(self, message):
-        """Отправка сообщения в Telegram с улучшенной диагностикой"""
+        """Отправка сообщения в Telegram с исправлениями"""
         if not self.token:
             print("❌ Токен бота не настроен!")
             return False
@@ -519,11 +520,14 @@ class EliteContentManager:
         print(f"🔗 Отправка в канал ID: {self.channel}")
         print(f"📝 Длина сообщения: {len(message)} символов")
         
+        # Очищаем сообщение от проблемных символов Markdown
+        clean_message = self._clean_telegram_message(message)
+        
         url = f"https://api.telegram.org/bot{self.token}/sendMessage"
         payload = {
             'chat_id': self.channel,
-            'text': message[:4090],  # Ограничение Telegram
-            'parse_mode': 'Markdown',
+            'text': clean_message,
+            'parse_mode': 'HTML',  # ИСПРАВЛЕНО: используем HTML вместо Markdown
             'disable_web_page_preview': True
         }
         
@@ -542,6 +546,16 @@ class EliteContentManager:
         except Exception as e:
             print(f"🌐 Ошибка сети: {e}")
             return False
+    
+    def _clean_telegram_message(self, message):
+        """Очистка сообщения от проблемных символов для Telegram"""
+        # Заменяем проблемные символы Markdown
+        clean_message = message
+        # Убираем или экранируем проблемные символы
+        clean_message = clean_message.replace('*', '•')
+        clean_message = clean_message.replace('_', '-')
+        clean_message = clean_message.replace('`', "'")
+        return clean_message
 
 # Инициализация системы
 elite_channel = EliteContentManager()
@@ -600,7 +614,7 @@ def home():
                     <h1>🍳 @ppsupershef - Система управления</h1>
                     
                     <div class="channel-info">
-                        <strong>📺 Канал:</strong> {elite_channel.channel} | 
+                        <strong>📺 Канал ID:</strong> {elite_channel.channel} | 
                         <strong>🔗 Username:</strong> @ppsupershef
                     </div>
                     
@@ -768,7 +782,7 @@ if __name__ == '__main__':
     
     print(f"🚀 Запуск системы @ppsupershef на порту {port}")
     print(f"📍 Время Кемерово: {elite_channel.get_kemerovo_time().strftime('%d.%m.%Y %H:%M')}")
-    print(f"📺 Канал: {elite_channel.channel}")
+    print(f"📺 Канал ID: {elite_channel.channel}")
     print(f"🤖 AI сервисы: YandexGPT - {'✅' if elite_channel.ai_generator.yandex_gpt.is_active else '❌'}, DeepSeek - {'✅' if elite_channel.ai_generator.deepseek_gpt.is_active else '❌'}")
     print(f"📅 Планировщик: {'✅ Активен' if scheduler.running else '❌ Не активен'}")
     
