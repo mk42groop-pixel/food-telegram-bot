@@ -23,388 +23,218 @@ app = Flask(__name__)
 # Ключи из вашего проекта
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '8459555322:AAHeddx-gWdcYXYkQHzyb9w7he9AHmZLhmA')
 TELEGRAM_CHANNEL = os.getenv('TELEGRAM_CHANNEL', '@ppsupershef')
+TELEGRAM_GROUP = os.getenv('TELEGRAM_GROUP', '@ppsupershef_chat')  # Группа для комментариев
 YANDEX_API_KEY = os.getenv('YANDEX_GPT_API_KEY', 'AQVN3PPgJleV36f1uQeT6F_Ph5oI5xTyFPNf18h-')
 YANDEX_FOLDER_ID = os.getenv('YANDEX_FOLDER_ID', 'b1gb6o9sk0ajjfdaoev8')
 DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY', 'sk-8af2b1f4bce441f8a802c2653516237a')
 
-class AIContentGenerator:
-    def __init__(self):
-        self.yandex_gpt = YandexGPT()
-        self.deepseek_gpt = DeepSeekGPT()
-        print(f"🤖 AI Генератор: YandexGPT - {'✅' if self.yandex_gpt.is_active else '❌'}, DeepSeek - {'✅' if self.deepseek_gpt.is_active else '❌'}")
+class CommentManager:
+    def __init__(self, ai_generator):
+        self.ai_generator = ai_generator
+        self.processed_comments = set()  # Чтобы не отвечать дважды
+        self.expert_roles = {
+            "nutritionist": "🧬 Нутрициолог с 40-летним стажем",
+            "chef": "👨‍🍳 Шеф-повар Мишлен", 
+            "trainer": "💪 Фитнес-тренер мирового уровня"
+        }
+    
+    def should_respond(self, comment_text, comment_id):
+        """Определяем, нужно ли отвечать на комментарий"""
+        if comment_id in self.processed_comments:
+            return False
+            
+        # Не отвечаем на короткие/неинформативные комментарии
+        if len(comment_text.strip()) < 10:
+            return False
+            
+        # Ключевые слова, требующие ответа
+        trigger_words = [
+            'вопрос', 'помогите', 'посоветуй', 'как', 'почему', 
+            'что', 'можно ли', 'стоит ли', 'подскажите', 'помоги',
+            'рецепт', 'питание', 'диета', 'здоровье', 'похудение',
+            'белки', 'жиры', 'углеводы', 'калории', 'метаболизм'
+        ]
         
-    def generate_content(self, prompt, content_type="recipe"):
-        """Умная генерация контента с использованием доступных AI"""
-        # Пробуем DeepSeek
-        if self.deepseek_gpt.is_active:
-            content = self.deepseek_gpt.generate_content(prompt, content_type)
-            if content:
-                return content
+        comment_lower = comment_text.lower()
+        return any(word in comment_lower for word in trigger_words)
+    
+    def generate_ai_response(self, comment_text, username, expert_role="nutritionist"):
+        """Генерация ответа через AI"""
         
-        # Пробуем Yandex GPT
-        if self.yandex_gpt.is_active:
-            content = self.yandex_gpt.generate_text(prompt)
-            if content:
-                return content
-        
-        return None
+        prompt = f"""
+        Ты {self.expert_roles[expert_role]}. Ответь на комментарий пользователя в кулинарном телеграм-канале.
 
-class YandexGPT:
-    def __init__(self):
-        self.api_key = YANDEX_API_KEY
-        self.folder_id = YANDEX_FOLDER_ID
-        self.base_url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
-        # Упрощенная проверка
-        self.is_active = bool(self.api_key and self.folder_id)
-        print(f"🤖 Yandex GPT: {'✅ Активен' if self.is_active else '❌ Не настроен'}")
+        КОММЕНТАРИЙ ОТ {username}: "{comment_text}"
+
+        Требования к ответу:
+        - Будь экспертом, но дружелюбным
+        - Ответь по существу, 2-3 предложения
+        - Дай практический совет
+        - Используй эмодзи для живости
+        - Не повторяй вопрос пользователя
+        - Подпишись как эксперт в конце
+
+        Формат ответа:
+        [Основной ответ с советом] [Эмодзи]
+
+        💎 [Подпись эксперта]
+        """
         
-    def generate_text(self, prompt, temperature=0.7):
-        """Генерация текста через Yandex GPT"""
-        if not self.is_active:
+        response = self.ai_generator.generate_content(prompt, "advice")
+        if response:
+            return response
+        
+        # Fallback ответ
+        return f"Спасибо за вопрос! Рекомендую проконсультироваться с специалистом для персонализированного совета. 💎\n\n{self.expert_roles[expert_role]}"
+    
+    def determine_expert_role(self, comment_text):
+        """Определяем, какой эксперт должен ответить"""
+        comment_lower = comment_text.lower()
+        
+        # Вопросы шеф-повару
+        chef_keywords = ['рецепт', 'готовить', 'приготовление', 'ингредиенты', 'блюдо', 'вкус', 'кухня', 'шеф']
+        if any(word in comment_lower for word in chef_keywords):
+            return "chef"
+        
+        # Вопросы тренеру
+        trainer_keywords = ['тренировка', 'спорт', 'упражнения', 'фитнес', 'мышцы', 'сила', 'выносливость']
+        if any(word in comment_lower for word in trainer_keywords):
+            return "trainer"
+        
+        # По умолчанию - нутрициолог
+        return "nutritionist"
+    
+    def process_comment(self, comment_text, comment_id, username, message_id=None):
+        """Обработка комментария и генерация ответа"""
+        if not self.should_respond(comment_text, comment_id):
             return None
             
-        headers = {
-            'Authorization': f'Api-Key {self.api_key}',
-            'Content-Type': 'application/json'
-        }
-        
-        data = {
-            'modelUri': f'gpt://{self.folder_id}/yandexgpt-lite',
-            'completionOptions': {
-                'stream': False,
-                'temperature': temperature,
-                'maxTokens': 2000
-            },
-            'messages': [
-                {
-                    'role': 'user',
-                    'text': prompt
-                }
-            ]
+        try:
+            # Определяем эксперта
+            expert_role = self.determine_expert_role(comment_text)
+            
+            # Генерируем ответ
+            response = self.generate_ai_response(comment_text, username, expert_role)
+            
+            # Помечаем как обработанный
+            self.processed_comments.add(comment_id)
+            
+            print(f"🤖 Сгенерирован ответ на комментарий {comment_id} от {username}")
+            return response
+            
+        except Exception as e:
+            print(f"❌ Ошибка обработки комментария: {e}")
+            return None
+
+class TelegramWebhookManager:
+    def __init__(self, token, comment_manager):
+        self.token = token
+        self.comment_manager = comment_manager
+        self.webhook_url = None
+    
+    def setup_webhook(self, webhook_url):
+        """Настройка webhook для Telegram"""
+        self.webhook_url = webhook_url
+        url = f"https://api.telegram.org/bot{self.token}/setWebhook"
+        payload = {
+            'url': webhook_url,
+            'drop_pending_updates': True
         }
         
         try:
-            print(f"🔄 Запрос к Yandex GPT...")
-            response = requests.post(self.base_url, headers=headers, json=data, timeout=30)
+            response = requests.post(url, json=payload)
             if response.status_code == 200:
-                result = response.json()
-                text = result['result']['alternatives'][0]['message']['text']
-                print(f"✅ Yandex GPT ответ получен ({len(text)} символов)")
-                return text
+                print(f"✅ Webhook установлен: {webhook_url}")
+                return True
             else:
-                print(f"❌ Ошибка Yandex GPT API: {response.status_code}")
-                return None
+                print(f"❌ Ошибка установки webhook: {response.text}")
+                return False
         except Exception as e:
-            print(f"❌ Ошибка соединения с Yandex GPT: {e}")
-            return None
-
-class DeepSeekGPT:
-    def __init__(self):
-        self.api_key = DEEPSEEK_API_KEY
-        self.base_url = "https://api.deepseek.com/v1/chat/completions"
-        # Упрощенная проверка
-        self.is_active = bool(self.api_key)
-        print(f"🤖 DeepSeek GPT: {'✅ Активен' if self.is_active else '❌ Не настроен'}")
-        
-    def generate_content(self, prompt, content_type="recipe"):
-        """Генерация контента через DeepSeek"""
-        if not self.is_active:
-            return None
-            
-        headers = {
-            'Authorization': f'Bearer {self.api_key}',
-            'Content-Type': 'application/json'
-        }
-        
-        system_prompts = {
-            "recipe": """Ты шеф-повар ресторанов Мишлен и нутрициолог с 40-летним стажем. Создавай полезные и вкусные рецепты.""",
-            "science": """Ты нутрициолог с 40-летним стажем. Объясняй научные концепции простым языком.""",
-            "advice": """Ты команда экспертов: нутрициолог, шеф-повар Мишлен и фитнес-тренер."""
-        }
-        
-        data = {
-            'model': 'deepseek-chat',
-            'messages': [
-                {
-                    'role': 'system',
-                    'content': system_prompts.get(content_type, system_prompts["recipe"])
-                },
-                {
-                    'role': 'user', 
-                    'content': prompt
-                }
-            ],
-            'temperature': 0.7,
-            'max_tokens': 2000
+            print(f"❌ Ошибка соединения: {e}")
+            return False
+    
+    def send_reply(self, chat_id, message_id, text):
+        """Отправка ответа на комментарий"""
+        url = f"https://api.telegram.org/bot{self.token}/sendMessage"
+        payload = {
+            'chat_id': chat_id,
+            'text': text,
+            'parse_mode': 'Markdown',
+            'reply_to_message_id': message_id
         }
         
         try:
-            print(f"🔄 Запрос к DeepSeek...")
-            response = requests.post(self.base_url, headers=headers, json=data, timeout=30)
-            if response.status_code == 200:
-                result = response.json()
-                text = result['choices'][0]['message']['content']
-                print(f"✅ DeepSeek ответ получен ({len(text)} символов)")
-                return text
-            else:
-                print(f"❌ Ошибка DeepSeek API: {response.status_code}")
-                return None
+            response = requests.post(url, json=payload)
+            return response.status_code == 200
         except Exception as e:
-            print(f"❌ Ошибка соединения с DeepSeek: {e}")
-            return None
+            print(f"❌ Ошибка отправки ответа: {e}")
+            return False
 
+# Инициализация менеджера комментариев (добавить в EliteContentManager)
 class EliteContentManager:
     def __init__(self):
         self.token = TELEGRAM_TOKEN
         self.channel = TELEGRAM_CHANNEL
         self.timezone_offset = 7
         self.ai_generator = AIContentGenerator()
+        self.comment_manager = CommentManager(self.ai_generator)  # ← ДОБАВИТЬ ЭТУ СТРОЧКУ
+        self.webhook_manager = TelegramWebhookManager(self.token, self.comment_manager)
         self.content_strategy = self._initialize_content_strategy()
         self.last_sent_times = {}
-        
-    def get_kemerovo_time(self):
-        """Получаем текущее время в Кемерово (UTC+7)"""
-        utc_time = datetime.now(timezone.utc)
-        kemerovo_time = utc_time + timedelta(hours=self.timezone_offset)
-        return kemerovo_time
     
-    def _initialize_content_strategy(self):
-        """Элитная стратегия контента"""
-        return {
-            "weekly_themes": {
-                0: "🧬 НАУЧНЫЙ ПОНЕДЕЛЬНИК: Биохимия питания",
-                1: "👨‍🍳 TECH CHECK: Техники шефа", 
-                2: "💬 СРЕДА ОТВЕТОВ: Команда экспертов",
-                3: "🍽️ РЕЦЕПТ НЕДЕЛИ: Шедевр от Мишлен",
-                4: "📊 ТРЕНДОВАЯ ПЯТНИЦА: Анализ тенденций",
-                5: "⚡ БЫСТРО & ЗДОРОВО: Простые решения",
-                6: "🎯 ВОСКРЕСНЫЙ ДАЙДЖЕСТ: Итоги и мотивация"
-            }
-        }
-    
-    def generate_elite_content(self, content_type, weekday=None):
-        """Генерация элитного контента"""
-        if weekday is None:
-            weekday = self.get_kemerovo_time().weekday()
-            
-        theme = self.content_strategy["weekly_themes"][weekday]
-        
-        # Пробуем AI генерацию
-        ai_content = self._try_ai_generation(content_type, weekday, theme)
-        if ai_content:
-            return ai_content
-        
-        # Fallback на статический контент
-        return self._get_static_content(content_type, weekday, theme)
-    
-    def _try_ai_generation(self, content_type, weekday, theme):
-        """Попытка генерации контента через AI"""
-        prompts = {
-            'breakfast': f"Создай рецепт полезного завтрака на тему: {theme}. Включи ингредиенты, шаги приготовления и nutritional info.",
-            'lunch': f"Создай рецепт обеда для продуктивности на тему: {theme}. С фокусом на баланс БЖУ.",
-            'dinner': f"Создай рецепт легкого ужина для восстановления на тему: {theme}.",
-            'science': f"Объясни научную концепцию питания простым языком на тему: {theme}.",
-            'expert_advice': f"Дай совет от команды экспертов (нутрициолог, шеф, тренер) на тему: {theme}.",
-            'visual': f"Создай описание инфографики на тему: {theme}.",
-            'interactive': f"Создай интерактивный опрос или челлендж на тему: {theme}."
-        }
-        
-        prompt = prompts.get(content_type)
-        if not prompt:
-            return None
-            
-        content = self.ai_generator.generate_content(prompt, content_type)
-        if content:
-            emoji = self._get_content_emoji(content_type)
-            return f"{emoji} {content_type.upper()} ПРЕМИУМ\n\n{theme}\n\n{content}"
-        
-        return None
-    
-    def _get_content_emoji(self, content_type):
-        """Возвращает эмодзи для типа контента"""
-        emojis = {
-            'breakfast': '🌅',
-            'lunch': '🍽️', 
-            'dinner': '🌙',
-            'science': '🧬',
-            'visual': '🎨',
-            'interactive': '💬',
-            'expert_advice': '🌟'
-        }
-        return emojis.get(content_type, '📝')
-    
-    def _get_static_content(self, content_type, weekday, theme):
-        """Статический контент как fallback"""
-        static_content = {
-            'breakfast': [
-                "🌅 ЭЛИТНЫЙ ЗАВТРАК: Овсянка с суперфудами\n\n🥗 Ингредиенты:\n• Овсяные хлопья - 50г\n• Молоко миндальное - 200мл\n• Семена чиа - 1 ст.л.\n• Ягоды годжи - 1 ст.л.\n• Мед - 1 ч.л.\n\n👨‍🍳 Приготовление:\n1. Варить овсянку 5 минут\n2. Добавить суперфуды\n3. Подавать теплым\n\n📊 КБЖУ: 280 ккал",
-                "🌅 ЭЛИТНЫЙ ЗАВТРАК: Авокадо-тост с яйцом-пашот\n\n🥗 Ингредиенты:\n• Хлеб цельнозерновой - 2 ломтика\n• Авокадо - ½ шт\n• Яйца - 2 шт\n• Семена кунжута\n\n👨‍🍳 Приготовление:\n1. Поджарить хлеб\n2. Размять авокадо\n3. Приготовить яйца-пашот\n4. Собрать тосты\n\n📊 КБЖУ: 320 ккал"
-            ],
-            'lunch': [
-                "🍽️ ОБЕД ДЛЯ ПРОДУКТИВНОСТИ: Киноа с овощами\n\n🥗 Ингредиенты:\n• Киноа - 100г\n• Овощи гриль - 200г\n• Нут - 100г\n• Лимонный сок\n\n👨‍🍳 Приготовление:\n1. Отварить киноа\n2. Обжарить овощи\n3. Смешать с нутом\n4. Заправить соком\n\n📊 КБЖУ: 350 ккал",
-                "🍽️ ОБЕД ДЛЯ ПРОДУКТИВНОСТИ: Салат с лососем\n\n🥗 Ингредиенты:\n• Лосось - 150г\n• Руккола - 100г\n• Авокадо - ½ шт\n• Орехи грецкие - 30г\n\n👨‍🍳 Приготовление:\n1. Запечь лосось\n2. Смешать зелень\n3. Добавить авокадо\n4. Посыпать орехами\n\n📊 КБЖУ: 380 ккал"
-            ],
-            'dinner': [
-                "🌙 УЖИН ДЛЯ ВОССТАНОВЛЕНИЯ: Рыба на пару\n\n🥗 Ингредиенты:\n• Морской окунь - 200г\n• Брокколи - 150г\n• Морковь - 1 шт\n• Имбирь\n\n👨‍🍳 Приготовление:\n1. Приготовить на пару 15 мин\n2. Подать с овощами\n3. Сбрызнуть соевым соусом\n\n📊 КБЖУ: 250 ккал",
-                "🌙 УЖИН ДЛЯ ВОССТАНОВЛЕНИЯ: Тушеные овощи с тофу\n\n🥗 Ингредиенты:\n• Тофу - 150г\n• Цукини - 1 шт\n• Грибы - 100г\n• Кокосовое молоко\n\n👨‍🍳 Приготовление:\n1. Обжарить тофу\n2. Добавить овощи\n3. Тушить 20 минут\n\n📊 КБЖУ: 280 ккал"
-            ],
-            'science': [
-                "🧬 НАУКА ПИТАНИЯ: Циркадные ритмы\n\n📚 Факт: Прием пищи в правильное время ускоряет метаболизм на 10-15%\n\n💡 Практика: Завтракайте в течение часа после пробуждения\n\n🎯 Эксперт: Соблюдайте 12-часовое окно для приема пищи",
-                "🧬 НАУКА ПИТАНИЯ: Микробиом\n\n📚 Факт: Кишечные бактерии влияют на иммунитет и настроение\n\n💡 Практика: Ешьте ферментированные продукты\n\n🎯 Эксперт: Разнообразьте рацион клетчаткой"
-            ],
-            'visual': [
-                "🎨 ИНФОГРАФИКА: Правило тарелки\n\n📊 Идеальная пропорция:\n• ½ Тарелки - Овощи\n• ¼ Тарелки - Белки\n• ¼ Тарелки - Углеводы\n\n💡 Добавьте полезные жиры\n\n🏷️ #ПравилоТарелки #Баланс",
-                "🎨 ИНФОГРАФИКА: Время приемов пищи\n\n⏰ Оптимальный график:\n• 🕗 7-9: Завтрак\n• 🕛 12-14: Обед\n• 🕐 16-17: Перекус\n• 🕢 18-20: Ужин\n\n🏷️ #Тайминг #Метаболизм"
-            ],
-            'interactive': [
-                "💬 ОПРОС: Ваш подход к питанию?\n\n• 🕒 Строгий график\n• 🍽️ Интуитивное питание\n• 📊 Подсчет калорий\n• 🌱 Растительное питание\n\n💭 Напишите в комментариях!",
-                "🎯 ЧЕЛЛЕНДЖ НЕДЕЛИ\n\nПриготовьте полезный ужин и:\n1. 📸 Сфотографируйте\n2. 💬 Опишите рецепт\n3. 🏷️ Отметьте @ppsupershef\n\n🏆 Лучшие рецепты - в сторис!"
-            ],
-            'expert_advice': [
-                "🌟 СОВЕТ ЭКСПЕРТОВ\n\n🧬 Нутрициолог: 'Пейте воду за 30 минут до еды'\n👨‍🍳 Шеф: 'Используйте свежие травы вместо соли'\n💪 Тренер: 'Сочетайте кардио и силовые тренировки'",
-                "🌟 СОВЕТ ЭКСПЕРТОВ\n\n🧬 Нутрициолог: 'Слушайте сигналы голода'\n👨‍🍳 Шеф: 'Экспериментируйте со специями'\n💪 Тренер: 'Восстановление так же важно как тренировки'"
-            ]
-        }
-        
-        content_list = static_content.get(content_type, ["📝 Контент в разработке"])
-        content = content_list[weekday % len(content_list)]
-        emoji = self._get_content_emoji(content_type)
-        
-        return f"{emoji} {content_type.upper()}\n\n{theme}\n\n{content}"
-    
-    def _get_elite_call_to_action(self):
-        """Призыв к действию"""
-        return """
+    # ... остальной код без изменений ...
 
-═══════════════════════════════
-
-💎 **ПОДПИСЫВАЙТЕСЬ!** 👉 @ppsupershef
-
-💬 **КОММЕНТИРУЙТЕ!** Эксперты отвечают на вопросы
-
-👇 **РЕАКЦИИ:**
-❤️ - Нравится | 🔥 - Приготовлю | 📚 - Полезно
-
-📤 **ПОДЕЛИТЕСЬ** с друзьями!
-
-🏷️ #ppsupershef #ЗдоровоеПитание #Рецепты
-"""
-
-    def run_elite_scheduler(self):
-        """Запуск расписания публикаций"""
-        # Очищаем существующие задания
-        schedule.clear()
-        
-        # Основные публикации (время Кемерово UTC+7)
-        schedule.every().day.at("07:00").do(lambda: self.publish_content('breakfast'))
-        schedule.every().day.at("12:00").do(lambda: self.publish_content('lunch')) 
-        schedule.every().day.at("15:00").do(lambda: self.publish_content('science'))
-        schedule.every().day.at("18:00").do(lambda: self.publish_content('interactive'))
-        schedule.every().day.at("19:00").do(lambda: self.publish_content('dinner'))
-        schedule.every().day.at("21:00").do(lambda: self.publish_content('expert_advice'))
-        
-        # Визуальный контент через день
-        if self.get_kemerovo_time().day % 2 == 0:
-            schedule.every().day.at("16:00").do(lambda: self.publish_content('visual'))
-        
-        kemerovo_time = self.get_kemerovo_time()
-        print(f"🎯 РАСПИСАНИЕ АКТИВИРОВАНО!")
-        print(f"📍 Кемерово: {kemerovo_time.strftime('%H:%M')}")
-        print(f"📱 Канал: @ppsupershef")
-        print("📊 Расписание:")
-        print("🥞 07:00 - Завтрак")
-        print("🍽️ 12:00 - Обед") 
-        print("🧬 15:00 - Наука")
-        print("🎨 16:00 - Визуал (через день)")
-        print("💬 18:00 - Интерактив")
-        print("🍽️ 19:00 - Ужин")
-        print("🌟 21:00 - Советы экспертов")
-        print("=" * 50)
-        
-        # Немедленный тест
-        print("🧪 Тест системы...")
-        self.publish_content('breakfast')
-        
-        while True:
-            try:
-                schedule.run_pending()
-                time.sleep(60)
-            except Exception as e:
-                print(f"❌ Ошибка в планировщике: {e}")
-                time.sleep(60)
-    
-    def publish_content(self, content_type):
-        """Публикация контента"""
-        try:
-            kemerovo_time = self.get_kemerovo_time()
-            
-            # Проверяем чтобы не отправлять слишком часто
-            last_sent = self.last_sent_times.get(content_type)
-            if last_sent and (kemerovo_time - last_sent).total_seconds() < 300:  # 5 минут
-                print(f"⏰ Пропускаем {content_type} - отправлялся недавно")
-                return
-                
-            print(f"📤 Публикация {content_type}... ({kemerovo_time.strftime('%H:%M')})")
-            
-            message = self.generate_elite_content(content_type)
-            message += self._get_elite_call_to_action()
-            
-            success = self.send_to_telegram(message)
-            
-            if success:
-                print(f"✅ {content_type.upper()} отправлен в @ppsupershef!")
-                self.last_sent_times[content_type] = kemerovo_time
-            else:
-                print(f"❌ Ошибка отправки {content_type}")
-                
-        except Exception as e:
-            print(f"❌ Критическая ошибка в publish_content: {e}")
-    
-    def send_to_telegram(self, message):
-        """Отправка сообщения в Telegram"""
-        if not self.token:
-            print("❌ Ошибка: Не установлен токен бота!")
-            return False
-            
-        if not self.channel:
-            print("❌ Ошибка: Не установлен канал!")
-            return False
-            
-        url = f"https://api.telegram.org/bot{self.token}/sendMessage"
-        payload = {
-            'chat_id': self.channel,
-            'text': message,
-            'parse_mode': 'Markdown',
-            'disable_web_page_preview': True
-        }
-        
-        try:
-            response = requests.post(url, json=payload, timeout=10)
-            if response.status_code == 200:
-                print(f"✅ Сообщение отправлено в @ppsupershef")
-                return True
-            else:
-                print(f"❌ Ошибка Telegram API: {response.status_code}")
-                return False
-        except Exception as e:
-            print(f"❌ Ошибка соединения с Telegram: {e}")
-            return False
-
-# Инициализация системы
+# Глобальные объекты
 elite_channel = EliteContentManager()
 
-def start_elite_scheduler():
-    """Запуск планировщика в отдельном потоке"""
+# Webhook endpoint для Telegram
+@app.route('/webhook/telegram', methods=['POST'])
+def telegram_webhook():
+    """Endpoint для получения webhook от Telegram"""
     try:
-        elite_channel.run_elite_scheduler()
+        data = request.get_json()
+        
+        # Логируем входящие данные для отладки
+        print(f"📨 Входящий webhook: {json.dumps(data, ensure_ascii=False)[:500]}...")
+        
+        # Обрабатываем сообщение
+        if 'message' in data:
+            message = data['message']
+            
+            # Проверяем, что это комментарий в группе обсуждений
+            chat_id = message.get('chat', {}).get('id')
+            message_id = message.get('message_id')
+            text = message.get('text', '')
+            username = message.get('from', {}).get('username', 'Аноним')
+            
+            # Игнорируем сообщения от ботов и служебные сообщения
+            if (message.get('from', {}).get('is_bot', False) or 
+                not text.strip() or
+                text.startswith('/')):
+                return 'ok'
+            
+            # Обрабатываем комментарий
+            response_text = elite_channel.comment_manager.process_comment(
+                text, message_id, username, message_id
+            )
+            
+            # Отправляем ответ если нужно
+            if response_text:
+                success = elite_channel.webhook_manager.send_reply(
+                    chat_id, message_id, response_text
+                )
+                if success:
+                    print(f"✅ Ответ отправлен на комментарий {message_id}")
+                else:
+                    print(f"❌ Ошибка отправки ответа на комментарий {message_id}")
+        
+        return 'ok'
+        
     except Exception as e:
-        print(f"❌ Критическая ошибка планировщика: {e}")
+        print(f"❌ Ошибка в webhook: {e}")
+        return 'error', 500
 
-# Запускаем планировщик
-scheduler_thread = Thread(target=start_elite_scheduler)
-scheduler_thread.daemon = True
-scheduler_thread.start()
-
+# Обновляем главную страницу с информацией о комментариях
 @app.route('/')
 def home():
     """Главная страница"""
@@ -425,6 +255,9 @@ def home():
             'expert_advice': "✅" if now.hour >= 21 else "⏰"
         }
         
+        # Проверяем webhook
+        webhook_status = "✅ Активен" if elite_channel.webhook_manager.webhook_url else "❌ Не настроен"
+        
         return f"""
         <html>
             <head>
@@ -444,6 +277,7 @@ def home():
                     .buttons {{ margin-top: 20px; }}
                     .btn {{ display: inline-block; padding: 10px 15px; margin: 5px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }}
                     .btn:hover {{ background: #0056b3; }}
+                    .feature {{ background: #d1ecf1; padding: 10px; border-radius: 5px; margin: 5px 0; }}
                 </style>
             </head>
             <body>
@@ -457,11 +291,18 @@ def home():
                     </div>
                     
                     <div class="status {'success' if elite_channel.ai_generator.yandex_gpt.is_active else 'warning'}">
-                        <strong>🤖 Yandex GPT:</strong> {'✅ Активен' if elite_channel.ai_generator.yandex_gpt.is_active else '❌ Не настроен'}
+                        <strong>🤖 AI Генерация:</strong> {'✅ Активна' if elite_channel.ai_generator.yandex_gpt.is_active or elite_channel.ai_generator.deepseek_gpt.is_active else '❌ Не настроена'}
                     </div>
                     
-                    <div class="status {'success' if elite_channel.ai_generator.deepseek_gpt.is_active else 'warning'}">
-                        <strong>🤖 DeepSeek:</strong> {'✅ Активен' if elite_channel.ai_generator.deepseek_gpt.is_active else '❌ Не настроен'}
+                    <div class="status {'success' if elite_channel.webhook_manager.webhook_url else 'warning'}">
+                        <strong>🤖 Ответы на комментарии:</strong> {webhook_status}
+                    </div>
+                    
+                    <div class="feature">
+                        <strong>🎯 Автоответы на комментарии:</strong>
+                        <br>• 🧬 Нутрициолог - научные вопросы
+                        <br>• 👨‍🍳 Шеф - рецепты и готовка  
+                        <br>• 💪 Тренер - фитнес и активность
                     </div>
                     
                     <div class="schedule">
@@ -477,8 +318,8 @@ def home():
                     
                     <div class="buttons">
                         <a href="/test" class="btn">🧪 Тест системы</a>
+                        <a href="/setup-webhook" class="btn">🔗 Настроить Webhook</a>
                         <a href="/force/breakfast" class="btn">🚀 Отправить завтрак</a>
-                        <a href="/force/science" class="btn">🔬 Отправить науку</a>
                         <a href="/debug" class="btn">🔧 Диагностика</a>
                     </div>
                 </div>
@@ -488,43 +329,43 @@ def home():
     except Exception as e:
         return f"<h1>❌ Ошибка: {e}</h1>"
 
-@app.route('/test')
-def test():
-    """Тестовая отправка"""
-    test_message = "🧪 ТЕСТ СИСТЕМЫ\n\nСистема @ppsupershef работает корректно! ✅\n\nВремя Кемерово: " + elite_channel.get_kemerovo_time().strftime('%H:%M')
-    success = elite_channel.send_to_telegram(test_message)
-    return f"Тест отправлен: {'✅ Успешно' if success else '❌ Ошибка'}"
-
-@app.route('/force/<content_type>')
-def force_publish(content_type):
-    """Принудительная отправка"""
-    valid_types = ['breakfast', 'lunch', 'dinner', 'science', 'visual', 'interactive', 'expert_advice']
-    if content_type not in valid_types:
-        return f"❌ Неверный тип. Используйте: {', '.join(valid_types)}"
+# Endpoint для настройки webhook
+@app.route('/setup-webhook')
+def setup_webhook():
+    """Настройка webhook для Telegram"""
+    webhook_url = f"https://{request.host}/webhook/telegram"
+    success = elite_channel.webhook_manager.setup_webhook(webhook_url)
     
-    elite_channel.publish_content(content_type)
-    return f"✅ Принудительно отправлен {content_type}"
-
-@app.route('/debug')
-def debug():
-    """Диагностика"""
-    kemerovo_time = elite_channel.get_kemerovo_time()
-    return jsonify({
-        "system": "@ppsupershef",
-        "status": "active",
-        "kemerovo_time": kemerovo_time.strftime('%Y-%m-%d %H:%M:%S'),
-        "ai_services": {
-            "yandex_gpt": elite_channel.ai_generator.yandex_gpt.is_active,
-            "deepseek": elite_channel.ai_generator.deepseek_gpt.is_active
-        },
-        "telegram": {
-            "token_set": bool(TELEGRAM_TOKEN),
-            "channel_set": bool(TELEGRAM_CHANNEL)
-        }
-    })
+    if success:
+        return f"""
+        <html>
+            <body>
+                <h2>✅ Webhook настроен!</h2>
+                <p><strong>URL:</strong> {webhook_url}</p>
+                <p>Теперь бот будет автоматически отвечать на комментарии в группе обсуждений.</p>
+                <a href="/">← Назад</a>
+            </body>
+        </html>
+        """
+    else:
+        return f"""
+        <html>
+            <body>
+                <h2>❌ Ошибка настройки webhook</h2>
+                <p>Проверьте токен бота и доступность URL.</p>
+                <a href="/">← Назад</a>
+            </body>
+        </html>
+        """
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
+    
+    # Автоматическая настройка webhook при запуске
+    webhook_url = f"https://food-telegram-bot.onrender.com/webhook/telegram"
+    elite_channel.webhook_manager.setup_webhook(webhook_url)
+    
     print(f"🚀 Запуск системы @ppsupershef на порту {port}")
     print(f"📍 Время Кемерово: {elite_channel.get_kemerovo_time().strftime('%d.%m %H:%M')}")
+    print(f"🔗 Webhook: {webhook_url}")
     app.run(host='0.0.0.0', port=port, debug=False)
