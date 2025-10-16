@@ -56,6 +56,86 @@ class ContentFormatter:
         {"emoji": "📚", "text": "на рецепты"}
     ]
     
+    # Визуальный контент
+    VISUAL_CONTENT = {
+        'infographics': [
+            {'emoji': '📊', 'title': 'Правило тарелки', 'desc': 'Идеальное распределение продуктов'},
+            {'emoji': '📈', 'title': 'Баланс БЖУ', 'desc': 'Оптимальное соотношение белков, жиров, углеводов'},
+            {'emoji': '⏱️', 'title': 'Тайминг приемов пищи', 'desc': 'Когда и что лучше есть'},
+            {'emoji': '🥗', 'title': 'Сезонные продукты', 'desc': 'Что есть в текущем сезоне'},
+            {'emoji': '💧', 'title': 'Гидробаланс', 'desc': 'Схема потребления воды'}
+        ],
+        'checklists': [
+            {'emoji': '🛒', 'title': 'Чек-лист продуктов', 'desc': 'Список покупок на неделю'},
+            {'emoji': '🍱', 'title': 'Список для ланчбокса', 'desc': 'Что взять с собой на работу'},
+            {'emoji': '📅', 'title': 'План питания на неделю', 'desc': 'Расписание приемов пищи'},
+            {'emoji': '⚡', 'title': 'Экспресс-рецепты', 'desc': 'Быстрые блюда за 15 минут'},
+            {'emoji': '💰', 'title': 'Бюджетное питание', 'desc': 'Экономные и полезные варианты'}
+        ],
+        'guides': [
+            {'emoji': '🔍', 'title': 'Как читать этикетки', 'desc': 'Разбор состава продуктов'},
+            {'emoji': '🏃', 'title': 'Питание при тренировках', 'desc': 'До и после физической нагрузки'},
+            {'emoji': '💤', 'title': 'Питание для сна', 'desc': 'Что есть для качественного отдыха'}
+        ]
+    }
+    
+    # Система вовлечения
+    ENGAGEMENT_BOOSTERS = [
+        {
+            'type': 'social_mention',
+            'text': "📱 Отмечайте нас в сторис! Покажите свои блюда с тегом #ppsupershef",
+            'hashtag': '#ppsupershef'
+        },
+        {
+            'type': 'repost',
+            'text': "🎁 Репост приветствуется! Поделитесь с друзьями - сохраняйте полезное",
+            'emoji': "🎁"
+        },
+        {
+            'type': 'user_content',
+            'text': "👨‍🍳 Покажите вашу версию рецепта! Лучшие фото публикуем в канале",
+            'hashtag': '#мойрецепт'
+        },
+        {
+            'type': 'question',
+            'text': "💬 Как вам рецепт? Пишите в комментариях ваши впечатления!",
+            'emoji': "💬"
+        },
+        {
+            'type': 'challenge',
+            'text': "🏆 Примите кулинарный вызов! Готовите это блюдо - отмечайте нас",
+            'hashtag': '#кулинарныйвызов'
+        }
+    ]
+
+    # Интерактивные элементы
+    INTERACTIVE_ELEMENTS = {
+        'polls': [
+            {
+                'question': "📊 Голосуйте: Какой формат контента нравится больше?",
+                'options': ['🍳 Рецепты с КБЖУ', '🔬 Научные факты', '💡 Советы экспертов', '📊 Инфографика'],
+                'emoji': '📊'
+            },
+            {
+                'question': "🥗 Какой прием пищи планируете улучшить?",
+                'options': ['🍳 Завтрак', '🍲 Обед', '🍽️ Ужин', '🥨 Перекусы'],
+                'emoji': '🥗'
+            },
+            {
+                'question': "⏱️ Как часто готовите дома?",
+                'options': ['📅 Каждый день', '💼 В рабочие дни', '🎉 Только выходные', '🍕 Редко готовлю'],
+                'emoji': '⏱️'
+            }
+        ],
+        'quizzes': [
+            {
+                'question': "🧠 Тест: Насколько вы разбираетесь в питании?",
+                'options': ['💪 Профи', '📚 Любитель', '🌱 Начинающий', '❓ Только учусь'],
+                'emoji': '🧠'
+            }
+        ]
+    }
+
     @staticmethod
     def add_emojis_to_text(text):
         """Добавляет эмодзи в начало каждого нового предложения"""
@@ -125,7 +205,45 @@ class ContentFormatter:
 🔄 <b>Поделитесь с друзьями!</b> → {channel_link}
         """
         return footer
-    
+
+    @staticmethod
+    def add_visual_content(content_type='random'):
+        """Добавляет блок визуального контента"""
+        if content_type == 'random':
+            # Случайный выбор типа визуального контента
+            content_type = random.choice(list(ContentFormatter.VISUAL_CONTENT.keys()))
+        
+        if content_type in ContentFormatter.VISUAL_CONTENT:
+            item = random.choice(ContentFormatter.VISUAL_CONTENT[content_type])
+            return f"\n\n{item['emoji']} <b>{item['title']}</b>\n{item['desc']} - сохраняйте в закладки! 📌"
+        return ""
+
+    @staticmethod
+    def add_engagement_booster():
+        """Добавляет случайный элемент вовлечения"""
+        booster = random.choice(ContentFormatter.ENGAGEMENT_BOOSTERS)
+        
+        if booster['type'] == 'social_mention':
+            return f"\n\n{booster['text']}"
+        elif booster['type'] == 'repost':
+            return f"\n\n{booster['emoji']} {booster['text']}"
+        elif booster['type'] == 'user_content':
+            return f"\n\n{booster['text']}"
+        elif booster['type'] == 'question':
+            return f"\n\n{booster['text']}"
+        elif booster['type'] == 'challenge':
+            return f"\n\n{booster['text']}"
+        
+        return ""
+
+    @staticmethod
+    def add_interactive_element(element_type='poll'):
+        """Добавляет интерактивный элемент"""
+        if element_type == 'poll' and ContentFormatter.INTERACTIVE_ELEMENTS['polls']:
+            poll = random.choice(ContentFormatter.INTERACTIVE_ELEMENTS['polls'])
+            return f"\n\n{poll['emoji']} <b>{poll['question']}</b>"
+        return ""
+
     @staticmethod
     def format_recipe_content(title, content, include_kbju=True):
         """Форматирует полный рецепт с КБЖУ, эмодзи и футером"""
@@ -143,6 +261,29 @@ class ContentFormatter:
         footer = ContentFormatter.format_footer()
         
         return f"{title}\n\n{kbju_line}{formatted_content}{footer}"
+
+    @staticmethod
+    def format_recipe_content_enhanced(title, content, include_visual=True, include_engagement=True, include_interactive=True):
+        """Улучшенное форматирование с дополнительными элементами"""
+        # Базовое форматирование
+        formatted_content = ContentFormatter.format_recipe_content(title, content)
+        
+        # Добавляем визуальный контент (30% вероятность)
+        if include_visual and random.random() < 0.3:
+            visual_block = ContentFormatter.add_visual_content()
+            formatted_content += visual_block
+        
+        # Добавляем элемент вовлечения (40% вероятность)
+        if include_engagement and random.random() < 0.4:
+            engagement_block = ContentFormatter.add_engagement_booster()
+            formatted_content += engagement_block
+        
+        # Добавляем интерактивный элемент (25% вероятность)
+        if include_interactive and random.random() < 0.25:
+            interactive_block = ContentFormatter.add_interactive_element()
+            formatted_content += interactive_block
+        
+        return formatted_content
 
 class TimeZoneConverter:
     """Класс для конвертации времени между часовыми поясами"""
@@ -201,12 +342,58 @@ class TimeZoneConverter:
             'kemerovo_timezone': str(Config.KEMEROVO_TIMEZONE)
         }
 
+class TelegramPolls:
+    """Класс для работы с опросами в Telegram"""
+    
+    def __init__(self, bot_token):
+        self.bot_token = bot_token
+        self.base_url = f"https://api.telegram.org/bot{bot_token}"
+    
+    def create_poll(self, chat_id, question, options, is_anonymous=True, allows_multiple_answers=False):
+        """Создание опроса в Telegram"""
+        try:
+            url = f"{self.base_url}/sendPoll"
+            payload = {
+                'chat_id': chat_id,
+                'question': question,
+                'options': options,
+                'is_anonymous': is_anonymous,
+                'allows_multiple_answers': allows_multiple_answers,
+                'type': 'regular'
+            }
+            
+            response = requests.post(url, json=payload, timeout=30)
+            result = response.json()
+            
+            if result.get('ok'):
+                logger.info(f"✅ Опрос создан: {question}")
+                return result['result']
+            else:
+                logger.error(f"❌ Ошибка создания опроса: {result}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"❌ Исключение при создании опроса: {str(e)}")
+            return None
+    
+    def send_scheduled_poll(self, chat_id, poll_type='content_preference'):
+        """Отправка запланированного опроса"""
+        formatter = ContentFormatter()
+        
+        if poll_type == 'content_preference':
+            poll_data = random.choice(formatter.INTERACTIVE_ELEMENTS['polls'])
+            return self.create_poll(chat_id, poll_data['question'], poll_data['options'])
+        
+        return None
+
 # Класс для работы с Telegram каналом
 class EliteChannel:
     def __init__(self):
         self.token = Config.TELEGRAM_BOT_TOKEN
         self.channel = Config.TELEGRAM_CHANNEL
         self.group = Config.TELEGRAM_GROUP
+        self.polls_manager = TelegramPolls(self.token)
+        self.formatter = ContentFormatter()
         logger.info(f"✅ Инициализирован канал с ID: {self.channel}")
     
     def send_to_telegram(self, message, parse_mode='HTML'):
@@ -240,7 +427,7 @@ class EliteChannel:
             return False
 
     def test_connection(self):
-        """Тестирование подключения к каналу"""
+        """Тестирование подключения к канала"""
         try:
             if not self.token:
                 return {"status": "error", "message": "Токен бота не установлен"}
@@ -260,6 +447,33 @@ class EliteChannel:
                 
         except Exception as e:
             return {"status": "error", "message": str(e)}
+    
+    def send_poll(self, poll_type='content_preference'):
+        """Отправка опроса в канал"""
+        try:
+            return self.polls_manager.send_scheduled_poll(self.channel, poll_type)
+        except Exception as e:
+            logger.error(f"❌ Ошибка отправки опроса: {str(e)}")
+            return None
+    
+    def send_visual_content(self, content_type='infographics'):
+        """Отправка визуального контента"""
+        try:
+            visual_item = random.choice(self.formatter.VISUAL_CONTENT[content_type])
+            message = f"""🎨 <b>{visual_item['title']}</b>
+
+{visual_item['desc']}
+
+💡 Сохраните эту карточку - пригодится в планировании питания!
+
+📱 Поделитесь с друзьями, которым это может быть полезно
+
+#инфографика #советы #питание"""
+            
+            return self.send_to_telegram(message)
+        except Exception as e:
+            logger.error(f"❌ Ошибка отправки визуального контента: {str(e)}")
+            return False
 
 # Генерация контента
 class ContentGenerator:
@@ -334,11 +548,11 @@ class ContentGenerator:
         
         content = self.generate_with_yandex_gpt(prompt)
         if content:
-            return self.formatter.format_recipe_content("🍳 ЗАВТРАК", content)
+            return self.formatter.format_recipe_content_enhanced("🍳 ЗАВТРАК", content)
         
         # Fallback контент
         fallback_content = """Ингредиенты: овсяные хлопья - 50г, молоко - 200мл, банан - 1шт, мед - 1чл, грецкие орехи - 20г, ягоды - горсть. Залейте овсянку горячим молоком и оставьте на 5 минут. Добавьте нарезанный банан, мед и измельченные орехи. Украсьте свежими ягодами. Этот завтрак богат клетчаткой и дает энергию на весь день."""
-        return self.formatter.format_recipe_content("🍳 ЗАВТРАК", fallback_content)
+        return self.formatter.format_recipe_content_enhanced("🍳 ЗАВТРАК", fallback_content)
     
     def generate_lunch(self):
         """Генерация контента для обеда"""
@@ -352,10 +566,10 @@ class ContentGenerator:
         
         content = self.generate_with_yandex_gpt(prompt)
         if content:
-            return self.formatter.format_recipe_content("🍲 ОБЕД", content)
+            return self.formatter.format_recipe_content_enhanced("🍲 ОБЕД", content)
         
         fallback_content = """Ингредиенты: куриная грудка - 150г, гречка - 100г, морковь - 1шт, лук - 1шт, оливковое масло - 1стл, специи. Отварите гречку. Нарежьте курицу кубиками и обжарьте с луком и морковью. Добавьте специи и тушите 15 минут. Подавайте с гречкой. Это блюдо богато белком и сложными углеводами."""
-        return self.formatter.format_recipe_content("🍲 ОБЕД", fallback_content)
+        return self.formatter.format_recipe_content_enhanced("🍲 ОБЕД", fallback_content)
     
     def generate_science(self):
         """Генерация научного контента"""
@@ -365,7 +579,20 @@ class ContentGenerator:
         if content:
             formatted_content = self.formatter.add_emojis_to_text(content)
             footer = self.formatter.format_footer()
-            return f"🔬 НАУКА О ПИТАНИИ\n\n{formatted_content}{footer}"
+            
+            # Добавляем дополнительные элементы с вероятностью
+            enhanced_content = formatted_content
+            
+            if random.random() < 0.3:
+                enhanced_content += self.formatter.add_visual_content()
+            
+            if random.random() < 0.4:
+                enhanced_content += self.formatter.add_engagement_booster()
+            
+            if random.random() < 0.25:
+                enhanced_content += self.formatter.add_interactive_element()
+            
+            return f"🔬 НАУКА О ПИТАНИИ\n\n{enhanced_content}{footer}"
         
         fallback_content = "Исследования показывают что регулярное употребление омега-3 жирных кислот улучшает работу мозга. Добавьте в рацион рыбу и орехи. Ученые доказали что средиземноморская диета снижает риск сердечных заболеваний. Исследования подтверждают что зеленый чай ускоряет метаболизм."
         formatted_content = self.formatter.add_emojis_to_text(fallback_content)
@@ -380,7 +607,20 @@ class ContentGenerator:
         if content:
             formatted_content = self.formatter.add_emojis_to_text(content)
             footer = self.formatter.format_footer()
-            return f"⏱️ ИНТЕРВАЛЬНОЕ ПИТАНИЕ\n\n{formatted_content}{footer}"
+            
+            # Добавляем дополнительные элементы с вероятностью
+            enhanced_content = formatted_content
+            
+            if random.random() < 0.3:
+                enhanced_content += self.formatter.add_visual_content()
+            
+            if random.random() < 0.4:
+                enhanced_content += self.formatter.add_engagement_booster()
+            
+            if random.random() < 0.25:
+                enhanced_content += self.formatter.add_interactive_element()
+            
+            return f"⏱️ ИНТЕРВАЛЬНОЕ ПИТАНИЕ\n\n{enhanced_content}{footer}"
         
         fallback_content = "Оптимальный перерыв между приемами пищи 3-4 часа. Интервальное голодание 16/8 улучшает метаболизм. Не пропускайте завтрак для поддержания энергии. Вечерний перерыв в питании способствует качественному сну."
         formatted_content = self.formatter.add_emojis_to_text(fallback_content)
@@ -399,10 +639,10 @@ class ContentGenerator:
         
         content = self.generate_with_yandex_gpt(prompt)
         if content:
-            return self.formatter.format_recipe_content("🍽️ УЖИН", content)
+            return self.formatter.format_recipe_content_enhanced("🍽️ УЖИН", content)
         
         fallback_content = """Ингредиенты: творог - 150г, яйцо - 1шт, овсяные отруби - 2стл, разрыхлитель - 0.5чл, специи. Смешайте все ингредиенты. Выпекайте в формочках 25 минут при 180°C. Легкий ужин богат белком и способствует восстановлению мышц. Идеально подходит для вечернего приема пищи."""
-        return self.formatter.format_recipe_content("🍽️ УЖИН", fallback_content)
+        return self.formatter.format_recipe_content_enhanced("🍽️ УЖИН", fallback_content)
     
     def generate_expert_advice(self):
         """Генерация совета эксперта"""
@@ -412,7 +652,20 @@ class ContentGenerator:
         if content:
             formatted_content = self.formatter.add_emojis_to_text(content)
             footer = self.formatter.format_footer()
-            return f"💡 СОВЕТ ЭКСПЕРТА\n\n{formatted_content}{footer}"
+            
+            # Добавляем дополнительные элементы с вероятностью
+            enhanced_content = formatted_content
+            
+            if random.random() < 0.3:
+                enhanced_content += self.formatter.add_visual_content()
+            
+            if random.random() < 0.4:
+                enhanced_content += self.formatter.add_engagement_booster()
+            
+            if random.random() < 0.25:
+                enhanced_content += self.formatter.add_interactive_element()
+            
+            return f"💡 СОВЕТ ЭКСПЕРТА\n\n{enhanced_content}{footer}"
         
         fallback_content = "Пейте воду за 30 минут до еды для улучшения пищеварения. Используйте маленькие тарелки для контроля порций. Добавляйте белок в каждый прием пищи. Готовьте еду заранее для экономии времени. Ешьте медленно и осознанно."
         formatted_content = self.formatter.add_emojis_to_text(fallback_content)
@@ -432,21 +685,35 @@ class ContentScheduler:
             "21:00": {"type": "expert_advice", "name": "💡 Советы экспертов", "generator": "generate_expert_advice"}
         }
         
-        # Конвертируем расписание в серверное время
-        self.server_schedule = {}
-        for kemerovo_time, event in self.kemerovo_schedule.items():
-            server_time = TimeZoneConverter.kemerovo_to_server_time(kemerovo_time)
-            self.server_schedule[server_time] = event
-            logger.info(f"🕒 Расписание: Кемерово {kemerovo_time} -> Сервер {server_time} - {event['name']}")
+        # Дополнительное расписание для особого контента
+        self.special_schedule = {
+            "15:00": {"type": "visual_content", "name": "🎨 Визуальный контент", "handler": "send_visual_content"},
+            "20:00": {"type": "poll", "name": "📊 Опрос", "handler": "send_poll"},
+            "14:00": {"type": "engagement_post", "name": "📱 Пост вовлечения", "handler": "send_engagement_post"}
+        }
+        
+        # Конвертируем расписания
+        self.server_schedule = self._convert_schedule(self.kemerovo_schedule)
+        self.server_special_schedule = self._convert_schedule(self.special_schedule)
         
         self.is_running = False
-        logger.info("✅ Инициализирован планировщик контента с учетом часовых поясов")
-    
+        logger.info("✅ Инициализирован улучшенный планировщик контента")
+
+    def _convert_schedule(self, schedule):
+        """Конвертирует расписание в серверное время"""
+        converted = {}
+        for kemerovo_time, event in schedule.items():
+            server_time = TimeZoneConverter.kemerovo_to_server_time(kemerovo_time)
+            converted[server_time] = event
+            logger.info(f"🕒 Расписание: Кемерово {kemerovo_time} -> Сервер {server_time} - {event['name']}")
+        return converted
+
     def get_schedule(self):
         """Возвращает расписание в обоих часовых поясах"""
         return {
             'kemerovo_schedule': self.kemerovo_schedule,
-            'server_schedule': self.server_schedule
+            'server_schedule': self.server_schedule,
+            'special_schedule': self.special_schedule
         }
     
     def get_next_event(self):
@@ -454,11 +721,14 @@ class ContentScheduler:
         current_times = TimeZoneConverter.get_current_times()
         current_server_time = current_times['server_time'][:5]  # Берем только HH:MM
         
+        # Объединяем все расписания для поиска следующего события
+        all_events = {**self.server_schedule, **self.server_special_schedule}
+        
         # Ищем следующее событие в серверном времени
-        times_today = [t for t in self.server_schedule.keys() if t > current_server_time]
+        times_today = [t for t in all_events.keys() if t > current_server_time]
         if times_today:
             next_server_time = min(times_today)
-            next_event = self.server_schedule[next_server_time]
+            next_event = all_events[next_server_time]
             
             # Конвертируем обратно в Кемерово время для отображения
             next_kemerovo_time = TimeZoneConverter.server_to_kemerovo_time(next_server_time)
@@ -466,8 +736,8 @@ class ContentScheduler:
             return next_server_time, next_kemerovo_time, next_event
         
         # Если сегодня событий больше нет, берем первое завтра
-        first_server_time = min(self.server_schedule.keys())
-        first_event = self.server_schedule[first_server_time]
+        first_server_time = min(all_events.keys())
+        first_event = all_events[first_server_time]
         first_kemerovo_time = TimeZoneConverter.server_to_kemerovo_time(first_server_time)
         
         return first_server_time, first_kemerovo_time, first_event
@@ -477,36 +747,84 @@ class ContentScheduler:
         if self.is_running:
             return
         
-        logger.info("🚀 Запуск планировщика публикаций с учетом часовых поясов...")
+        logger.info("🚀 Запуск улучшенного планировщика контента...")
         
-        def schedule_job(server_time_str, content_type, kemerovo_time_str):
-            method_name = self.server_schedule[server_time_str]['generator']
-            method = getattr(content_gen, method_name)
-            
-            def job():
-                current_times = TimeZoneConverter.get_current_times()
-                logger.info(f"🕒 Выполнение: {content_type} (Кемерово: {kemerovo_time_str}, Сервер: {current_times['server_time']})")
-                content = method()
-                if content:
-                    # Добавляем информацию о времени публикации
-                    content_with_time = f"{content}\n\n🕐 Опубликовано: {current_times['kemerovo_time']} (Кемерово)"
-                    success = elite_channel.send_to_telegram(content_with_time)
-                    if success:
-                        logger.info(f"✅ Успешная публикация: {content_type}")
-                    else:
-                        logger.error(f"❌ Ошибка публикации: {content_type}")
-            
-            schedule.every().day.at(server_time_str).do(job)
-            logger.info(f"✅ Запланировано: Сервер {server_time_str} (Кемерово {kemerovo_time_str}) - {content_type}")
-        
-        # Планируем задачи в серверном времени
+        # Основной контент
         for server_time, event in self.server_schedule.items():
-            # Находим соответствующее время в Кемерово
             kemerovo_time = TimeZoneConverter.server_to_kemerovo_time(server_time)
-            schedule_job(server_time, event['type'], kemerovo_time)
+            self._schedule_regular_content(server_time, event, kemerovo_time)
+        
+        # Специальный контент
+        for server_time, event in self.server_special_schedule.items():
+            kemerovo_time = TimeZoneConverter.server_to_kemerovo_time(server_time)
+            self._schedule_special_content(server_time, event, kemerovo_time)
         
         self.is_running = True
+        self._run_scheduler()
+
+    def _schedule_regular_content(self, server_time, event, kemerovo_time):
+        """Планирует регулярный контент"""
+        method_name = event['generator']
+        method = getattr(content_gen, method_name)
         
+        def job():
+            current_times = TimeZoneConverter.get_current_times()
+            logger.info(f"🕒 Выполнение: {event['type']} (Кемерово: {kemerovo_time})")
+            
+            # Используем улучшенное форматирование
+            content = method()
+            if content:
+                # Убрали название города из временной метки
+                content_with_time = f"{content}\n\n🕐 Опубликовано: {current_times['kemerovo_time']}"
+                success = elite_channel.send_to_telegram(content_with_time)
+                if success:
+                    logger.info(f"✅ Успешная публикация: {event['type']}")
+        
+        schedule.every().day.at(server_time).do(job)
+        logger.info(f"✅ Запланировано: {server_time} - {event['name']}")
+
+    def _schedule_special_content(self, server_time, event, kemerovo_time):
+        """Планирует специальный контент"""
+        def job():
+            current_times = TimeZoneConverter.get_current_times()
+            logger.info(f"🕒 Выполнение: {event['type']} (Кемерово: {kemerovo_time})")
+            
+            if event['type'] == 'visual_content':
+                # Случайный тип визуального контента
+                content_type = random.choice(['infographics', 'checklists', 'guides'])
+                elite_channel.send_visual_content(content_type)
+                
+            elif event['type'] == 'poll':
+                elite_channel.send_poll()
+                
+            elif event['type'] == 'engagement_post':
+                self._send_engagement_post()
+        
+        # Специальный контент планируем не каждый день
+        if random.random() < 0.6:  # 60% вероятность
+            schedule.every().day.at(server_time).do(job)
+            logger.info(f"✅ Запланирован специальный контент: {server_time} - {event['name']}")
+
+    def _send_engagement_post(self):
+        """Отправляет пост для вовлечения"""
+        booster = random.choice(ContentFormatter.ENGAGEMENT_BOOSTERS)
+        message = f"""📱 <b>ВЗАИМОДЕЙСТВИЕ С АУДИТОРИЕЙ</b>
+
+{booster['text']}
+
+💫 Самые активные участники получают упоминания в канале!
+
+🎯 Не стесняйтесь делиться мнением - ваш опыт важен для других
+
+📢 <b>Подписывайтесь на канал!</b> → @ppsupershef
+💬 <b>Обсуждаем в комментариях!</b> → @ppsupershef_chat
+
+🔄 <b>Поделитесь с друзьями!</b> → @ppsupershef"""
+
+        elite_channel.send_to_telegram(message)
+
+    def _run_scheduler(self):
+        """Запускает фоновый поток планировщика"""
         def run_scheduler():
             while self.is_running:
                 schedule.run_pending()
@@ -558,6 +876,7 @@ def index():
                     .schedule {{ flex: 1; background: #ecf0f1; padding: 20px; border-radius: 5px; }}
                     .event {{ padding: 10px; margin: 5px 0; background: white; border-left: 4px solid #3498db; }}
                     .event-kemerovo {{ border-left-color: #e74c3c; }}
+                    .event-special {{ border-left-color: #9b59b6; }}
                     .status-success {{ color: #27ae60; }}
                     .status-error {{ color: #e74c3c; }}
                     .btn {{ display: inline-block; padding: 10px 20px; margin: 5px; background: #3498db; color: white; text-decoration: none; border-radius: 5px; }}
@@ -590,12 +909,15 @@ def index():
                             <li>📢 Призывы к действию в конце</li>
                             <li>😋 Реакции для вовлечения</li>
                             <li>🔄 Кнопка "Поделиться с друзьями"</li>
+                            <li>🎨 Визуальный контент и инфографика</li>
+                            <li>📊 Интерактивные опросы</li>
+                            <li>📱 Элементы вовлечения аудитории</li>
                         </ul>
                     </div>
                     
                     <div class="schedule-container">
                         <div class="schedule">
-                            <h3>📅 Расписание (Кемерово время)</h3>
+                            <h3>📅 Основное расписание (Кемерово время)</h3>
         """
         
         for time_str, event in schedule_info['kemerovo_schedule'].items():
@@ -606,12 +928,11 @@ def index():
                         </div>
                         
                         <div class="schedule">
-                            <h3>🖥️ Расписание (Серверное время)</h3>
+                            <h3>🎯 Специальный контент (Кемерово время)</h3>
         """
         
-        for time_str, event in schedule_info['server_schedule'].items():
-            is_next = " (Следующая)" if time_str == next_server_time else ""
-            html += f'<div class="event">{time_str} - {event["name"]}{is_next}</div>'
+        for time_str, event in schedule_info['special_schedule'].items():
+            html += f'<div class="event event-special">{time_str} - {event["name"]}</div>'
         
         html += f"""
                         </div>
@@ -624,6 +945,8 @@ def index():
                         <a class="btn" href="/health">Health Check</a>
                         <a class="btn" href="/time-info">Информация о времени</a>
                         <a class="btn" href="/preview-format" style="background: #27ae60;">Предпросмотр формата</a>
+                        <a class="btn" href="/send-poll" style="background: #9b59b6;">Отправить опрос</a>
+                        <a class="btn" href="/send-visual-content" style="background: #e67e22;">Визуальный контент</a>
                     </div>
                     
                     <div style="margin-top: 20px;">
@@ -696,6 +1019,9 @@ def preview_format():
                             <li><strong>📢 Призывы к действию</strong> - в конце сообщения</li>
                             <li><strong>😋 Реакции</strong> - для вовлечения аудитории</li>
                             <li><strong>🔄 Кнопка "Поделиться"</strong> - для вирального распространения</li>
+                            <li><strong>🎨 Визуальный контент</strong> - инфографика и чек-листы</li>
+                            <li><strong>📊 Интерактивные опросы</strong> - вовлечение аудитории</li>
+                            <li><strong>📱 Элементы вовлечения</strong> - репосты, отметки, челленджи</li>
                         </ul>
                     </div>
                     
@@ -718,6 +1044,39 @@ def preview_format():
     except Exception as e:
         logger.error(f"❌ Ошибка в preview-format: {e}")
         return f"Ошибка: {str(e)}"
+
+@app.route('/send-poll')
+def send_poll_route():
+    """Ручка для отправки тестового опроса"""
+    try:
+        result = elite_channel.send_poll()
+        if result:
+            return jsonify({
+                "status": "success",
+                "message": "Опрос отправлен",
+                "poll_id": result.get('poll', {}).get('id')
+            })
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Не удалось отправить опрос"
+            })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/send-visual-content')
+def send_visual_content_route():
+    """Ручка для отправки визуального контента"""
+    try:
+        content_type = request.args.get('type', 'infographics')
+        success = elite_channel.send_visual_content(content_type)
+        
+        return jsonify({
+            "status": "success" if success else "error",
+            "message": "Визуальный контент отправлен" if success else "Ошибка отправки"
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
 
 @app.route('/time-info')
 def time_info():
@@ -780,9 +1139,9 @@ def send_now(content_type):
                 "message": "Не удалось сгенерировать контент"
             })
         
-        # Добавляем временную метку
+        # Добавляем временную метку (без названия города)
         current_times = TimeZoneConverter.get_current_times()
-        content_with_time = f"{content}\n\n🕐 Опубликовано: {current_times['kemerovo_time']} (Кемерово)"
+        content_with_time = f"{content}\n\n🕐 Опубликовано: {current_times['kemerovo_time']}"
         
         success = elite_channel.send_to_telegram(content_with_time)
         
@@ -819,6 +1178,13 @@ def test_channel():
 👨‍🍳 Система автоматической публикации работает корректно.
 💫 Форматирование сообщений настроено правильно.
 
+📊 <b>Правило тарелки</b>
+Идеальное распределение продуктов - сохраняйте в закладки! 📌
+
+📱 Отмечайте нас в сторис! Покажите свои блюда с тегом #ppsupershef
+
+📊 <b>Голосуйте: Какой формат контента нравится больше?</b>
+
 📢 <b>Подписывайтесь на канал!</b> → @ppsupershef
 💬 <b>Обсуждаем в комментариях!</b> → @ppsupershef_chat
 
@@ -826,8 +1192,7 @@ def test_channel():
 
 🔄 <b>Поделитесь с друзьями!</b> → @ppsupershef
 
-🕐 Время Кемерово: {current_times['kemerovo_time']}
-🖥️ Время сервера: {current_times['server_time']}"""
+🕐 Опубликовано: {current_times['kemerovo_time']}"""
     
     success = elite_channel.send_to_telegram(test_message)
     
@@ -853,6 +1218,18 @@ def health_check():
         "scheduler_running": content_scheduler.is_running,
         "channel": "@ppsupershef",
         "time_info": current_times
+    })
+
+@app.route('/content-stats')
+def content_stats():
+    """Статистика по типам контента"""
+    formatter = ContentFormatter()
+    
+    return jsonify({
+        "visual_content_types": len(formatter.VISUAL_CONTENT),
+        "engagement_boosters": len(formatter.ENGAGEMENT_BOOSTERS),
+        "interactive_polls": len(formatter.INTERACTIVE_ELEMENTS['polls']),
+        "total_variations": len(formatter.VISUAL_CONTENT) + len(formatter.ENGAGEMENT_BOOSTERS)
     })
 
 if __name__ == '__main__':
