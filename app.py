@@ -483,6 +483,110 @@ class ContentGenerator:
         self.formatter = ContentFormatter()
         logger.info("✅ Инициализирован генератор контента")
     
+    def _get_current_season(self):
+        """Определяет текущий сезон"""
+        month = datetime.now().month
+        if month in [12, 1, 2]:
+            return "зима"
+        elif month in [3, 4, 5]:
+            return "весна"
+        elif month in [6, 7, 8]:
+            return "лето"
+        else:
+            return "осень"
+    
+    def _get_seasonal_section(self, season):
+        """Возвращает секцию с сезонными продуктами"""
+        seasonal_info = {
+            'зима': """🍊 <b>СЕЗОННЫЕ ПРОДУКТЫ (ЗИМА)</b>
+• Апельсины/мандарины - 1 кг
+• Гранаты - 2 шт
+• Хурма - 4 шт
+• Клюква замороженная - 300 г
+• Квашеная капуста - 500 г""",
+            
+            'весна': """🌱 <b>СЕЗОННЫЕ ПРОДУКТЫ (ВЕСНА)</b>
+• Редис - 2 пучка
+• Шпинат - 300 г
+• Спаржа - 200 г
+• Молодая зелень - 2 пучка
+• Клубника - 500 г""",
+            
+            'лето': """☀️ <b>СЕЗОННЫЕ ПРОДУКТЫ (ЛЕТО)</b>
+• Сезонные ягоды - 1 кг
+• Персики/нектарины - 1 кг
+• Кабачки - 3 шт
+• Сладкий перец - 5 шт
+• Помидоры черри - 500 г""",
+            
+            'осень': """🍂 <b>СЕЗОННЫЕ ПРОДУКТЫ (ОСЕНЬ)</b>
+• Тыква - 1 кг
+• Яблоки местные - 1.5 кг
+• Груши - 1 кг
+• Грибы - 400 г
+• Виноград - 700 г"""
+        }
+        
+        return seasonal_info.get(season, "")
+    
+    def generate_smart_shopping_list(self):
+        """Генерирует умный чек-лист покупок на неделю"""
+        season = self._get_current_season()
+        
+        shopping_list = f"""🛒 <b>УМНЫЙ ЧЕК-ЛИСТ НА НЕДЕЛЮ</b>
+
+Основа для здорового питания + сезонные продукты ({season})
+
+🥦 <b>ОСНОВНЫЕ ОВОЩИ</b>
+• Помидоры - 1 кг
+• Огурцы - 1 кг
+• Морковь - 500 г
+• Лук репчатый - 5 шт
+• Чеснок - 2 головки
+• Капуста/брокколи - 1 шт
+• Зелень (петрушка, укроп) - 3 пучка
+
+🍗 <b>БЕЛКОВЫЕ ПРОДУКТЫ</b>
+• Куриная грудка - 1.5 кг
+• Яйца категории С0 - 10 шт
+• Творог 5% - 600 г
+• Филе белой рыбы - 700 г
+• Греческий йогурт - 500 г
+
+🌾 <b>КРУПЫ И БОБОВЫЕ</b>
+• Гречка - 500 г
+• Овсяные хлопья - 400 г
+• Бурый рис - 500 г
+• Чечевица - 300 г
+• Нут - 300 г
+
+{self._get_seasonal_section(season)}
+
+⚖️ <b>БАЗОВЫЕ ПРОДУКТЫ</b>
+• Оливковое масло - 500 мл
+• Специи (куркума, паприка, имбирь)
+• Яблочный уксус - 250 мл
+• Мед натуральный - 300 г
+• Лимон - 3 шт
+
+💡 <b>СОВЕТЫ:</b>
+• Составьте меню на неделю заранее
+• Замораживайте часть продуктов
+• Покупайте крупы и бобовые впрок
+• Используйте сезонные продукты - они дешевле и полезнее!
+
+📱 Сохраните этот список - идеальная основа для планирования!
+
+#чеклист #покупки #{season}"""
+        
+        # Добавляем футер
+        footer = self.formatter.format_footer()
+        return f"{shopping_list}{footer}"
+    
+    def generate_shopping_list_content(self):
+        """Генерирует контент для чек-листа покупок"""
+        return self.generate_smart_shopping_list()
+    
     def generate_with_yandex_gpt(self, prompt):
         """Генерация контента через Yandex GPT"""
         try:
@@ -689,7 +793,8 @@ class ContentScheduler:
         self.special_schedule = {
             "15:00": {"type": "visual_content", "name": "🎨 Визуальный контент", "handler": "send_visual_content"},
             "20:00": {"type": "poll", "name": "📊 Опрос", "handler": "send_poll"},
-            "14:00": {"type": "engagement_post", "name": "📱 Пост вовлечения", "handler": "send_engagement_post"}
+            "14:00": {"type": "engagement_post", "name": "📱 Пост вовлечения", "handler": "send_engagement_post"},
+            "10:00": {"type": "shopping_list", "name": "🛒 Чек-лист покупок", "generator": "generate_shopping_list_content"}
         }
         
         # Конвертируем расписания
@@ -799,9 +904,21 @@ class ContentScheduler:
                 
             elif event['type'] == 'engagement_post':
                 self._send_engagement_post()
+                
+            elif event['type'] == 'shopping_list':
+                # Генерация умного чек-листа - ИЗМЕНЕНО НА СУББОТУ
+                content = content_gen.generate_shopping_list_content()
+                if content:
+                    content_with_time = f"{content}\n\n🕐 Опубликовано: {current_times['kemerovo_time']}"
+                    elite_channel.send_to_telegram(content_with_time)
         
-        # Специальный контент планируем не каждый день
-        if random.random() < 0.6:  # 60% вероятность
+        # Специальный контент планируем не каждый день (кроме чек-листа)
+        if event['type'] == 'shopping_list':
+            # Чек-лист публикуем каждую СУББОТУ - ИЗМЕНЕНО С ПОНЕДЕЛЬНИКА НА СУББОТУ
+            if datetime.now().weekday() == 5:  # 5 = суббота
+                schedule.every().saturday.at(server_time).do(job)
+                logger.info(f"✅ Запланирован чек-лист на субботу: {server_time}")
+        elif random.random() < 0.6:  # 60% вероятность для другого спецконтента
             schedule.every().day.at(server_time).do(job)
             logger.info(f"✅ Запланирован специальный контент: {server_time} - {event['name']}")
 
@@ -847,7 +964,7 @@ try:
     # Логируем информацию о времени
     current_times = TimeZoneConverter.get_current_times()
     logger.info(f"🌍 Текущее время сервера: {current_times['server_time']}")
-    logger.info(f"🌍 Текущее время Кемерово: {current_times['kemerovo_time']}")
+    logger.info(f"🌍 Время Кемерово: {current_times['kemerovo_time']}")
     
 except Exception as e:
     logger.error(f"❌ Ошибка инициализации: {e}")
@@ -877,6 +994,7 @@ def index():
                     .event {{ padding: 10px; margin: 5px 0; background: white; border-left: 4px solid #3498db; }}
                     .event-kemerovo {{ border-left-color: #e74c3c; }}
                     .event-special {{ border-left-color: #9b59b6; }}
+                    .event-shopping {{ border-left-color: #27ae60; }}
                     .status-success {{ color: #27ae60; }}
                     .status-error {{ color: #e74c3c; }}
                     .btn {{ display: inline-block; padding: 10px 20px; margin: 5px; background: #3498db; color: white; text-decoration: none; border-radius: 5px; }}
@@ -912,6 +1030,7 @@ def index():
                             <li>🎨 Визуальный контент и инфографика</li>
                             <li>📊 Интерактивные опросы</li>
                             <li>📱 Элементы вовлечения аудитории</li>
+                            <li>🛒 <strong>УМНЫЙ ЧЕК-ЛИСТ</strong> с сезонными продуктами (по СУББОТАМ в 10:00)</li>
                         </ul>
                     </div>
                     
@@ -932,7 +1051,9 @@ def index():
         """
         
         for time_str, event in schedule_info['special_schedule'].items():
-            html += f'<div class="event event-special">{time_str} - {event["name"]}</div>'
+            is_next = " (Следующая)" if time_str == next_kemerovo_time else ""
+            class_name = "event-shopping" if event['type'] == 'shopping_list' else "event-special"
+            html += f'<div class="event {class_name}">{time_str} - {event["name"]}{is_next}</div>'
         
         html += f"""
                         </div>
@@ -947,6 +1068,7 @@ def index():
                         <a class="btn" href="/preview-format" style="background: #27ae60;">Предпросмотр формата</a>
                         <a class="btn" href="/send-poll" style="background: #9b59b6;">Отправить опрос</a>
                         <a class="btn" href="/send-visual-content" style="background: #e67e22;">Визуальный контент</a>
+                        <a class="btn" href="/send-shopping-list" style="background: #27ae60;">Чек-лист покупок</a>
                     </div>
                     
                     <div style="margin-top: 20px;">
@@ -963,6 +1085,7 @@ def index():
                         <p>Следующая публикация: <strong>{next_kemerovo_time} - {next_event['name']}</strong> (Кемерово)</p>
                         <p>На сервере: <strong>{next_server_time}</strong></p>
                         <p>Текущее время сервера: {current_times['server_time']}</p>
+                        <p><strong>🛒 Чек-лист покупок публикуется по СУББОТАМ в 10:00</strong></p>
                     </div>
                 </div>
             </body>
@@ -1022,6 +1145,7 @@ def preview_format():
                             <li><strong>🎨 Визуальный контент</strong> - инфографика и чек-листы</li>
                             <li><strong>📊 Интерактивные опросы</strong> - вовлечение аудитории</li>
                             <li><strong>📱 Элементы вовлечения</strong> - репосты, отметки, челленджи</li>
+                            <li><strong>🛒 Умный чек-лист</strong> - с сезонными продуктами (по СУББОТАМ)</li>
                         </ul>
                     </div>
                     
@@ -1033,6 +1157,7 @@ def preview_format():
                     <div>
                         <a class="btn" href="/">На главную</a>
                         <a class="btn" href="/send-now/breakfast" style="background: #27ae60;">Отправить тестовое сообщение</a>
+                        <a class="btn" href="/send-shopping-list" style="background: #27ae60;">Тест чек-листа</a>
                     </div>
                 </div>
             </body>
@@ -1044,6 +1169,32 @@ def preview_format():
     except Exception as e:
         logger.error(f"❌ Ошибка в preview-format: {e}")
         return f"Ошибка: {str(e)}"
+
+@app.route('/send-shopping-list')
+def send_shopping_list():
+    """Отправка тестового чек-листа"""
+    try:
+        content = content_gen.generate_shopping_list_content()
+        current_times = TimeZoneConverter.get_current_times()
+        content_with_time = f"{content}\n\n🕐 Опубликовано: {current_times['kemerovo_time']}"
+        
+        success = elite_channel.send_to_telegram(content_with_time)
+        
+        if success:
+            return jsonify({
+                "status": "success",
+                "message": "Умный чек-лист отправлен в канал",
+                "kemerovo_time": current_times['kemerovo_time']
+            })
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Не удалось отправить чек-лист"
+            })
+            
+    except Exception as e:
+        logger.error(f"❌ Ошибка отправки чек-листа: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)})
 
 @app.route('/send-poll')
 def send_poll_route():
@@ -1127,6 +1278,8 @@ def send_now(content_type):
             content = content_gen.generate_interval()
         elif content_type == 'expert_advice':
             content = content_gen.generate_expert_advice()
+        elif content_type == 'shopping_list':
+            content = content_gen.generate_shopping_list_content()
         else:
             return jsonify({
                 "status": "error", 
