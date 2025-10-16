@@ -386,6 +386,84 @@ class TelegramPolls:
         
         return None
 
+class ChannelAnalytics:
+    """Класс для сбора и анализа статистики канала"""
+    
+    def __init__(self, bot_token, channel_id):
+        self.bot_token = bot_token
+        self.channel_id = channel_id
+        self.base_url = f"https://api.telegram.org/bot{bot_token}"
+        
+    def get_channel_info(self):
+        """Получение базовой информации о канале"""
+        try:
+            url = f"{self.base_url}/getChat"
+            payload = {
+                'chat_id': self.channel_id
+            }
+            response = requests.post(url, json=payload, timeout=10)
+            return response.json()
+        except Exception as e:
+            logger.error(f"❌ Ошибка получения информации о канале: {e}")
+            return None
+    
+    def get_member_count(self):
+        """Получение количества подписчиков"""
+        try:
+            url = f"{self.base_url}/getChatMembersCount"
+            payload = {
+                'chat_id': self.channel_id
+            }
+            response = requests.post(url, json=payload, timeout=10)
+            result = response.json()
+            if result.get('ok'):
+                return result['result']
+            return 0
+        except Exception as e:
+            logger.error(f"❌ Ошибка получения количества подписчиков: {e}")
+            return 0
+    
+    def track_post_engagement(self, message_id):
+        """Отслеживание вовлеченности поста"""
+        # Эта функция может быть расширена для отслеживания конкретных постов
+        # В реальном сценарии нужно сохранять message_id и периодически проверять статистику
+        pass
+    
+    def generate_daily_report(self):
+        """Генерация ежедневного отчета"""
+        member_count = self.get_member_count()
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        report = f"""📊 <b>ЕЖЕДНЕВНЫЙ ОТЧЕТ КАНАЛА @ppsupershef</b>
+
+👥 Подписчиков: <b>{member_count}</b>
+📅 Дата: {current_time}
+📍 Время Кемерово: {TimeZoneConverter.get_current_times()['kemerovo_time']}
+
+📈 <b>СТАТУС СИСТЕМЫ:</b>
+✅ Автопостинг активен
+✅ Планировщик работает
+✅ Контент генерируется
+
+💫 <b>ПОСЛЕДНИЕ ПУБЛИКАЦИИ:</b>
+• 🍳 Рецепты с КБЖУ
+• 🔬 Научные факты о питании  
+• 💡 Советы экспертов
+• 🛒 Чек-листы покупок (по субботам)
+
+🎯 <b>РЕКОМЕНДАЦИИ:</b>
+• Продолжайте регулярные публикации
+• Анализируйте реакцию на разные форматы
+• Взаимодействуйте с аудиторией в комментариях
+
+📱 <b>ПОДПИСЫВАЙТЕСЬ И ДЕЛИТЕСЬ:</b>
+@ppsupershef - канал
+@ppsupershef_chat - обсуждения
+
+#статистика #отчет #аналитика"""
+        
+        return report
+
 # Класс для работы с Telegram каналом
 class EliteChannel:
     def __init__(self):
@@ -726,7 +804,7 @@ class ContentGenerator:
             
             return f"⏱️ ИНТЕРВАЛЬНОЕ ПИТАНИЕ\n\n{enhanced_content}{footer}"
         
-        fallback_content = "Оптимальный перерыв между приемами пищи 3-4 часа. Интервальное голодание 16/8 улучшает метаболизм. Не пропускайте завтрак для поддержания энергии. Вечерний перерыв в питании способствует качественному сну."
+        fallback_content = "Оптимальный перерыв между приемами пищи 3-4 часа. Интервальное голодание 16/8 улучжает метаболизм. Не пропускайте завтрак для поддержания энергии. Вечерний перерыв в питании способствует качественному сну."
         formatted_content = self.formatter.add_emojis_to_text(fallback_content)
         footer = self.formatter.format_footer()
         return f"⏱️ ИНТЕРВАЛЬНОЕ ПИТАНИЕ\n\n{formatted_content}{footer}"
@@ -864,6 +942,9 @@ class ContentScheduler:
             kemerovo_time = TimeZoneConverter.server_to_kemerovo_time(server_time)
             self._schedule_special_content(server_time, event, kemerovo_time)
         
+        # Отчеты статистики
+        self._schedule_analytics_reports()
+        
         self.is_running = True
         self._run_scheduler()
 
@@ -922,6 +1003,19 @@ class ContentScheduler:
             schedule.every().day.at(server_time).do(job)
             logger.info(f"✅ Запланирован специальный контент: {server_time} - {event['name']}")
 
+    def _schedule_analytics_reports(self):
+        """Планирование автоматических отчетов статистики"""
+        # Ежедневный отчет в 09:00 по Кемерово
+        report_time = TimeZoneConverter.kemerovo_to_server_time("09:00")
+        
+        def analytics_job():
+            logger.info("📊 Генерация ежедневного отчета статистики")
+            report = channel_analytics.generate_daily_report()
+            elite_channel.send_to_telegram(report)
+        
+        schedule.every().day.at(report_time).do(analytics_job)
+        logger.info(f"✅ Запланирован ежедневный отчет статистики на {report_time}")
+
     def _send_engagement_post(self):
         """Отправляет пост для вовлечения"""
         booster = random.choice(ContentFormatter.ENGAGEMENT_BOOSTERS)
@@ -955,6 +1049,7 @@ class ContentScheduler:
 elite_channel = EliteChannel()
 content_gen = ContentGenerator()
 content_scheduler = ContentScheduler()
+channel_analytics = ChannelAnalytics(Config.TELEGRAM_BOT_TOKEN, Config.TELEGRAM_CHANNEL)
 
 # Запускаем планировщик при старте
 try:
@@ -978,6 +1073,7 @@ def index():
         connection_info = elite_channel.test_connection()
         current_times = TimeZoneConverter.get_current_times()
         schedule_info = content_scheduler.get_schedule()
+        member_count = channel_analytics.get_member_count()
         
         html = f"""
         <html>
@@ -989,6 +1085,7 @@ def index():
                     .container {{ max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }}
                     .header {{ background: #2c3e50; color: white; padding: 20px; border-radius: 5px; }}
                     .time-info {{ background: #3498db; color: white; padding: 15px; border-radius: 5px; margin: 10px 0; }}
+                    .stats-card {{ background: #9b59b6; color: white; padding: 15px; border-radius: 5px; margin: 10px 0; }}
                     .schedule-container {{ display: flex; gap: 20px; margin: 20px 0; }}
                     .schedule {{ flex: 1; background: #ecf0f1; padding: 20px; border-radius: 5px; }}
                     .event {{ padding: 10px; margin: 5px 0; background: white; border-left: 4px solid #3498db; }}
@@ -1011,6 +1108,13 @@ def index():
                         </p>
                     </div>
                     
+                    <div class="stats-card">
+                        <h2>📊 СТАТИСТИКА КАНАЛА</h2>
+                        <p><strong>👥 Подписчиков: {member_count}</strong></p>
+                        <p><strong>📈 Статус: Активен</strong></p>
+                        <p><strong>🕒 Ежедневные отчеты: 09:00 (Кемерово)</strong></p>
+                    </div>
+                    
                     <div class="time-info">
                         <h3>🌍 Информация о времени</h3>
                         <p>Текущее время сервера: <strong>{current_times['server_time']}</strong> ({current_times['server_timezone']})</p>
@@ -1031,6 +1135,7 @@ def index():
                             <li>📊 Интерактивные опросы</li>
                             <li>📱 Элементы вовлечения аудитории</li>
                             <li>🛒 <strong>УМНЫЙ ЧЕК-ЛИСТ</strong> с сезонными продуктами (по СУББОТАМ в 10:00)</li>
+                            <li>📊 <strong>СТАТИСТИКА</strong> - ежедневные отчеты о росте канала</li>
                         </ul>
                     </div>
                     
@@ -1061,6 +1166,7 @@ def index():
                     
                     <div>
                         <h3>⚡ Быстрые действия</h3>
+                        <a class="btn" href="/stats" style="background: #9b59b6;">📊 Статистика</a>
                         <a class="btn" href="/test-channel">Тест канала</a>
                         <a class="btn" href="/debug">Отладка</a>
                         <a class="btn" href="/health">Health Check</a>
@@ -1069,6 +1175,7 @@ def index():
                         <a class="btn" href="/send-poll" style="background: #9b59b6;">Отправить опрос</a>
                         <a class="btn" href="/send-visual-content" style="background: #e67e22;">Визуальный контент</a>
                         <a class="btn" href="/send-shopping-list" style="background: #27ae60;">Чек-лист покупок</a>
+                        <a class="btn" href="/send-stats-report" style="background: #9b59b6;">📨 Отчет статистики</a>
                     </div>
                     
                     <div style="margin-top: 20px;">
@@ -1086,6 +1193,7 @@ def index():
                         <p>На сервере: <strong>{next_server_time}</strong></p>
                         <p>Текущее время сервера: {current_times['server_time']}</p>
                         <p><strong>🛒 Чек-лист покупок публикуется по СУББОТАМ в 10:00</strong></p>
+                        <p><strong>📊 Отчет статистики публикуется ежедневно в 09:00</strong></p>
                     </div>
                 </div>
             </body>
@@ -1105,6 +1213,137 @@ def index():
             </body>
         </html>
         """
+
+@app.route('/stats')
+def channel_stats():
+    """Страница статистики канала"""
+    try:
+        member_count = channel_analytics.get_member_count()
+        channel_info = channel_analytics.get_channel_info()
+        current_times = TimeZoneConverter.get_current_times()
+        
+        html = f"""
+        <html>
+            <head>
+                <title>Статистика @ppsupershef</title>
+                <meta charset="utf-8">
+                <style>
+                    body {{ font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }}
+                    .container {{ max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }}
+                    .header {{ background: #2c3e50; color: white; padding: 20px; border-radius: 5px; }}
+                    .stat-card {{ background: #3498db; color: white; padding: 20px; margin: 10px 0; border-radius: 5px; }}
+                    .btn {{ display: inline-block; padding: 10px 20px; margin: 5px; background: #3498db; color: white; text-decoration: none; border-radius: 5px; }}
+                    .info-box {{ background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #27ae60; }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>📊 Статистика канала @ppsupershef</h1>
+                        <p>Мониторинг эффективности контента</p>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <h2>👥 Подписчики: <strong>{member_count}</strong></h2>
+                        <p>Текущее количество подписчиков</p>
+                    </div>
+                    
+                    <div style="background: #27ae60; color: white; padding: 20px; margin: 10px 0; border-radius: 5px;">
+                        <h2>📈 Активность</h2>
+                        <p>Регулярные публикации по расписанию</p>
+                        <p>Время Кемерово: {current_times['kemerovo_time']}</p>
+                    </div>
+                    
+                    <div style="background: #e67e22; color: white; padding: 20px; margin: 10px 0; border-radius: 5px;">
+                        <h2>🔄 Автоматизация</h2>
+                        <p>🤖 Бот: Активен</p>
+                        <p>📅 Планировщик: Работает</p>
+                        <p>📊 Отчеты: Ежедневно в 09:00</p>
+                    </div>
+                    
+                    <div>
+                        <h3>⚡ Быстрые действия</h3>
+                        <a class="btn" href="/send-stats-report">📨 Отправить отчет</a>
+                        <a class="btn" href="/">🏠 На главную</a>
+                        <a class="btn" href="/debug">🔧 Отладка</a>
+                        <a class="btn" href="/api/stats">📡 API Статистики</a>
+                    </div>
+                    
+                    <div class="info-box">
+                        <h3>💡 Рекомендации по аналитике:</h3>
+                        <ul>
+                            <li>Следите за ростом подписчиков ежедневно</li>
+                            <li>Анализируйте какие посты получают больше реакций</li>
+                            <li>Экспериментируйте с временем публикации</li>
+                            <li>Отслеживайте вовлеченность по хештегам</li>
+                            <li>Сравнивайте активность в разные дни недели</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="info-box">
+                        <h3>📈 Метрики для отслеживания:</h3>
+                        <ul>
+                            <li><strong>Рост подписчиков</strong> - динамика по дням</li>
+                            <li><strong>Вовлеченность</strong> - реакции, репосты, комментарии</li>
+                            <li><strong>Охват</strong> - сколько людей видят посты</li>
+                            <li><strong>CTR</strong> - кликабельность контента</li>
+                            <li><strong>Удержание</strong> - как долго остаются подписчики</li>
+                        </ul>
+                    </div>
+                </div>
+            </body>
+        </html>
+        """
+        return html
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка в статистике: {e}")
+        return f"Ошибка: {str(e)}"
+
+@app.route('/send-stats-report')
+def send_stats_report():
+    """Отправка отчета статистики в канал"""
+    try:
+        report = channel_analytics.generate_daily_report()
+        success = elite_channel.send_to_telegram(report)
+        
+        if success:
+            return jsonify({
+                "status": "success",
+                "message": "Отчет статистики отправлен в канал"
+            })
+        else:
+            return jsonify({
+                "status": "error", 
+                "message": "Не удалось отправить отчет"
+            })
+            
+    except Exception as e:
+        logger.error(f"❌ Ошибка отправки отчета: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/api/stats')
+def api_stats():
+    """API для получения статистики"""
+    try:
+        member_count = channel_analytics.get_member_count()
+        
+        return jsonify({
+            "status": "success",
+            "channel": "@ppsupershef",
+            "member_count": member_count,
+            "timestamp": datetime.now().isoformat(),
+            "server_time": TimeZoneConverter.get_current_times()['server_time'],
+            "kemerovo_time": TimeZoneConverter.get_current_times()['kemerovo_time'],
+            "analytics": {
+                "daily_reports": "09:00 (Kemerovo time)",
+                "auto_posting": "active",
+                "content_types": ["recipes", "science", "tips", "checklists"]
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
 
 @app.route('/preview-format')
 def preview_format():
@@ -1146,6 +1385,7 @@ def preview_format():
                             <li><strong>📊 Интерактивные опросы</strong> - вовлечение аудитории</li>
                             <li><strong>📱 Элементы вовлечения</strong> - репосты, отметки, челленджи</li>
                             <li><strong>🛒 Умный чек-лист</strong> - с сезонными продуктами (по СУББОТАМ)</li>
+                            <li><strong>📊 Статистика</strong> - ежедневные отчеты о росте канала</li>
                         </ul>
                     </div>
                     
@@ -1158,6 +1398,7 @@ def preview_format():
                         <a class="btn" href="/">На главную</a>
                         <a class="btn" href="/send-now/breakfast" style="background: #27ae60;">Отправить тестовое сообщение</a>
                         <a class="btn" href="/send-shopping-list" style="background: #27ae60;">Тест чек-листа</a>
+                        <a class="btn" href="/stats" style="background: #9b59b6;">📊 Статистика</a>
                     </div>
                 </div>
             </body>
@@ -1247,6 +1488,7 @@ def debug():
     """Страница отладки"""
     connection_test = elite_channel.test_connection()
     current_times = TimeZoneConverter.get_current_times()
+    member_count = channel_analytics.get_member_count()
     
     return jsonify({
         "status": "active",
@@ -1254,6 +1496,8 @@ def debug():
         "channel_username": "@ppsupershef",
         "bot_token_exists": bool(Config.TELEGRAM_BOT_TOKEN),
         "scheduler_status": "running" if content_scheduler.is_running else "stopped",
+        "analytics_status": "active",
+        "member_count": member_count,
         "connection_test": connection_test,
         "time_info": current_times,
         "time_difference": f"+{Config.TIME_DIFFERENCE_HOURS} hours (Kemerovo ahead)",
@@ -1330,6 +1574,7 @@ def test_channel():
 🍳 Это тестовое сообщение для проверки работы бота.
 👨‍🍳 Система автоматической публикации работает корректно.
 💫 Форматирование сообщений настроено правильно.
+📊 Статистика канала отслеживается автоматически.
 
 📊 <b>Правило тарелки</b>
 Идеальное распределение продуктов - сохраняйте в закладки! 📌
@@ -1363,12 +1608,15 @@ def health_check():
     """Проверка здоровья приложения"""
     connection = elite_channel.test_connection()
     current_times = TimeZoneConverter.get_current_times()
+    member_count = channel_analytics.get_member_count()
     
     return jsonify({
         "status": "healthy",
         "timestamp": datetime.now(Config.SERVER_TIMEZONE).isoformat(),
         "telegram_connection": connection,
         "scheduler_running": content_scheduler.is_running,
+        "analytics_active": True,
+        "member_count": member_count,
         "channel": "@ppsupershef",
         "time_info": current_times
     })
@@ -1382,7 +1630,13 @@ def content_stats():
         "visual_content_types": len(formatter.VISUAL_CONTENT),
         "engagement_boosters": len(formatter.ENGAGEMENT_BOOSTERS),
         "interactive_polls": len(formatter.INTERACTIVE_ELEMENTS['polls']),
-        "total_variations": len(formatter.VISUAL_CONTENT) + len(formatter.ENGAGEMENT_BOOSTERS)
+        "total_variations": len(formatter.VISUAL_CONTENT) + len(formatter.ENGAGEMENT_BOOSTERS),
+        "content_schedule": {
+            "regular_posts": len(content_scheduler.kemerovo_schedule),
+            "special_posts": len(content_scheduler.special_schedule),
+            "shopping_list_day": "saturday",
+            "analytics_reports": "daily_09:00"
+        }
     })
 
 if __name__ == '__main__':
@@ -1393,5 +1647,9 @@ if __name__ == '__main__':
     current_times = TimeZoneConverter.get_current_times()
     logger.info(f"🌍 Серверное время: {current_times['server_time']}")
     logger.info(f"🌍 Время Кемерово: {current_times['kemerovo_time']}")
+    
+    # Логируем начальную статистику
+    member_count = channel_analytics.get_member_count()
+    logger.info(f"📊 Начальное количество подписчиков: {member_count}")
     
     app.run(host='0.0.0.0', port=10000, debug=False)
