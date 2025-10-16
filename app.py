@@ -858,79 +858,82 @@ class ContentGenerator:
 # Расписание публикаций
 class ContentScheduler:
     def __init__(self):
-        # Обновленное расписание с новой философией
+        # Полное расписание на всю неделю в времени Кемерово (UTC+7)
         self.kemerovo_schedule = {
-            # ПОНЕДЕЛЬНИК: 🧠 НЕЙРОПИТАНИЕ
-            "07:00": {"type": "neuro_breakfast", "name": "🧠 Нейрозавтрак", "generator": "generate_neuro_breakfast"},
-            "12:00": {"type": "focus_lunch", "name": "🎯 Обед для фокуса", "generator": "generate_energy_breakfast"},
-            "16:00": {"type": "brain_science", "name": "🔬 Нейронаука", "generator": "generate_science_content"},
-            "17:00": {"type": "neuro_dessert", "name": "🍫 Умный десерт", "generator": "generate_neuro_dessert"},
-            "19:00": {"type": "recovery_dinner", "name": "🌙 Восстанавливающий ужин", "generator": "generate_longevity_breakfast"},
-            "21:00": {"type": "evening_biohack", "name": "💫 Вечерний биохакинг", "generator": "generate_expert_advice"},
-
-            # ВТОРНИК: 💪 ЭНЕРГИЯ И ТОНУС
-            "07:00": {"type": "energy_breakfast", "name": "⚡ Энерго-завтрак", "generator": "generate_energy_breakfast"},
-            "12:00": {"type": "endurance_lunch", "name": "🏃 Обед для выносливости", "generator": "generate_energy_breakfast"},
-            "16:00": {"type": "energy_science", "name": "🔬 Наука энергии", "generator": "generate_science_content"},
-            "17:00": {"type": "energy_dessert", "name": "🍓 Энергетический десерт", "generator": "generate_neuro_dessert"},
-            "19:00": {"type": "recovery_dinner", "name": "🌙 Восстанавливающий ужин", "generator": "generate_longevity_breakfast"},
-            "21:00": {"type": "energy_tips", "name": "💡 Принципы энергии", "generator": "generate_expert_advice"},
-
-            # СРЕДА: 🛡️ ДОЛГОЛЕТИЕ
-            "07:00": {"type": "longevity_breakfast", "name": "🛡️ Завтрак долгожителя", "generator": "generate_longevity_breakfast"},
-            "12:00": {"type": "longevity_lunch", "name": "🌿 Обед для долголетия", "generator": "generate_longevity_breakfast"},
-            "16:00": {"type": "longevity_science", "name": "🔬 Наука долголетия", "generator": "generate_science_content"},
-            "17:00": {"type": "anti_age_dessert", "name": "🍇 Антиэйдж десерт", "generator": "generate_neuro_dessert"},
-            "19:00": {"type": "cellular_dinner", "name": "🌙 Ужин для обновления", "generator": "generate_longevity_breakfast"},
-            "21:00": {"type": "longevity_principles", "name": "💡 Принципы долголетия", "generator": "generate_expert_advice"},
-
-            # ЧЕТВЕРГ: 🍽️ ГАСТРОНОМИЧЕСКОЕ НАСЛАЖДЕНИЕ
-            "07:00": {"type": "gastronomy_breakfast", "name": "🎨 Творческий завтрак", "generator": "generate_gastronomy_breakfast"},
-            "12:00": {"type": "restaurant_lunch", "name": "🍽️ Ресторанный обед", "generator": "generate_gastronomy_breakfast"},
-            "16:00": {"type": "taste_science", "name": "🔬 Наука вкуса", "generator": "generate_science_content"},
-            "17:00": {"type": "michelin_dessert", "name": "🎭 Шеф-десерт", "generator": "generate_neuro_dessert"},
-            "19:00": {"type": "gastronomy_dinner", "name": "🌙 Гастрономический ужин", "generator": "generate_gastronomy_breakfast"},
-            "21:00": {"type": "enjoyment_principles", "name": "💡 Искусство наслаждения", "generator": "generate_expert_advice"},
-
-            # ПЯТНИЦА: 🎯 РЕЗУЛЬТАТЫ И ПЛАНЫ
-            "07:00": {"type": "analytical_breakfast", "name": "📊 Аналитический завтрак", "generator": "generate_analytical_breakfast"},
-            "12:00": {"type": "results_lunch", "name": "🎯 Обед для итогов", "generator": "generate_analytical_breakfast"},
-            "16:00": {"type": "results_science", "name": "🔬 Наука результатов", "generator": "generate_science_content"},
-            "17:00": {"type": "reflection_dessert", "name": "🍍 Десерт для осмысления", "generator": "generate_neuro_dessert"},
-            "19:00": {"type": "planning_dinner", "name": "🌙 Ужин для планов", "generator": "generate_analytical_breakfast"},
-            "21:00": {"type": "weekly_planning", "name": "💡 Планирование недели", "generator": "generate_expert_advice"},
-
-            # СУББОТА: 🛒 УМНЫЕ ПОКУПКИ + РЕЦЕПТЫ
-            "07:00": {"type": "weekend_breakfast", "name": "🥗 Субботний завтрак", "generator": "generate_energy_breakfast"},
-            "10:00": {"type": "shopping_list", "name": "🛒 Чек-лист покупок", "generator": "generate_smart_shopping_list"},
-            "12:00": {"type": "family_lunch", "name": "🍲 Семейный обед", "generator": "generate_gastronomy_breakfast"},
-            "15:00": {"type": "visual_content", "name": "🎨 Визуальный контент", "handler": "send_visual_content"},
-            "17:00": {"type": "weekend_dessert", "name": "🧁 Субботний десерт", "generator": "generate_neuro_dessert"},
-            "19:00": {"type": "weekend_dinner", "name": "🌙 Субботний ужин", "generator": "generate_gastronomy_breakfast"},
-            "21:00": {"type": "weekend_tips", "name": "💡 Советы для выходных", "generator": "generate_expert_advice"},
-
-            # ВОСКРЕСЕНЬЕ: 📊 АНАЛИТИКА + РЕЦЕПТЫ
-            "07:00": {"type": "sunday_brunch", "name": "🍳 Воскресный бранч", "generator": "generate_sunday_brunch"},
-            "12:00": {"type": "sunday_lunch", "name": "🥘 Воскресный обед", "generator": "generate_gastronomy_breakfast"},
-            "17:00": {"type": "sunday_dessert", "name": "🍮 Воскресный десерт", "generator": "generate_neuro_dessert"},
-            "18:00": {"type": "sunday_dinner", "name": "🌙 Воскресный ужин", "generator": "generate_analytical_breakfast"},
-            "21:00": {"type": "weekly_motivation", "name": "🎯 Мотивация на неделю", "generator": "generate_expert_advice"}
+            'monday': {
+                "07:00": {"type": "neuro_breakfast", "name": "🧠 Нейрозавтрак для ясности ума", "generator": "generate_neuro_breakfast"},
+                "12:00": {"type": "focus_lunch", "name": "🎯 Обед для фокуса и концентрации", "generator": "generate_energy_breakfast"},
+                "16:00": {"type": "brain_science", "name": "🔬 Научный факт о мозге и питании", "generator": "generate_science_content"},
+                "17:00": {"type": "neuro_dessert", "name": "🍫 Умный десерт для когнитивных функций", "generator": "generate_neuro_dessert"},
+                "19:00": {"type": "recovery_dinner", "name": "🌙 Восстанавливающий ужин для нервной системы", "generator": "generate_longevity_breakfast"},
+                "21:00": {"type": "evening_biohack", "name": "💫 Вечерний биохакинг для мозга", "generator": "generate_expert_advice"}
+            },
+            'tuesday': {
+                "07:00": {"type": "energy_breakfast", "name": "⚡ Энерго-завтрак для активного дня", "generator": "generate_energy_breakfast"},
+                "12:00": {"type": "endurance_lunch", "name": "🏃 Обед для выносливости и энергии", "generator": "generate_energy_breakfast"},
+                "16:00": {"type": "energy_science", "name": "🔬 Наука энергии и метаболизма", "generator": "generate_science_content"},
+                "17:00": {"type": "energy_dessert", "name": "🍓 Энергетический десерт", "generator": "generate_neuro_dessert"},
+                "19:00": {"type": "recovery_dinner", "name": "🌙 Восстанавливающий ужин для мышц", "generator": "generate_longevity_breakfast"},
+                "21:00": {"type": "energy_tips", "name": "💡 Принципы поддержания энергии", "generator": "generate_expert_advice"}
+            },
+            'wednesday': {
+                "07:00": {"type": "longevity_breakfast", "name": "🛡️ Завтрак долгожителя", "generator": "generate_longevity_breakfast"},
+                "12:00": {"type": "longevity_lunch", "name": "🌿 Обед для долголетия", "generator": "generate_longevity_breakfast"},
+                "16:00": {"type": "longevity_science", "name": "🔬 Наука anti-age питания", "generator": "generate_science_content"},
+                "17:00": {"type": "anti_age_dessert", "name": "🍇 Антиэйдж десерт", "generator": "generate_neuro_dessert"},
+                "19:00": {"type": "cellular_dinner", "name": "🌙 Ужин для клеточного обновления", "generator": "generate_longevity_breakfast"},
+                "21:00": {"type": "longevity_principles", "name": "💡 Принципы долголетия", "generator": "generate_expert_advice"}
+            },
+            'thursday': {
+                "07:00": {"type": "gastronomy_breakfast", "name": "🎨 Творческий завтрак ресторанного уровня", "generator": "generate_gastronomy_breakfast"},
+                "12:00": {"type": "restaurant_lunch", "name": "🍽️ Ресторанный обед с пользой", "generator": "generate_gastronomy_breakfast"},
+                "16:00": {"type": "taste_science", "name": "🔬 Наука вкуса и наслаждения", "generator": "generate_science_content"},
+                "17:00": {"type": "michelin_dessert", "name": "🎭 Шеф-десерт от Мишлен", "generator": "generate_neuro_dessert"},
+                "19:00": {"type": "gastronomy_dinner", "name": "🌙 Гастрономический ужин", "generator": "generate_gastronomy_breakfast"},
+                "21:00": {"type": "enjoyment_principles", "name": "💡 Искусство осознанного наслаждения", "generator": "generate_expert_advice"}
+            },
+            'friday': {
+                "07:00": {"type": "analytical_breakfast", "name": "📊 Аналитический завтрак для планирования", "generator": "generate_analytical_breakfast"},
+                "12:00": {"type": "results_lunch", "name": "🎯 Обед для подведения итогов", "generator": "generate_analytical_breakfast"},
+                "16:00": {"type": "results_science", "name": "🔬 Наука продуктивности и питания", "generator": "generate_science_content"},
+                "17:00": {"type": "reflection_dessert", "name": "🍍 Десерт для осмысления недели", "generator": "generate_neuro_dessert"},
+                "19:00": {"type": "planning_dinner", "name": "🌙 Ужин для планов на выходные", "generator": "generate_analytical_breakfast"},
+                "21:00": {"type": "weekly_planning", "name": "💡 Планирование питания на следующую неделю", "generator": "generate_expert_advice"}
+            },
+            'saturday': {
+                "07:00": {"type": "weekend_breakfast", "name": "🥗 Субботний завтрак для семьи", "generator": "generate_energy_breakfast"},
+                "10:00": {"type": "shopping_list", "name": "🛒 Умный чек-лист покупок на неделю", "generator": "generate_smart_shopping_list"},
+                "12:00": {"type": "family_lunch", "name": "🍲 Семейный обед", "generator": "generate_gastronomy_breakfast"},
+                "15:00": {"type": "visual_content", "name": "🎨 Визуальный контент (инфографика)", "handler": "send_visual_content"},
+                "17:00": {"type": "weekend_dessert", "name": "🧁 Субботний десерт", "generator": "generate_neuro_dessert"},
+                "19:00": {"type": "weekend_dinner", "name": "🌙 Субботний ужин", "generator": "generate_gastronomy_breakfast"},
+                "21:00": {"type": "weekend_tips", "name": "💡 Советы для выходных", "generator": "generate_expert_advice"}
+            },
+            'sunday': {
+                "07:00": {"type": "sunday_brunch", "name": "🍳 Воскресный бранч-ритуал", "generator": "generate_sunday_brunch"},
+                "12:00": {"type": "sunday_lunch", "name": "🥘 Воскресный обед", "generator": "generate_gastronomy_breakfast"},
+                "17:00": {"type": "sunday_dessert", "name": "🍮 Воскресный десерт", "generator": "generate_neuro_dessert"},
+                "18:00": {"type": "sunday_dinner", "name": "🌙 Воскресный ужин для подготовки к неделе", "generator": "generate_analytical_breakfast"},
+                "21:00": {"type": "weekly_motivation", "name": "🎯 Мотивация и настрой на новую неделю", "generator": "generate_expert_advice"}
+            }
         }
         
         # Конвертируем расписание в серверное время
-        self.server_schedule = self._convert_schedule(self.kemerovo_schedule)
+        self.server_schedule = self._convert_schedule_to_server()
         
         self.is_running = False
         logger.info("✅ Инициализирован планировщик контента с новой философией")
 
-    def _convert_schedule(self, schedule):
-        """Конвертирует расписание в серверное время"""
-        converted = {}
-        for kemerovo_time, event in schedule.items():
-            server_time = TimeZoneConverter.kemerovo_to_server_time(kemerovo_time)
-            converted[server_time] = event
-            logger.info(f"🕒 Расписание: Кемерово {kemerovo_time} -> Сервер {server_time} - {event['name']}")
-        return converted
+    def _convert_schedule_to_server(self):
+        """Конвертирует все расписание в серверное время"""
+        server_schedule = {}
+        for day, day_schedule in self.kemerovo_schedule.items():
+            server_schedule[day] = {}
+            for kemerovo_time, event in day_schedule.items():
+                server_time = TimeZoneConverter.kemerovo_to_server_time(kemerovo_time)
+                server_schedule[day][server_time] = event
+                logger.info(f"🕒 Расписание: {day} - Кемерово {kemerovo_time} -> Сервер {server_time} - {event['name']}")
+        return server_schedule
 
     def get_schedule(self):
         """Возвращает расписание"""
@@ -940,21 +943,46 @@ class ContentScheduler:
         }
     
     def get_next_event(self):
-        """Получает следующее событие"""
-        current_times = TimeZoneConverter.get_current_times()
-        current_server_time = current_times['server_time'][:5]
-        
-        times_today = [t for t in self.server_schedule.keys() if t > current_server_time]
-        if times_today:
-            next_server_time = min(times_today)
-            next_event = self.server_schedule[next_server_time]
-            next_kemerovo_time = TimeZoneConverter.server_to_kemerovo_time(next_server_time)
-            return next_server_time, next_kemerovo_time, next_event
-        
-        first_server_time = min(self.server_schedule.keys())
-        first_event = self.server_schedule[first_server_time]
-        first_kemerovo_time = TimeZoneConverter.server_to_kemerovo_time(first_server_time)
-        return first_server_time, first_kemerovo_time, first_event
+        """Получает следующее событие с учетом текущего дня недели"""
+        try:
+            current_times = TimeZoneConverter.get_current_times()
+            current_kemerovo_time = current_times['kemerovo_time'][:5]
+            
+            # Получаем текущий день недели (0-6, где 0-понедельник)
+            current_weekday = datetime.now(Config.KEMEROVO_TIMEZONE).weekday()
+            days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+            current_day = days[current_weekday]
+            
+            # Получаем расписание на текущий день
+            today_schedule = self.kemerovo_schedule.get(current_day, {})
+            
+            # Ищем следующее событие сегодня
+            times_today = [t for t in today_schedule.keys() if t > current_kemerovo_time]
+            
+            if times_today:
+                # Есть посты сегодня
+                next_kemerovo_time = min(times_today)
+                next_event = today_schedule[next_kemerovo_time]
+                next_server_time = TimeZoneConverter.kemerovo_to_server_time(next_kemerovo_time)
+                return next_server_time, next_kemerovo_time, next_event
+            else:
+                # Постов сегодня больше нет, берем первый пост завтра
+                next_weekday = (current_weekday + 1) % 7
+                next_day = days[next_weekday]
+                next_day_schedule = self.kemerovo_schedule.get(next_day, {})
+                
+                if next_day_schedule:
+                    next_kemerovo_time = min(next_day_schedule.keys())
+                    next_event = next_day_schedule[next_kemerovo_time]
+                    next_server_time = TimeZoneConverter.kemerovo_to_server_time(next_kemerovo_time)
+                    return next_server_time, next_kemerovo_time, next_event
+            
+            # Если ничего не найдено, возвращаем заглушку
+            return "17:00", "17:00", {"name": "Следующий пост", "type": "unknown"}
+            
+        except Exception as e:
+            logger.error(f"❌ Ошибка получения следующего события: {e}")
+            return "17:00", "17:00", {"name": "Следующий пост", "type": "unknown"}
     
     def start_scheduler(self):
         """Запуск планировщика"""
@@ -963,35 +991,53 @@ class ContentScheduler:
         
         logger.info("🚀 Запуск планировщика контента с новой философией...")
         
-        # Планируем основной контент
-        for server_time, event in self.server_schedule.items():
-            kemerovo_time = TimeZoneConverter.server_to_kemerovo_time(server_time)
-            self._schedule_content(server_time, event, kemerovo_time)
+        # Планируем основной контент для каждого дня
+        for day, day_schedule in self.server_schedule.items():
+            for server_time, event in day_schedule.items():
+                if 'generator' in event:
+                    self._schedule_daily_content(day, server_time, event)
+        
+        # Планируем ежедневный отчет
+        self._schedule_analytics_reports()
         
         self.is_running = True
         self._run_scheduler()
 
-    def _schedule_content(self, server_time, event, kemerovo_time):
-        """Планирует контент"""
-        if 'generator' in event:
-            method_name = event['generator']
-            method = getattr(content_gen, method_name)
-        else:
-            return
-
+    def _schedule_daily_content(self, day, server_time, event):
+        """Планирует контент для конкретного дня"""
         def job():
             current_times = TimeZoneConverter.get_current_times()
-            logger.info(f"🕒 Выполнение: {event['type']} (Кемерово: {kemerovo_time})")
+            logger.info(f"🕒 Выполнение: {event['name']}")
             
-            content = method()
+            if 'generator' in event:
+                method_name = event['generator']
+                method = getattr(content_gen, method_name)
+                content = method()
+            else:
+                content = None
+            
             if content:
                 content_with_time = f"{content}\n\n🕐 Опубликовано: {current_times['kemerovo_time']}"
                 success = elite_channel.send_to_telegram(content_with_time)
                 if success:
-                    logger.info(f"✅ Успешная публикация: {event['type']}")
+                    logger.info(f"✅ Успешная публикация: {event['name']}")
         
-        schedule.every().day.at(server_time).do(job)
-        logger.info(f"✅ Запланировано: {server_time} - {event['name']}")
+        # Планируем задачу на конкретный день и время
+        getattr(schedule.every(), day).at(server_time).do(job)
+        logger.info(f"✅ Запланировано: {day} {server_time} - {event['name']}")
+
+    def _schedule_analytics_reports(self):
+        """Планирование аналитических отчетов"""
+        # Публичный отчет в 09:00 по Кемерово каждый день
+        public_report_time = TimeZoneConverter.kemerovo_to_server_time("09:00")
+        
+        def public_analytics_job():
+            logger.info("📊 Генерация публичного отчета")
+            report = channel_analytics.generate_public_report()
+            elite_channel.send_to_telegram(report)
+        
+        schedule.every().day.at(public_report_time).do(public_analytics_job)
+        logger.info(f"✅ Запланирован публичный отчет на {public_report_time}")
 
     def _run_scheduler(self):
         """Запускает фоновый поток планировщика"""
@@ -1033,8 +1079,12 @@ def index():
         next_server_time, next_kemerovo_time, next_event = content_scheduler.get_next_event()
         connection_info = elite_channel.test_connection()
         current_times = TimeZoneConverter.get_current_times()
-        schedule_info = content_scheduler.get_schedule()
         member_count = channel_analytics.get_member_count()
+        
+        # Получаем русское название дня недели
+        weekday_names = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье']
+        current_weekday = datetime.now(Config.KEMEROVO_TIMEZONE).weekday()
+        current_day_name = weekday_names[current_weekday]
         
         html = f"""
         <html>
@@ -1056,6 +1106,7 @@ def index():
                     .content-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 20px 0; }}
                     .form-group {{ margin: 10px 0; }}
                     input, textarea, select {{ width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; }}
+                    .day-info {{ background: #9b59b6; color: white; padding: 15px; border-radius: 5px; margin: 10px 0; }}
                 </style>
             </head>
             <body>
@@ -1063,6 +1114,11 @@ def index():
                     <div class="header">
                         <h1>🎪 Система управления @ppsupershef</h1>
                         <p>ФИЛОСОФИЯ: Осознанное питание как инвестиция в энергичную, долгую и продуктивную жизнь</p>
+                    </div>
+                    
+                    <div class="day-info">
+                        <h2>📅 Сегодня: {current_day_name}</h2>
+                        <p>Тема дня: {self._get_day_theme(current_weekday)}</p>
                     </div>
                     
                     <div class="quick-actions">
@@ -1221,6 +1277,19 @@ def index():
         logger.error(f"❌ Ошибка в главной странице: {e}")
         return f"Ошибка: {str(e)}"
 
+    def _get_day_theme(self, weekday):
+        """Возвращает тему дня недели"""
+        themes = {
+            0: "🧠 Нейропитание - фокус на мозг и когнитивные функции",
+            1: "💪 Энергия и тонус - заряд энергии для достижений", 
+            2: "🛡️ Долголетие - стратегии здоровой долгой жизни",
+            3: "🍽️ Гастрономическое наслаждение - изысканность с пользой",
+            4: "🎯 Результаты и планы - аналитика и планирование",
+            5: "🛒 Умные покупки + рецепты - подготовка к неделе",
+            6: "📊 Аналитика + ритуалы - настрой на новую неделю"
+        }
+        return themes.get(weekday, "Осознанное питание")
+
 @app.route('/send-public-report')
 def send_public_report():
     """Отправка публичного отчета"""
@@ -1361,7 +1430,17 @@ def format_preview():
 def send_breakfast():
     """Отправка завтрака"""
     try:
-        content = content_gen.generate_neuro_breakfast()
+        # Определяем текущий день недели для выбора правильного типа завтрака
+        current_weekday = datetime.now(Config.KEMEROVO_TIMEZONE).weekday()
+        breakfast_types = [
+            "generate_neuro_breakfast", "generate_energy_breakfast", 
+            "generate_longevity_breakfast", "generate_gastronomy_breakfast",
+            "generate_analytical_breakfast", "generate_energy_breakfast",
+            "generate_sunday_brunch"
+        ]
+        method_name = breakfast_types[current_weekday]
+        method = getattr(content_gen, method_name)
+        content = method()
         success = elite_channel.send_to_telegram(content)
         return jsonify({"status": "success" if success else "error"})
     except Exception as e:
