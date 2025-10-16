@@ -6,7 +6,7 @@ import time
 import schedule
 from datetime import datetime, timedelta
 from threading import Thread
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template_string
 import pytz
 import random
 
@@ -32,9 +32,6 @@ class Config:
     SERVER_TIMEZONE = pytz.timezone('UTC')
     KEMEROVO_TIMEZONE = pytz.timezone('Asia/Novokuznetsk')
     TIME_DIFFERENCE_HOURS = 7
-    
-    # Приватная статистика
-    ADMIN_USER_ID = os.getenv('TELEGRAM_ADMIN_ID', 'ваш_user_id_здесь')
 
 class ContentFormatter:
     """Класс для форматирования контента с новой философией"""
@@ -279,63 +276,6 @@ class ChannelAnalytics:
 #отчет #статистика #клуб"""
         
         return report
-
-    def generate_private_report(self):
-        """Генерация приватного отчета для администратора"""
-        member_count = self.get_member_count()
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        
-        report = f"""🔐 <b>ПРИВАТНЫЙ ОТЧЕТ АДМИНИСТРАТОРА</b>
-
-📊 <b>СТАТИСТИКА КАНАЛА</b>
-👥 Подписчиков: <b>{member_count}</b>
-📅 Дата: {current_time}
-
-🌍 <b>СИСТЕМНАЯ ИНФОРМАЦИЯ:</b>
-• Автопостинг: ✅ Активен
-• Контент-план: ✅ Новая философия
-• Вовлеченность: 📈 Растет
-
-💡 <b>РЕКОМЕНДАЦИИ:</b>
-• Продолжайте курс на осознанное долголетие
-• Анализируйте реакцию на эмоциональные триггеры
-• Развивайте сообщество единомышленников
-
-⚠️ <b>ЭТОТ ОТЧЕТ ДОСТУПЕН ТОЛЬКО ВАМ</b>"""
-        
-        return report
-
-    def send_private_message(self, message, user_id=None):
-        """Отправка приватного сообщения администратору"""
-        try:
-            if not user_id:
-                user_id = Config.ADMIN_USER_ID
-            
-            if user_id == 'ваш_user_id_здесь':
-                logger.error("❌ User ID администратора не настроен")
-                return False
-            
-            url = f"{self.base_url}/sendMessage"
-            payload = {
-                'chat_id': user_id,
-                'text': message,
-                'parse_mode': 'HTML',
-                'disable_web_page_preview': True
-            }
-            
-            response = requests.post(url, json=payload, timeout=30)
-            result = response.json()
-            
-            if result.get('ok'):
-                logger.info(f"✅ Приватное сообщение отправлено администратору")
-                return True
-            else:
-                logger.error(f"❌ Ошибка отправки приватного сообщения: {result}")
-                return False
-                
-        except Exception as e:
-            logger.error(f"❌ Исключение при отправке приватного сообщения: {str(e)}")
-            return False
 
 # Класс для работы с Telegram каналом
 class EliteChannel:
@@ -1028,9 +968,6 @@ class ContentScheduler:
             kemerovo_time = TimeZoneConverter.server_to_kemerovo_time(server_time)
             self._schedule_content(server_time, event, kemerovo_time)
         
-        # Планируем аналитические отчеты
-        self._schedule_analytics_reports()
-        
         self.is_running = True
         self._run_scheduler()
 
@@ -1055,30 +992,6 @@ class ContentScheduler:
         
         schedule.every().day.at(server_time).do(job)
         logger.info(f"✅ Запланировано: {server_time} - {event['name']}")
-
-    def _schedule_analytics_reports(self):
-        """Планирование аналитических отчетов"""
-        # Публичный отчет в 09:00 по Кемерово
-        public_report_time = TimeZoneConverter.kemerovo_to_server_time("09:00")
-        
-        def public_analytics_job():
-            logger.info("📊 Генерация публичного отчета")
-            report = channel_analytics.generate_public_report()
-            elite_channel.send_to_telegram(report)
-        
-        # Приватный отчет в 09:30 по Кемерово
-        private_report_time = TimeZoneConverter.kemerovo_to_server_time("09:30")
-        
-        def private_analytics_job():
-            logger.info("🔐 Генерация приватного отчета")
-            report = channel_analytics.generate_private_report()
-            channel_analytics.send_private_message(report)
-        
-        schedule.every().day.at(public_report_time).do(public_analytics_job)
-        schedule.every().day.at(private_report_time).do(private_analytics_job)
-        
-        logger.info(f"✅ Запланирован публичный отчет на {public_report_time}")
-        logger.info(f"✅ Запланирован приватный отчет на {private_report_time}")
 
     def _run_scheduler(self):
         """Запускает фоновый поток планировщика"""
@@ -1109,10 +1022,6 @@ try:
     member_count = channel_analytics.get_member_count()
     logger.info(f"📊 Начальное количество подписчиков: {member_count}")
     
-    if Config.ADMIN_USER_ID and Config.ADMIN_USER_ID != 'ваш_user_id_здесь':
-        startup_message = "🤖 <b>Бот @ppsupershef запущен с новой философией!</b>\n\n🎪 Теперь это Клуб Осознанного Долголетия. Приватные отчеты будут приходить вам ежедневно в 09:30."
-        channel_analytics.send_private_message(startup_message)
-    
 except Exception as e:
     logger.error(f"❌ Ошибка инициализации: {e}")
 
@@ -1127,35 +1036,63 @@ def index():
         schedule_info = content_scheduler.get_schedule()
         member_count = channel_analytics.get_member_count()
         
-        admin_id_status = "✅ Настроен" if Config.ADMIN_USER_ID and Config.ADMIN_USER_ID != 'ваш_user_id_здесь' else "❌ Не настроен"
-        
         html = f"""
         <html>
             <head>
-                <title>Клуб Осознанного Долголетия @ppsupershef</title>
+                <title>Система управления @ppsupershef</title>
                 <meta charset="utf-8">
                 <style>
-                    body {{ font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }}
-                    .container {{ max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }}
-                    .header {{ background: #2c3e50; color: white; padding: 20px; border-radius: 5px; }}
-                    .philosophy {{ background: #9b59b6; color: white; padding: 20px; border-radius: 5px; margin: 10px 0; }}
+                    body {{ font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }}
+                    .container {{ max-width: 1200px; margin: 0 auto; }}
+                    .header {{ background: #2c3e50; color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }}
                     .stats-card {{ background: #3498db; color: white; padding: 15px; border-radius: 5px; margin: 10px 0; }}
-                    .private-card {{ background: #e74c3c; color: white; padding: 15px; border-radius: 5px; margin: 10px 0; }}
                     .time-info {{ background: #27ae60; color: white; padding: 15px; border-radius: 5px; margin: 10px 0; }}
-                    .btn {{ display: inline-block; padding: 10px 20px; margin: 5px; background: #3498db; color: white; text-decoration: none; border-radius: 5px; }}
+                    .btn {{ display: inline-block; padding: 10px 20px; margin: 5px; background: #3498db; color: white; text-decoration: none; border-radius: 5px; border: none; cursor: pointer; }}
+                    .btn-danger {{ background: #e74c3c; }}
+                    .btn-success {{ background: #27ae60; }}
+                    .btn-warning {{ background: #f39c12; }}
+                    .content-section {{ background: white; padding: 20px; border-radius: 10px; margin: 20px 0; }}
+                    .quick-actions {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 20px 0; }}
+                    .content-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 20px 0; }}
+                    .form-group {{ margin: 10px 0; }}
+                    input, textarea, select {{ width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; }}
                 </style>
             </head>
             <body>
                 <div class="container">
                     <div class="header">
-                        <h1>🎪 Клуб Осознанного Долголетия @ppsupershef</h1>
+                        <h1>🎪 Система управления @ppsupershef</h1>
                         <p>ФИЛОСОФИЯ: Осознанное питание как инвестиция в энергичную, долгую и продуктивную жизнь</p>
                     </div>
                     
-                    <div class="philosophy">
-                        <h2>🎯 Новая концепция контента:</h2>
-                        <p><strong>🧠 Нейропитание • 💪 Энергия • 🛡️ Долголетие • 🍽️ Гастрономия</strong></p>
-                        <p>Каждый прием пищи - инструмент для улучшения качества жизни</p>
+                    <div class="quick-actions">
+                        <button class="btn" onclick="testChannel()">📊 Статистика</button>
+                        <button class="btn" onclick="testConnection()">Тест канала</button>
+                        <button class="btn" onclick="showDebug()">Отладка</button>
+                        <button class="btn" onclick="healthCheck()">Health Check</button>
+                        <button class="btn" onclick="showFormatPreview()">Предпросмотр формата</button>
+                        <button class="btn" onclick="sendPoll()">Отправить опрос</button>
+                        <button class="btn" onclick="sendVisualContent()">Визуальный контент</button>
+                        <button class="btn" onclick="sendShoppingList()">Чек-лист покупок</button>
+                        <button class="btn btn-success" onclick="sendPublicReport()">📨 Отчет статистики</button>
+                    </div>
+                    
+                    <div class="content-section">
+                        <h2>📤 Отправка контента</h2>
+                        <div class="content-grid">
+                            <button class="btn" onclick="sendContent('breakfast')">🍳 Завтрак</button>
+                            <button class="btn" onclick="sendContent('lunch')">🍲 Обед</button>
+                            <button class="btn" onclick="sendContent('science')">🔬 Наука</button>
+                            <button class="btn" onclick="sendContent('interval')">⏱️ Интервал</button>
+                            <button class="btn" onclick="sendContent('dinner')">🍽️ Ужин</button>
+                            <button class="btn" onclick="sendContent('advice')">💡 Советы экспертов</button>
+                        </div>
+                        
+                        <div class="form-group">
+                            <h3>✍️ Ручной ввод контента</h3>
+                            <textarea id="manualContent" rows="6" placeholder="Введите текст сообщения для Telegram..."></textarea>
+                            <button class="btn btn-success" onclick="sendManualContent()">📤 Отправить в канал</button>
+                        </div>
                     </div>
                     
                     <div class="stats-card">
@@ -1165,57 +1102,116 @@ def index():
                         <p><strong>🎯 Философия: Осознанное долголетие</strong></p>
                     </div>
                     
-                    <div class="private-card">
-                        <h2>🔐 ПРИВАТНАЯ СТАТИСТИКА</h2>
-                        <p><strong>ID администратора: {admin_id_status}</strong></p>
-                        <p><strong>🕒 Приватные отчеты: 09:30 (Кемерово)</strong></p>
-                    </div>
-                    
                     <div class="time-info">
                         <h3>🌍 ИНФОРМАЦИЯ О ВРЕМЕНИ</h3>
                         <p>Сервер: <strong>{current_times['server_time']}</strong> • Кемерово: <strong>{current_times['kemerovo_time']}</strong></p>
                         <p>Следующая публикация: <strong>{next_kemerovo_time} - {next_event['name']}</strong></p>
                     </div>
-                    
-                    <div>
-                        <h3>⚡ БЫСТРЫЕ ДЕЙСТВИЯ</h3>
-                        <a class="btn" href="/test-channel">Тест канала</a>
-                        <a class="btn" href="/send-private-report" style="background: #e74c3c;">🔐 Приватный отчет</a>
-                        <a class="btn" href="/send-public-report" style="background: #3498db;">📊 Публичный отчет</a>
-                        <a class="btn" href="/health">Health Check</a>
-                        <a class="btn" href="/debug">Отладка</a>
-                    </div>
-                    
-                    <div style="margin-top: 20px;">
-                        <h3>🎪 ОСНОВНЫЕ НАПРАВЛЕНИЯ КОНТЕНТА:</h3>
-                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px;">
-                            <div style="background: #e8f6f3; padding: 10px; border-radius: 5px;">
-                                <strong>🧠 Понедельник:</strong> Нейропитание
-                            </div>
-                            <div style="background: #fdebd0; padding: 10px; border-radius: 5px;">
-                                <strong>💪 Вторник:</strong> Энергия и тонус
-                            </div>
-                            <div style="background: #e8daef; padding: 10px; border-radius: 5px;">
-                                <strong>🛡️ Среда:</strong> Долголетие
-                            </div>
-                            <div style="background: #d5f5e3; padding: 10px; border-radius: 5px;">
-                                <strong>🍽️ Четверг:</strong> Гастрономия
-                            </div>
-                            <div style="background: #fcf3cf; padding: 10px; border-radius: 5px;">
-                                <strong>🎯 Пятница:</strong> Результаты
-                            </div>
-                            <div style="background: #d6eaf8; padding: 10px; border-radius: 5px;">
-                                <strong>🛒 Суббота:</strong> Покупки + Рецепты
-                            </div>
-                            <div style="background: #fadbd8; padding: 10px; border-radius: 5px;">
-                                <strong>📊 Воскресенье:</strong> Аналитика
-                            </div>
-                            <div style="background: #d1f2eb; padding: 10px; border-radius: 5px;">
-                                <strong>🍰 Каждый день:</strong> Умные десерты в 17:00
-                            </div>
-                        </div>
-                    </div>
                 </div>
+
+                <script>
+                    function testConnection() {{
+                        fetch('/test-channel')
+                            .then(response => response.json())
+                            .then(data => alert('Результат теста: ' + (data.status === 'success' ? '✅ Успешно' : '❌ Ошибка')));
+                    }}
+
+                    function healthCheck() {{
+                        fetch('/health')
+                            .then(response => response.json())
+                            .then(data => alert('Статус системы: ' + (data.status === 'healthy' ? '✅ Здорова' : '❌ Проблемы')));
+                    }}
+
+                    function showDebug() {{
+                        fetch('/debug')
+                            .then(response => response.json())
+                            .then(data => alert('Отладка: ' + JSON.stringify(data, null, 2)));
+                    }}
+
+                    function testChannel() {{
+                        fetch('/test-channel')
+                            .then(response => response.json())
+                            .then(data => alert('Тест канала: ' + (data.status === 'success' ? '✅ Успешно' : '❌ Ошибка')));
+                    }}
+
+                    function sendPublicReport() {{
+                        fetch('/send-public-report')
+                            .then(response => response.json())
+                            .then(data => alert('Отчет: ' + (data.status === 'success' ? '✅ Отправлен' : '❌ Ошибка')));
+                    }}
+
+                    function sendPoll() {{
+                        fetch('/send-poll')
+                            .then(response => response.json())
+                            .then(data => alert('Опрос: ' + (data.status === 'success' ? '✅ Создан' : '❌ Ошибка')));
+                    }}
+
+                    function sendVisualContent() {{
+                        fetch('/send-visual-content')
+                            .then(response => response.json())
+                            .then(data => alert('Визуальный контент: ' + (data.status === 'success' ? '✅ Отправлен' : '❌ Ошибка')));
+                    }}
+
+                    function sendShoppingList() {{
+                        fetch('/send-shopping-list')
+                            .then(response => response.json())
+                            .then(data => alert('Чек-лист: ' + (data.status === 'success' ? '✅ Отправлен' : '❌ Ошибка')));
+                    }}
+
+                    function showFormatPreview() {{
+                        fetch('/format-preview')
+                            .then(response => response.json())
+                            .then(data => {{
+                                if (data.status === 'success') {{
+                                    alert('Предпросмотр формата отправлен в канал');
+                                }} else {{
+                                    alert('Ошибка: ' + data.message);
+                                }}
+                            }});
+                    }}
+
+                    function sendContent(type) {{
+                        const endpoints = {{
+                            'breakfast': '/send-breakfast',
+                            'lunch': '/send-lunch', 
+                            'science': '/send-science',
+                            'interval': '/send-interval',
+                            'dinner': '/send-dinner',
+                            'advice': '/send-advice'
+                        }};
+
+                        if (endpoints[type]) {{
+                            fetch(endpoints[type])
+                                .then(response => response.json())
+                                .then(data => alert('Контент отправлен: ' + (data.status === 'success' ? '✅ Успешно' : '❌ Ошибка')));
+                        }}
+                    }}
+
+                    function sendManualContent() {{
+                        const content = document.getElementById('manualContent').value;
+                        if (!content) {{
+                            alert('Введите текст сообщения');
+                            return;
+                        }}
+
+                        fetch('/send-manual-content', {{
+                            method: 'POST',
+                            headers: {{
+                                'Content-Type': 'application/json',
+                            }},
+                            body: JSON.stringify({{ content: content }})
+                        }})
+                        .then(response => response.json())
+                        .then(data => {{
+                            if (data.status === 'success') {{
+                                alert('✅ Сообщение отправлено в канал');
+                                document.getElementById('manualContent').value = '';
+                            }} else {{
+                                alert('❌ Ошибка: ' + data.message);
+                            }}
+                        }});
+                    }}
+                </script>
             </body>
         </html>
         """
@@ -1224,20 +1220,6 @@ def index():
     except Exception as e:
         logger.error(f"❌ Ошибка в главной странице: {e}")
         return f"Ошибка: {str(e)}"
-
-@app.route('/send-private-report')
-def send_private_report():
-    """Отправка приватного отчета"""
-    try:
-        report = channel_analytics.generate_private_report()
-        success = channel_analytics.send_private_message(report)
-        
-        if success:
-            return jsonify({"status": "success", "message": "Приватный отчет отправлен"})
-        else:
-            return jsonify({"status": "error", "message": "Ошибка отправки"})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
 
 @app.route('/send-public-report')
 def send_public_report():
@@ -1303,6 +1285,156 @@ def debug():
         "scheduler_status": "running" if content_scheduler.is_running else "stopped",
         "time_info": current_times
     })
+
+@app.route('/send-poll')
+def send_poll():
+    """Отправка опроса"""
+    try:
+        success = elite_channel.send_poll()
+        return jsonify({"status": "success" if success else "error"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/send-visual-content')
+def send_visual_content():
+    """Отправка визуального контента"""
+    try:
+        success = elite_channel.send_visual_content()
+        return jsonify({"status": "success" if success else "error"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/send-shopping-list')
+def send_shopping_list():
+    """Отправка чек-листа покупок"""
+    try:
+        content = content_gen.generate_smart_shopping_list()
+        success = elite_channel.send_to_telegram(content)
+        return jsonify({"status": "success" if success else "error"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/format-preview')
+def format_preview():
+    """Предпросмотр формата контента"""
+    try:
+        preview_content = """🎪 <b>КЛУБ ОСОЗНАННОГО ДОЛГОЛЕТИЯ</b>
+
+Станьте версией себя, которой восхищаетесь
+
+🧠 НЕЙРОЗАВТРАК ДЛЯ ЯСНОСТИ УМА
+
+🥑 Омлет с авокадо и шпинатом
+
+Ингредиенты:
+• Яйца - 2 шт
+• Авокадо - ½ шт  
+• Шпинат - 50 г
+• Грецкие орехи - 20 г
+• Оливковое масло - 1 ч.л.
+
+Приготовление:
+1. Взбейте яйца с щепоткой соли
+2. Обжарьте шпинат на оливковом масле 2 минуты
+3. Влейте яйца, готовьте на среднем огне 5-7 минут
+4. Подавайте с ломтиками авокадо и грецкими орехами
+
+💡 Научное обоснование: Авокадо содержит омега-9 для мембран нейронов, шпинат - лютеин для когнитивных функций, грецкие орехи - омега-3 для нейропластичности.
+
+---
+💫 <b>Вы не просто читаете рецепт - вы инвестируете в свое долголетие и энергию</b>
+
+📢 <b>Подписывайтесь на канал!</b> → @ppsupershef
+💬 <b>Обсуждаем в комментариях!</b> → @ppsupershef_chat
+
+😋 вкусно | 💪 полезно | 👨‍🍳 приготовлю | 📝 запишу себе | 📚 на рецепты
+
+🔄 <b>Поделитесь с друзьями!</b> → @ppsupershef"""
+        
+        success = elite_channel.send_to_telegram(preview_content)
+        return jsonify({"status": "success" if success else "error", "message": "Формат отправлен для предпросмотра"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+# Маршруты для отправки контента
+@app.route('/send-breakfast')
+def send_breakfast():
+    """Отправка завтрака"""
+    try:
+        content = content_gen.generate_neuro_breakfast()
+        success = elite_channel.send_to_telegram(content)
+        return jsonify({"status": "success" if success else "error"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/send-lunch')
+def send_lunch():
+    """Отправка обеда"""
+    try:
+        content = content_gen.generate_energy_breakfast()
+        success = elite_channel.send_to_telegram(content)
+        return jsonify({"status": "success" if success else "error"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/send-science')
+def send_science():
+    """Отправка научного контента"""
+    try:
+        content = content_gen.generate_science_content()
+        success = elite_channel.send_to_telegram(content)
+        return jsonify({"status": "success" if success else "error"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/send-interval')
+def send_interval():
+    """Отправка контента про интервальное питание"""
+    try:
+        content = content_gen.generate_expert_advice()
+        success = elite_channel.send_to_telegram(content)
+        return jsonify({"status": "success" if success else "error"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/send-dinner')
+def send_dinner():
+    """Отправка ужина"""
+    try:
+        content = content_gen.generate_longevity_breakfast()
+        success = elite_channel.send_to_telegram(content)
+        return jsonify({"status": "success" if success else "error"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/send-advice')
+def send_advice():
+    """Отправка советов экспертов"""
+    try:
+        content = content_gen.generate_expert_advice()
+        success = elite_channel.send_to_telegram(content)
+        return jsonify({"status": "success" if success else "error"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/send-manual-content', methods=['POST'])
+def send_manual_content():
+    """Отправка ручного контента"""
+    try:
+        data = request.get_json()
+        content = data.get('content', '')
+        
+        if not content:
+            return jsonify({"status": "error", "message": "Пустое сообщение"})
+        
+        current_times = TimeZoneConverter.get_current_times()
+        content_with_footer = f"{content}\n\n🕐 Опубликовано: {current_times['kemerovo_time']}"
+        
+        success = elite_channel.send_to_telegram(content_with_footer)
+        return jsonify({"status": "success" if success else "error"})
+        
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
 
 if __name__ == '__main__':
     logger.info(f"🚀 Запуск Клуба Осознанного Долголетия: @ppsupershef")
