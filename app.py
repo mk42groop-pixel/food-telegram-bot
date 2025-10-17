@@ -86,18 +86,6 @@ def rate_limit(requests_per_minute=30):
         return decorated_function
     return decorator
 
-def require_auth(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        auth_token = request.headers.get('Authorization')
-        expected_token = os.getenv('ADMIN_TOKEN')
-        
-        if expected_token and auth_token != f"Bearer {expected_token}":
-            return jsonify({"status": "error", "message": "Неавторизован"}), 401
-        
-        return f(*args, **kwargs)
-    return decorated_function
-
 # Инициализация конфигурации
 try:
     config = SecureConfig()
@@ -117,7 +105,8 @@ class ModernContentFormatter:
             'color': '#8B5CF6',
             'triggers': [
                 "Ясность ума начинается с завтрака",
-                "Нейроны любят правильную пищу"
+                "Нейроны любят правильную пищу",
+                "Мозг заслуживает лучшего топлива"
             ]
         },
         'energy': {
@@ -126,7 +115,8 @@ class ModernContentFormatter:
             'color': '#F59E0B',
             'triggers': [
                 "Зарядитесь энергией на весь день",
-                "Топливо для ваших амбиций"
+                "Топливо для ваших амбиций",
+                "Энергия для великих свершений"
             ]
         },
         'longevity': {
@@ -135,7 +125,48 @@ class ModernContentFormatter:
             'color': '#10B981',
             'triggers': [
                 "Инвестируйте в свое здоровое будущее",
-                "Каждый прием пищи - шаг к долголетию"
+                "Каждый прием пищи - шаг к долголетию",
+                "Долголетие начинается сегодня"
+            ]
+        },
+        'gastronomy': {
+            'emoji': '🍽️',
+            'name': 'Гастрономия',
+            'color': '#EC4899', 
+            'triggers': [
+                "Наслаждение с пользой для здоровья",
+                "Изысканность в каждой тарелке",
+                "Гастрономия как искусство"
+            ]
+        },
+        'analytics': {
+            'emoji': '📊',
+            'name': 'Аналитика',
+            'color': '#3B82F6',
+            'triggers': [
+                "Планируйте свое питание осознанно",
+                "Аналитика для лучших решений", 
+                "Стратегия вашего здоровья"
+            ]
+        },
+        'shopping': {
+            'emoji': '🛒',
+            'name': 'Покупки',
+            'color': '#8B5CF6',
+            'triggers': [
+                "Умные покупки - основа здоровья",
+                "Инвестируйте в качественные продукты",
+                "Ваша корзина - ваш выбор здоровья"
+            ]
+        },
+        'rituals': {
+            'emoji': '📈',
+            'name': 'Ритуалы',
+            'color': '#F59E0B',
+            'triggers': [
+                "Создайте ритуалы для здоровья",
+                "Воскресенье - время для планирования",
+                "Начните неделю с правильного настроя"
             ]
         }
     }
@@ -165,6 +196,45 @@ class ModernContentFormatter:
 #осознанноепитание #{theme_type}"""
         
         return header + "\n\n" + content + footer
+
+# 🕐 Конвертер времени
+class TimeZoneConverter:
+    """Класс для конвертации времени между часовыми поясами"""
+    
+    @staticmethod
+    def kemerovo_to_server_time(kemerovo_time_str):
+        """Конвертирует время из Кемерово в серверное время"""
+        try:
+            today = datetime.now(config.KEMEROVO_TIMEZONE).date()
+            kemerovo_dt = datetime.combine(today, datetime.strptime(kemerovo_time_str, '%H:%M').time())
+            kemerovo_dt = config.KEMEROVO_TIMEZONE.localize(kemerovo_dt)
+            server_dt = kemerovo_dt.astimezone(config.SERVER_TIMEZONE)
+            return server_dt.strftime('%H:%M')
+        except Exception as e:
+            logger.error(f"❌ Ошибка конвертации времени {kemerovo_time_str}: {e}")
+            return kemerovo_time_str
+    
+    @staticmethod
+    def get_current_times():
+        """Возвращает текущее время в обоих часовых поясах"""
+        try:
+            server_now = datetime.now(config.SERVER_TIMEZONE)
+            kemerovo_now = datetime.now(config.KEMEROVO_TIMEZONE)
+            
+            return {
+                'server_time': server_now.strftime('%H:%M:%S'),
+                'kemerovo_time': kemerovo_now.strftime('%H:%M:%S'),
+                'server_timezone': str(config.SERVER_TIMEZONE),
+                'kemerovo_timezone': str(config.KEMEROVO_TIMEZONE)
+            }
+        except Exception as e:
+            logger.error(f"❌ Ошибка получения времени: {e}")
+            return {
+                'server_time': '00:00:00',
+                'kemerovo_time': '00:00:00',
+                'server_timezone': 'UTC',
+                'kemerovo_timezone': 'Asia/Novokuznetsk'
+            }
 
 # 🔧 Улучшенный менеджер Telegram
 class SecureTelegramManager:
@@ -262,10 +332,10 @@ class EfficientContentGenerator:
             'monday': ('neuro', '🧠 НЕЙРОЗАВТРАК ДЛЯ ЯСНОСТИ УМА'),
             'tuesday': ('energy', '⚡ ЭНЕРГО-ЗАВТРАК ДЛЯ АКТИВНОГО ДНЯ'),
             'wednesday': ('longevity', '🛡️ ЗАВТРАК ДОЛГОЖИТЕЛЯ'),
-            'thursday': ('neuro', '🎨 ТВОРЧЕСКИЙ ЗАВТРАК'),
-            'friday': ('energy', '📊 АНАЛИТИЧЕСКИЙ ЗАВТРАК'),
-            'saturday': ('longevity', '🥗 СУББОТНИЙ БРАНЧ'),
-            'sunday': ('neuro', '🍳 ВОСКРЕСНЫЙ РИТУАЛ')
+            'thursday': ('gastronomy', '🎨 ТВОРЧЕСКИЙ ЗАВТРАК'),
+            'friday': ('analytics', '📊 АНАЛИТИЧЕСКИЙ ЗАВТРАК'),
+            'saturday': ('shopping', '🥗 СУББОТНИЙ БРАНЧ'),
+            'sunday': ('rituals', '🍳 ВОСКРЕСНЫЙ РИТУАЛ')
         }
         
         theme, title = content_map.get(day_type, ('neuro', '🍳 УМНЫЙ ЗАВТРАК'))
@@ -325,30 +395,162 @@ class EfficientContentGenerator:
 2. Добавьте куркуму за 2 минуты
 3. Подавайте с ягодами и маслом
 
-💡 Польза: Активирует гены долголетия"""
+💡 Польза: Активирует гены долголетия""",
+            
+            'gastronomy': """🍳 Гренки с авокадо и яйцом-пашот
+
+Ингредиенты (1 порция):
+• 🍞 Хлеб цельнозерновой - 2 ломтика
+• 🥑 Авокадо - 1 шт
+• 🥚 Яйца - 2 шт
+• 🥬 Руккола - 30 г
+• ⚫ Семена кунжута - 1 ч.л.
+
+Приготовление (15 минут):
+1. Подсушите хлеб на сковороде
+2. Разомните авокадо с солью
+3. Приготовьте яйца-пашот (3 минуты)
+4. Соберите: хлеб + авокадо + руккола + яйцо
+
+💡 Польза: Изысканный вкус с максимальной пользой""",
+            
+            'analytics': """🥣 Творожная масса с орехами
+
+Ингредиенты (1 порция):
+• 🧀 Творог 5% - 150 г
+• 🌰 Грецкие орехи - 30 г
+• 🍯 Мед - 1 ст.л.
+• 🟣 Изюм - 20 г
+• 🍋 Лимонный сок - 1 ч.л.
+
+Приготовление (5 минут):
+1. Смешайте творог с медом и соком
+2. Добавьте орехи и изюм
+3. Подавайте с хлебцами
+
+💡 Польза: Идеально для ясности мышления"""
         }
         
         return recipes.get(theme, recipes['neuro'])
+    
+    def generate_shopping_list(self):
+        """Генерация умного чек-листа покупок"""
+        season = self._get_current_season()
+        
+        shopping_list = f"""🛒 <b>УМНЫЙ ЧЕК-ЛИСТ НА НЕДЕЛЮ</b>
 
-# 🌐 Современный Flask интерфейс
+🎯 Основа для осознанного долголетия ({season})
+
+🧠 <b>ДЛЯ МОЗГА И НЕРВНОЙ СИСТЕМЫ:</b>
+• 🌰 Грецкие орехи - 200 г
+• 🥑 Авокадо - 3-4 шт
+• 🐟 Жирная рыба - 500 г
+• 🥚 Яйца - 10 шт
+• 🍫 Темный шоколад 85% - 100 г
+
+💪 <b>ДЛЯ ЭНЕРГИИ И ТОНУСА:</b>
+• 🌾 Овсяные хлопья - 500 g
+• 🍌 Бананы - 1 кг
+• 💎 Семена чиа - 100 г
+• 🍗 Куриная грудка - 1 кг
+• 🟤 Гречневая крупа - 500 г
+
+🛡️ <b>ДЛЯ ДОЛГОЛЕТИЯ:</b>
+• 🟡 Куркума - 50 г
+• 🟠 Имбирь - 100 г
+• ⚪ Чеснок - 3 головки
+• 🍓 Ягоды (замороженные) - 500 г
+• 🥬 Зеленые овощи - 1 кг
+
+💡 <b>СОВЕТЫ ОТ ШЕФ-ПОВАРА:</b>
+• Покупайте сезонные местные продукты
+• Читайте составы - избегайте рафинированного сахара
+• Планируйте меню на неделю вперед
+• Храните орехи и семена в холодильнике
+
+🎯 <b>ФИЛОСОФИЯ ПОКУПОК:</b>
+Каждый продукт в вашей корзине - это инвестиция в ваше долголетие и качество жизни!
+
+#чеклист #умныепокупки #{season}"""
+        
+        return shopping_list
+    
+    def generate_expert_advice(self):
+        """Генерация советов экспертов"""
+        advice = """🎯 <b>ПРИНЦИП: "ЕШЬТЕ ЦВЕТА РАДУГИ"</b>
+
+🎯 <b>ФОРМУЛИРОВКА:</b> Каждый день включайте в рацион продукты всех цветов радуги - красные, оранжевые, желтые, зеленые, синие, фиолетовые.
+
+🔬 <b>НАУЧНОЕ ОБОСНОВАНИЕ:</b>
+• 🔴 Красные - ликопин против рака
+• 🟠 Оранжевые - бета-каротин для зрения  
+• 🟡 Желтые - витамин C для иммунитета
+• 🟢 Зеленые - лютеин для мозга
+• 🔵 Синие - антоцианы для сердца
+• 🟣 Фиолетовые - ресвератрол для долголетия
+
+⚡ <b>МЕХАНИЗМ ДЕЙСТВИЯ:</b>
+• Обеспечивает фитонутриентное разнообразие
+• Укрепляет антиоксидантную защиту
+• Снижает системное воспаление
+• Поддерживает микробиом
+
+💡 <b>ПРАКТИЧЕСКОЕ ПРИМЕНЕНИЕ:</b> Сделайте свой обед разноцветным - салат из помидоров, моркови, перца, огурцов и капусты.
+
+📈 <b>РЕЗУЛЬТАТЫ:</b> Укрепление иммунной системы, снижение воспаления, защита от хронических заболеваний.
+
+🎯 <b>ПРОСТОЙ ШАГ:</b> Добавьте хотя бы 3 разных цвета в каждый основной прием пищи."""
+        
+        return advice
+    
+    def _get_current_season(self):
+        """Определяет текущий сезон"""
+        month = datetime.now().month
+        if month in [12, 1, 2]:
+            return "зима"
+        elif month in [3, 4, 5]:
+            return "весна"
+        elif month in [6, 7, 8]:
+            return "лето"
+        else:
+            return "осень"
+
+# 🌐 СОВРЕМЕННЫЙ FLASK ИНТЕРФЕЙС
 @app.route('/')
 def modern_dashboard():
     """Современная главная страница"""
     try:
         current_time = datetime.now(config.KEMEROVO_TIMEZONE)
         weekday = current_time.strftime('%A').lower()
+        
+        # Правильные русские названия дней
         day_name_ru = {
-            'monday': 'Понедельник', 'tuesday': 'Вторник', 
-            'wednesday': 'Среда', 'thursday': 'Четверг',
-            'friday': 'Пятница', 'saturday': 'Суббота', 
+            'monday': 'Понедельник', 
+            'tuesday': 'Вторник', 
+            'wednesday': 'Среда', 
+            'thursday': 'Четверг',
+            'friday': 'Пятница', 
+            'saturday': 'Суббота', 
             'sunday': 'Воскресенье'
         }.get(weekday, 'День')
         
+        # Тема дня
+        day_theme = {
+            'monday': '🧠 Нейропитание',
+            'tuesday': '⚡ Энергия', 
+            'wednesday': '🛡️ Долголетие',
+            'thursday': '🍽️ Гастрономия',
+            'friday': '📊 Аналитика',
+            'saturday': '🛒 Покупки',
+            'sunday': '📈 Ритуалы'
+        }.get(weekday, '🎯 Осознанность')
+
         # Статистика
         telegram = SecureTelegramManager()
         bot_info = telegram.test_connection()
+        bot_status = "✅ Активен" if bot_info.get('status') == 'success' else "❌ Ошибка"
         
-        html = f"""
+        html = f'''
         <!DOCTYPE html>
         <html lang="ru">
         <head>
@@ -360,6 +562,7 @@ def modern_dashboard():
                     --primary: #8B5CF6;
                     --secondary: #F59E0B;
                     --success: #10B981;
+                    --danger: #EF4444;
                     --dark: #1F2937;
                     --light: #F9FAFB;
                 }}
@@ -367,10 +570,11 @@ def modern_dashboard():
                 * {{ margin: 0; padding: 0; box-sizing: border-box; }}
                 
                 body {{
-                    font-family: 'Segoe UI', system-ui, sans-serif;
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                     min-height: 100vh;
                     color: var(--dark);
+                    line-height: 1.6;
                 }}
                 
                 .container {{
@@ -382,95 +586,160 @@ def modern_dashboard():
                 .header {{
                     background: white;
                     border-radius: 20px;
-                    padding: 30px;
+                    padding: 40px 30px;
                     margin-bottom: 24px;
                     box-shadow: 0 10px 25px rgba(0,0,0,0.1);
                     text-align: center;
                 }}
                 
+                .header h1 {{
+                    font-size: 2.5rem;
+                    margin-bottom: 16px;
+                    color: var(--dark);
+                }}
+                
+                .header p {{
+                    font-size: 1.2rem;
+                    color: #6B7280;
+                    font-weight: 500;
+                }}
+                
                 .stats-grid {{
                     display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
                     gap: 20px;
-                    margin: 24px 0;
+                    margin: 30px 0;
                 }}
                 
                 .stat-card {{
                     background: white;
-                    padding: 24px;
+                    padding: 30px 24px;
                     border-radius: 16px;
                     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
                     text-align: center;
+                    transition: transform 0.2s ease;
+                }}
+                
+                .stat-card:hover {{
+                    transform: translateY(-5px);
+                }}
+                
+                .stat-icon {{
+                    font-size: 3rem;
+                    margin-bottom: 16px;
+                }}
+                
+                .stat-card h3 {{
+                    font-size: 1.3rem;
+                    margin-bottom: 8px;
+                    color: var(--dark);
+                }}
+                
+                .stat-card p {{
+                    color: #6B7280;
+                    font-size: 1.1rem;
+                }}
+                
+                .status-success {{
+                    color: var(--success);
+                    font-weight: bold;
+                }}
+                
+                .status-error {{
+                    color: var(--danger);
+                    font-weight: bold;
                 }}
                 
                 .actions-grid {{
                     display: grid;
                     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
                     gap: 16px;
-                    margin: 24px 0;
+                    margin: 30px 0;
                 }}
                 
                 .btn {{
                     background: var(--primary);
                     color: white;
                     border: none;
-                    padding: 16px 24px;
+                    padding: 18px 24px;
                     border-radius: 12px;
                     font-size: 16px;
+                    font-weight: 600;
                     cursor: pointer;
                     transition: all 0.3s ease;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    gap: 8px;
+                    gap: 10px;
+                    text-decoration: none;
                 }}
                 
                 .btn:hover {{
                     transform: translateY(-2px);
-                    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.3);
+                    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
                 }}
                 
                 .btn-success {{ background: var(--success); }}
                 .btn-warning {{ background: var(--secondary); }}
+                .btn-danger {{ background: var(--danger); }}
                 
                 .content-preview {{
                     background: white;
                     border-radius: 16px;
-                    padding: 24px;
-                    margin: 24px 0;
+                    padding: 30px;
+                    margin: 30px 0;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                }}
+                
+                .content-preview h3 {{
+                    margin-bottom: 20px;
+                    color: var(--dark);
+                    font-size: 1.4rem;
+                }}
+                
+                .footer {{
+                    text-align: center;
+                    margin-top: 40px;
+                    color: white;
+                    opacity: 0.8;
                 }}
                 
                 @media (max-width: 768px) {{
-                    .container {{ padding: 12px; }}
-                    .header {{ padding: 20px; }}
-                    .stat-card {{ padding: 16px; }}
+                    .container {{ padding: 15px; }}
+                    .header {{ padding: 30px 20px; }}
+                    .header h1 {{ font-size: 2rem; }}
+                    .stat-card {{ padding: 20px 16px; }}
+                    .btn {{ padding: 16px 20px; }}
                 }}
             </style>
         </head>
         <body>
             <div class="container">
                 <div class="header">
-                    <h1 style="font-size: 2.5rem; margin-bottom: 16px;">🎪 Клуб Осознанного Долголетия</h1>
-                    <p style="font-size: 1.2rem; color: #6B7280;">Питание как инвестиция в качество жизни</p>
+                    <h1>🎪 Клуб Осознанного Долголетия</h1>
+                    <p>Питание как инвестиция в качество жизни</p>
                 </div>
                 
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <div style="font-size: 3rem; margin-bottom: 16px;">📅</div>
+                        <div class="stat-icon">📅</div>
                         <h3>{day_name_ru}</h3>
-                        <p>Тема: {ModernContentFormatter.THEMES.get(weekday[:3], {}).get('name', 'Осознанность')}</p>
+                        <p>Тема: {day_theme}</p>
                     </div>
                     
                     <div class="stat-card">
-                        <div style="font-size: 3rem; margin-bottom: 16px;">🤖</div>
+                        <div class="stat-icon">🤖</div>
                         <h3>Статус бота</h3>
-                        <p>{'✅ Активен' if bot_info.get('status') == 'success' else '❌ Ошибка'}</p>
+                        <p class="{'status-success' if bot_info.get('status') == 'success' else 'status-error'}">
+                            {bot_status}
+                        </p>
+                        {f'<p><small>@{bot_info.get("bot_username", "")}</small></p>' if bot_info.get('bot_username') else ''}
                     </div>
                     
                     <div class="stat-card">
-                        <div style="font-size: 3rem; margin-bottom: 16px;">⚡</div>
+                        <div class="stat-icon">📊</div>
                         <h3>Контент-план</h3>
-                        <p>42 поста в неделю</p>
+                        <p>45 постов в неделю</p>
                     </div>
                 </div>
                 
@@ -490,10 +759,15 @@ def modern_dashboard():
                 </div>
                 
                 <div class="content-preview">
-                    <h3 style="margin-bottom: 16px;">🎯 Быстрый предпросмотр</h3>
-                    <button class="btn" onclick="sendPreview()">
+                    <h3>🎯 Быстрый предпросмотр</h3>
+                    <button class="btn btn-success" onclick="sendPreview()">
                         📤 Отправить тестовый пост
                     </button>
+                </div>
+                
+                <div class="footer">
+                    <p>Система управления каналом @ppsupershef</p>
+                    <p>🎯 Осознанное питание • 💫 Долголетие • 🧠 Нейронаука</p>
                 </div>
             </div>
             
@@ -502,9 +776,13 @@ def modern_dashboard():
                     try {{
                         const response = await fetch('/health');
                         const data = await response.json();
-                        alert(data.status === 'healthy' ? '✅ Система работает' : '❌ Есть проблемы');
+                        if (data.status === 'healthy') {{
+                            alert('✅ Система работает отлично!\\\\n🤖 Бот активен\\\\n📊 Все компоненты готовы');
+                        }} else {{
+                            alert('❌ Есть проблемы с системой');
+                        }}
                     }} catch (error) {{
-                        alert('❌ Ошибка подключения');
+                        alert('❌ Ошибка подключения к серверу');
                     }}
                 }}
                 
@@ -519,9 +797,13 @@ def modern_dashboard():
                         try {{
                             const response = await fetch(endpoints[type]);
                             const data = await response.json();
-                            alert(data.status === 'success' ? '✅ Отправлено' : '❌ Ошибка');
+                            if (data.status === 'success') {{
+                                alert('✅ Контент успешно отправлен в канал!');
+                            }} else {{
+                                alert('❌ Ошибка отправки: ' + (data.message || 'Неизвестная ошибка'));
+                            }}
                         }} catch (error) {{
-                            alert('❌ Ошибка сети');
+                            alert('❌ Ошибка сети при отправке контента');
                         }}
                     }}
                 }}
@@ -530,22 +812,210 @@ def modern_dashboard():
                     try {{
                         const response = await fetch('/test-channel');
                         const data = await response.json();
-                        alert(data.status === 'success' ? '✅ Тест отправлен' : '❌ Ошибка');
+                        if (data.status === 'success') {{
+                            alert('✅ Тестовый пост отправлен в канал!\\\\n📨 Проверьте канал @ppsupershef');
+                        }} else {{
+                            alert('❌ Ошибка отправки тестового поста');
+                        }}
                     }} catch (error) {{
-                        alert('❌ Ошибка сети');
+                        alert('❌ Ошибка сети при отправке тестового поста');
                     }}
                 }}
+                
+                // Показать уведомление о загрузке
+                window.addEventListener('load', function() {{
+                    console.log('✅ Панель управления загружена');
+                }});
             </script>
         </body>
         </html>
-        """
+        '''
         return html
         
     except Exception as e:
         logger.error(f"Ошибка дашборда: {e}")
-        return "🚧 Система временно недоступна"
+        return """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Ошибка - Клуб Осознанного Долголетия</title>
+            <style>
+                body { 
+                    font-family: Arial, sans-serif; 
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    height: 100vh;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                    text-align: center;
+                }
+                .error-container {
+                    background: rgba(255,255,255,0.1);
+                    padding: 40px;
+                    border-radius: 20px;
+                    backdrop-filter: blur(10px);
+                }
+            </style>
+        </head>
+        <body>
+            <div class="error-container">
+                <h1>⚠️ Временные неполадки</h1>
+                <p>Система управления временно недоступна</p>
+                <p>Попробуйте обновить страницу через несколько минут</p>
+            </div>
+        </body>
+        </html>
+        """
 
-# 🚀 Запуск приложения
+@app.route('/health')
+def health_check():
+    """Проверка здоровья системы"""
+    try:
+        telegram = SecureTelegramManager()
+        bot_info = telegram.test_connection()
+        
+        return jsonify({
+            "status": "healthy" if bot_info.get('status') == 'success' else "degraded",
+            "bot_status": bot_info.get('status'),
+            "bot_username": bot_info.get('bot_username'),
+            "timestamp": datetime.now().strftime("%H:%M:%S"),
+            "message": "✅ Система работает нормально" if bot_info.get('status') == 'success' else "⚠️ Проблемы с ботом"
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": "❌ Критическая ошибка системы",
+            "timestamp": datetime.now().strftime("%H:%M:%S")
+        })
+
+@app.route('/test-channel')
+def test_channel():
+    """Тестирование канала"""
+    try:
+        telegram = SecureTelegramManager()
+        current_times = TimeZoneConverter.get_current_times()
+        
+        test_message = f"""🎪 <b>ТЕСТ СИСТЕМЫ УПРАВЛЕНИЯ</b>
+
+✅ Клуб Осознанного Долголетия @ppsupershef
+🤖 Автопостинг активирован
+📊 Контент-план: 45 постов/неделю
+🎯 Философия: Питание как инвестиция в качество жизни
+
+💫 <b>РАСПИСАНИЕ КОНТЕНТА:</b>
+• 🧠 Пн: Нейропитание для ума
+• ⚡ Вт: Энергия для достижений  
+• 🛡️ Ср: Стратегии долголетия
+• 🍽️ Чт: Гастрономия с пользой
+• 📊 Пт: Аналитика и планы
+• 🛒 Сб: Умные покупки
+• 📈 Вс: Ритуалы и мотивация
+
+🕐 <b>Время публикации:</b> {current_times['kemerovo_time']}
+
+#тест #диагностика #клуб"""
+        
+        success = telegram.send_message(test_message)
+        return jsonify({
+            "status": "success" if success else "error", 
+            "message": "Тестовое сообщение отправлено" if success else "Ошибка отправки"
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/send-breakfast')
+@rate_limit()
+def send_breakfast():
+    """Отправка завтрака"""
+    try:
+        telegram = SecureTelegramManager()
+        content_gen = EfficientContentGenerator()
+        
+        current_time = datetime.now(config.KEMEROVO_TIMEZONE)
+        weekday = current_time.strftime('%A').lower()
+        
+        content = content_gen.generate_daily_content(weekday)
+        success = telegram.send_message(content)
+        
+        return jsonify({
+            "status": "success" if success else "error",
+            "message": "Завтрак отправлен" if success else "Ошибка отправки"
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/send-shopping-list')
+@rate_limit()
+def send_shopping_list():
+    """Отправка чек-листа покупок"""
+    try:
+        telegram = SecureTelegramManager()
+        content_gen = EfficientContentGenerator()
+        
+        content = content_gen.generate_shopping_list()
+        success = telegram.send_message(content)
+        
+        return jsonify({
+            "status": "success" if success else "error",
+            "message": "Чек-лист отправлен" if success else "Ошибка отправки"
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/send-advice')
+@rate_limit()
+def send_advice():
+    """Отправка советов экспертов"""
+    try:
+        telegram = SecureTelegramManager()
+        content_gen = EfficientContentGenerator()
+        
+        content = content_gen.generate_expert_advice()
+        success = telegram.send_message(content)
+        
+        return jsonify({
+            "status": "success" if success else "error",
+            "message": "Советы отправлены" if success else "Ошибка отправки"
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/send-manual-content', methods=['POST'])
+@rate_limit()
+def send_manual_content():
+    """Отправка ручного контента"""
+    try:
+        telegram = SecureTelegramManager()
+        data = request.get_json()
+        
+        if not data or 'content' not in data:
+            return jsonify({"status": "error", "message": "Отсутствует содержимое"})
+            
+        content = data['content']
+        if not content.strip():
+            return jsonify({"status": "error", "message": "Пустое сообщение"})
+        
+        current_times = TimeZoneConverter.get_current_times()
+        content_with_footer = f"{content}\n\n🕐 Опубликовано: {current_times['kemerovo_time']}"
+        
+        success = telegram.send_message(content_with_footer)
+        return jsonify({"status": "success" if success else "error"})
+        
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({"status": "error", "message": "Endpoint not found"}), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    logger.error(f"500 Error: {str(error)}")
+    return jsonify({"status": "error", "message": "Internal server error"}), 500
+
+# 🚀 ЗАПУСК ПРИЛОЖЕНИЯ
 if __name__ == '__main__':
     logger.info("🚀 Запуск безопасной системы управления контентом")
     
