@@ -360,6 +360,91 @@ class EliteChannel:
         except Exception as e:
             return {"status": "error", "message": str(e)}
     
+    def diagnose_channel(self):
+        """Полная диагностика канала и бота"""
+        try:
+            diagnosis = {
+                "status": "running",
+                "checks": [],
+                "summary": "",
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+            
+            # Проверка 1: Токен бота
+            if not self.token:
+                diagnosis["checks"].append({"check": "Токен бота", "status": "❌ Ошибка", "details": "Токен не установлен"})
+                diagnosis["status"] = "error"
+            else:
+                diagnosis["checks"].append({"check": "Токен бота", "status": "✅ Успех", "details": "Токен установлен"})
+            
+            # Проверка 2: Доступность бота
+            bot_info = self.test_connection()
+            if bot_info["status"] == "success":
+                diagnosis["checks"].append({"check": "Доступность бота", "status": "✅ Успех", "details": f"Бот: @{bot_info['bot']}"})
+            else:
+                diagnosis["checks"].append({"check": "Доступность бота", "status": "❌ Ошибка", "details": bot_info["message"]})
+                diagnosis["status"] = "error"
+            
+            # Проверка 3: ID канала
+            if not self.channel:
+                diagnosis["checks"].append({"check": "ID канала", "status": "❌ Ошибка", "details": "ID канала не установлен"})
+                diagnosis["status"] = "error"
+            else:
+                diagnosis["checks"].append({"check": "ID канала", "status": "✅ Успех", "details": f"Канал: {self.channel}"})
+            
+            # Проверка 4: Права бота в канале
+            if self.token and self.channel:
+                try:
+                    url = f"https://api.telegram.org/bot{self.token}/getChat"
+                    payload = {'chat_id': self.channel}
+                    response = requests.post(url, json=payload, timeout=10)
+                    result = response.json()
+                    
+                    if result.get('ok'):
+                        chat_info = result['result']
+                        diagnosis["checks"].append({"check": "Права в канале", "status": "✅ Успех", "details": f"Канал: {chat_info.get('title', 'Unknown')}"})
+                    else:
+                        diagnosis["checks"].append({"check": "Права в канале", "status": "❌ Ошибка", "details": "Бот не имеет доступа к каналу"})
+                        diagnosis["status"] = "error"
+                except Exception as e:
+                    diagnosis["checks"].append({"check": "Права в канале", "status": "⚠️ Предупреждение", "details": f"Не удалось проверить: {str(e)}"})
+            
+            # Проверка 5: Количество подписчиков
+            try:
+                analytics = ChannelAnalytics(self.token, self.channel)
+                member_count = analytics.get_member_count()
+                diagnosis["checks"].append({"check": "Подписчики", "status": "✅ Успех", "details": f"Подписчиков: {member_count}"})
+            except Exception as e:
+                diagnosis["checks"].append({"check": "Подписчики", "status": "⚠️ Предупреждение", "details": f"Не удалось получить: {str(e)}"})
+            
+            # Проверка 6: Отправка тестового сообщения
+            if diagnosis["status"] != "error":
+                test_message = "🔧 Тестовое сообщение диагностики"
+                success = self.send_to_telegram(test_message)
+                if success:
+                    diagnosis["checks"].append({"check": "Отправка сообщений", "status": "✅ Успех", "details": "Тестовое сообщение отправлено"})
+                else:
+                    diagnosis["checks"].append({"check": "Отправка сообщений", "status": "❌ Ошибка", "details": "Не удалось отправить сообщение"})
+                    diagnosis["status"] = "error"
+            
+            # Сводка
+            if diagnosis["status"] == "error":
+                diagnosis["summary"] = "❌ Требуется внимание: обнаружены критические ошибки"
+            elif diagnosis["status"] == "running":
+                diagnosis["summary"] = "✅ Все системы работают нормально"
+            else:
+                diagnosis["summary"] = "⚠️ Есть предупреждения, но система работает"
+            
+            return diagnosis
+            
+        except Exception as e:
+            return {
+                "status": "error",
+                "checks": [{"check": "Общая диагностика", "status": "❌ Ошибка", "details": f"Исключение: {str(e)}"}],
+                "summary": "❌ Ошибка диагностики",
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+    
     def send_poll(self, poll_type='content_preference'):
         """Отправка опроса в канал"""
         try:
@@ -1549,12 +1634,18 @@ def index():
                     .btn-danger {{ background: #e74c3c; }}
                     .btn-success {{ background: #27ae60; }}
                     .btn-warning {{ background: #f39c12; }}
+                    .btn-info {{ background: #17a2b8; }}
                     .content-section {{ background: white; padding: 20px; border-radius: 10px; margin: 20px 0; }}
                     .quick-actions {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 20px 0; }}
                     .content-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 20px 0; }}
                     .form-group {{ margin: 10px 0; }}
                     input, textarea, select {{ width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; }}
                     .day-info {{ background: #9b59b6; color: white; padding: 15px; border-radius: 5px; margin: 10px 0; }}
+                    .diagnosis-result {{ background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 15px; margin: 10px 0; }}
+                    .check-item {{ margin: 5px 0; padding: 5px; border-radius: 3px; }}
+                    .check-success {{ background: #d4edda; color: #155724; }}
+                    .check-error {{ background: #f8d7da; color: #721c24; }}
+                    .check-warning {{ background: #fff3cd; color: #856404; }}
                 </style>
             </head>
             <body>
@@ -1572,6 +1663,7 @@ def index():
                     <div class="quick-actions">
                         <button class="btn" onclick="testChannel()">📊 Статистика</button>
                         <button class="btn" onclick="testConnection()">Тест канала</button>
+                        <button class="btn btn-info" onclick="diagnoseChannel()">🔧 Диагностика канала</button>
                         <button class="btn" onclick="showDebug()">Отладка</button>
                         <button class="btn" onclick="healthCheck()">Health Check</button>
                         <button class="btn" onclick="showFormatPreview()">Предпросмотр формата</button>
@@ -1597,6 +1689,11 @@ def index():
                             <textarea id="manualContent" rows="6" placeholder="Введите текст сообщения для Telegram..."></textarea>
                             <button class="btn btn-success" onclick="sendManualContent()">📤 Отправить в канал</button>
                         </div>
+                    </div>
+                    
+                    <div id="diagnosisResult" class="diagnosis-result" style="display: none;">
+                        <h3>🔧 Результаты диагностики канала</h3>
+                        <div id="diagnosisContent"></div>
                     </div>
                     
                     <div class="stats-card">
@@ -1636,6 +1733,35 @@ def index():
                         fetch('/test-channel')
                             .then(response => response.json())
                             .then(data => alert('Тест канала: ' + (data.status === 'success' ? '✅ Успешно' : '❌ Ошибка')));
+                    }}
+
+                    function diagnoseChannel() {{
+                        fetch('/diagnose-channel')
+                            .then(response => response.json())
+                            .then(data => {{
+                                const resultDiv = document.getElementById('diagnosisResult');
+                                const contentDiv = document.getElementById('diagnosisContent');
+                                
+                                let html = `<h4>${data.summary}</h4>`;
+                                html += `<p><strong>Время диагностики:</strong> ${data.timestamp}</p>`;
+                                html += `<h5>Проверки:</h5>`;
+                                
+                                data.checks.forEach(check => {{
+                                    let statusClass = 'check-warning';
+                                    if (check.status.includes('✅')) statusClass = 'check-success';
+                                    if (check.status.includes('❌')) statusClass = 'check-error';
+                                    
+                                    html += `<div class="check-item ${statusClass}">
+                                        <strong>${check.check}</strong>: ${check.status} - ${check.details}
+                                    </div>`;
+                                }});
+                                
+                                contentDiv.innerHTML = html;
+                                resultDiv.style.display = 'block';
+                                
+                                // Прокрутка к результатам
+                                resultDiv.scrollIntoView({{ behavior: 'smooth' }});
+                            }});
                     }}
 
                     function sendPublicReport() {{
@@ -1760,6 +1886,20 @@ def test_channel():
     
     success = elite_channel.send_to_telegram(test_message)
     return jsonify({"status": "success" if success else "error"})
+
+@app.route('/diagnose-channel')
+def diagnose_channel():
+    """Полная диагностика канала"""
+    try:
+        diagnosis = elite_channel.diagnose_channel()
+        return jsonify(diagnosis)
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "checks": [{"check": "Общая диагностика", "status": "❌ Ошибка", "details": f"Исключение: {str(e)}"}],
+            "summary": "❌ Ошибка диагностики",
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        })
 
 @app.route('/health')
 def health_check():
