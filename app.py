@@ -183,20 +183,6 @@ class ContentFormatter:
         
         return formatted_content
 
-    @staticmethod
-    def format_footer():
-        """Форматирует нижнюю часть сообщения"""
-        reactions_line = " | ".join([f"{reaction['emoji']} {reaction['text']}" for reaction in ContentFormatter.REACTIONS])
-        
-        return f"""
-        
-📢 <b>Подписывайтесь на канал!</b> → @ppsupershef
-💬 <b>Обсуждаем в комментариях!</b> → @ppsupershef_chat
-
-{reactions_line}
-
-🔄 <b>Поделитесь с друзьями!</b> → @ppsupershef"""
-
 class TimeZoneConverter:
     """Класс для конвертации времени между часовыми поясами"""
     
@@ -1653,20 +1639,20 @@ def index():
                                     resultsHtml = `
                                         <div class="diagnostics-header">
                                             <h3>📊 Результаты диагностики</h3>
-                                            <p><small>Время проверки: {data.timestamp}</small></p>
+                                            <p><small>Время проверки: ${data.timestamp}</small></p>
                                         </div>
                                         
                                         <div class="diagnostics-steps">
                                             <h4>📋 Выполненные проверки:</h4>
                                             <ul>
-                                                {data.steps.map(step => `<li>${step}</li>`).join('')}
+                                                ${data.steps.map(step => `<li>${step}</li>`).join('')}
                                             </ul>
                                         </div>
                                         
                                         <div class="diagnostics-success" style="color: #27ae60; margin: 15px 0;">
                                             <h4>✅ Успешные проверки:</h4>
                                             <ul>
-                                                {data.success.map(item => `<li>${item}</li>`).join('')}
+                                                ${data.success.map(item => `<li>${item}</li>`).join('')}
                                             </ul>
                                         </div>
                                     `;
@@ -1676,7 +1662,7 @@ def index():
                                             <div class="diagnostics-errors" style="color: #e74c3c; margin: 15px 0;">
                                                 <h4>❌ Обнаруженные ошибки:</h4>
                                                 <ul>
-                                                    {data.errors.map(error => `<li>${error}</li>`).join('')}
+                                                    ${data.errors.map(error => `<li>${error}</li>`).join('')}
                                                 </ul>
                                             </div>
                                         `;
@@ -1691,14 +1677,14 @@ def index():
                                     resultsHtml += `
                                         <div class="channel-status" style="margin-top: 20px; padding: 15px; background: #ecf0f1; border-radius: 5px;">
                                             <h4>📈 Статус канала:</h4>
-                                            <p><strong>Подписчиков:</strong> {data.member_count}</p>
-                                            <p><strong>Статус бота:</strong> {getStatusText(data.bot_status)}</p>
-                                            <p><strong>Доступ к каналу:</strong> {getStatusText(data.channel_status)}</p>
+                                            <p><strong>Подписчиков:</strong> ${data.member_count}</p>
+                                            <p><strong>Статус бота:</strong> ${getStatusText(data.bot_status)}</p>
+                                            <p><strong>Доступ к каналу:</strong> ${getStatusText(data.channel_status)}</p>
                                         </div>
                                     `;
                                     
                                 }} else {{
-                                    resultsHtml = `<div class="diagnostics-error">❌ Ошибка диагностики: {data.message}</div>`;
+                                    resultsHtml = `<div class="diagnostics-error">❌ Ошибка диагностики: ${data.message}</div>`;
                                 }}
                                 
                                 document.getElementById('diagnosticsResults').innerHTML = resultsHtml;
