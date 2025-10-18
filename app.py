@@ -1767,7 +1767,7 @@ def index():
                                         <div class="diagnostics-steps">
                                             <h4>📋 Выполненные проверки:</h4>
                                             <ul>
-                                                ${data.steps.map(step => `<li>${step}</li>`).join('')}
+                                                ${"".join([f"<li>{step}</li>" for step in data.steps])}
                                             </ul>
                                         </div>
                                         
@@ -2224,3 +2224,4 @@ if __name__ == '__main__':
         port=port,
         debug=False
     )
+
