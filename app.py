@@ -402,7 +402,15 @@ class ChannelAnalytics:
         """Генерация отчета по engagement"""
         total_posts = len(self.post_metrics)
         if total_posts == 0:
-            return "Нет данных для анализа"
+            return {
+                'total_posts': 0,
+                'engagement_metrics': {
+                    'reactions': 0, 'comments': 0, 'shares': 0, 
+                    'chat_clicks': 0, 'avg_relevance': 75
+                },
+                'engagement_rate': 0,
+                'chat_conversion_rate': 0
+            }
         
         total_engagement = {
             'reactions': 0,
@@ -424,7 +432,7 @@ class ChannelAnalytics:
         return {
             'total_posts': total_posts,
             'engagement_metrics': total_engagement,
-            'engagement_rate': (total_engagement['reactions'] + total_engagement['comments']) / total_posts,
+            'engagement_rate': (total_engagement['reactions'] + total_engagement['comments']) / total_posts if total_posts > 0 else 0,
             'chat_conversion_rate': total_engagement['chat_clicks'] / total_posts if total_posts > 0 else 0
         }
     
@@ -1444,33 +1452,33 @@ def index():
         current_weekday = datetime.now(Config.KEMEROVO_TIMEZONE).weekday()
         current_day_name = weekday_names[current_weekday]
         
-        html = f"""
+        html = """
         <html>
             <head>
                 <title>Система управления @ppsupershef</title>
                 <meta charset="utf-8">
                 <style>
-                    body {{ font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }}
-                    .container {{ max-width: 1200px; margin: 0 auto; }}
-                    .header {{ background: #2c3e50; color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }}
-                    .stats-card {{ background: #3498db; color: white; padding: 15px; border-radius: 5px; margin: 10px 0; }}
-                    .engagement-card {{ background: #9b59b6; color: white; padding: 15px; border-radius: 5px; margin: 10px 0; }}
-                    .time-info {{ background: #27ae60; color: white; padding: 15px; border-radius: 5px; margin: 10px 0; }}
-                    .btn {{ display: inline-block; padding: 10px 20px; margin: 5px; background: #3498db; color: white; text-decoration: none; border-radius: 5px; border: none; cursor: pointer; }}
-                    .btn-danger {{ background: #e74c3c; }}
-                    .btn-success {{ background: #27ae60; }}
-                    .btn-warning {{ background: #f39c12; }}
-                    .content-section {{ background: white; padding: 20px; border-radius: 10px; margin: 20px 0; }}
-                    .quick-actions {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 20px 0; }}
-                    .content-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 20px 0; }}
-                    .form-group {{ margin: 10px 0; }}
-                    input, textarea, select {{ width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; }}
-                    .day-info {{ background: #e67e22; color: white; padding: 15px; border-radius: 5px; margin: 10px 0; }}
-                    .metric-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 20px 0; }}
-                    .metric-card {{ background: white; padding: 15px; border-radius: 5px; border-left: 4px solid #3498db; }}
+                    body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+                    .container { max-width: 1200px; margin: 0 auto; }
+                    .header { background: #2c3e50; color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+                    .stats-card { background: #3498db; color: white; padding: 15px; border-radius: 5px; margin: 10px 0; }
+                    .engagement-card { background: #9b59b6; color: white; padding: 15px; border-radius: 5px; margin: 10px 0; }
+                    .time-info { background: #27ae60; color: white; padding: 15px; border-radius: 5px; margin: 10px 0; }
+                    .btn { display: inline-block; padding: 10px 20px; margin: 5px; background: #3498db; color: white; text-decoration: none; border-radius: 5px; border: none; cursor: pointer; }
+                    .btn-danger { background: #e74c3c; }
+                    .btn-success { background: #27ae60; }
+                    .btn-warning { background: #f39c12; }
+                    .content-section { background: white; padding: 20px; border-radius: 10px; margin: 20px 0; }
+                    .quick-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 20px 0; }
+                    .content-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 20px 0; }
+                    .form-group { margin: 10px 0; }
+                    input, textarea, select { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; }
+                    .day-info { background: #e67e22; color: white; padding: 15px; border-radius: 5px; margin: 10px 0; }
+                    .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 20px 0; }
+                    .metric-card { background: white; padding: 15px; border-radius: 5px; border-left: 4px solid #3498db; }
                     
                     /* Стили для модального окна */
-                    .modal {{
+                    .modal {
                         display: none;
                         position: fixed;
                         z-index: 1000;
@@ -1479,8 +1487,8 @@ def index():
                         width: 100%;
                         height: 100%;
                         background-color: rgba(0,0,0,0.5);
-                    }}
-                    .modal-content {{
+                    }
+                    .modal-content {
                         background-color: white;
                         margin: 5% auto;
                         padding: 20px;
@@ -1489,22 +1497,22 @@ def index():
                         max-width: 800px;
                         max-height: 80vh;
                         overflow-y: auto;
-                    }}
-                    .close {{
+                    }
+                    .close {
                         color: #aaa;
                         float: right;
                         font-size: 28px;
                         font-weight: bold;
                         cursor: pointer;
-                    }}
-                    .close:hover {{
+                    }
+                    .close:hover {
                         color: black;
-                    }}
-                    .diagnostics-loading {{
+                    }
+                    .diagnostics-loading {
                         text-align: center;
                         padding: 20px;
-                    }}
-                    .spinner {{
+                    }
+                    .spinner {
                         border: 4px solid #f3f3f3;
                         border-top: 4px solid #3498db;
                         border-radius: 50%;
@@ -1512,27 +1520,27 @@ def index():
                         height: 40px;
                         animation: spin 2s linear infinite;
                         margin: 20px auto;
-                    }}
-                    @keyframes spin {{
-                        0% {{ transform: rotate(0deg); }}
-                        100% {{ transform: rotate(360deg); }}
-                    }}
+                    }
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
                     .diagnostics-steps ul, 
                     .diagnostics-success ul, 
-                    .diagnostics-errors ul {{
+                    .diagnostics-errors ul {
                         margin-left: 20px;
-                    }}
-                    .diagnostics-header {{
+                    }
+                    .diagnostics-header {
                         border-bottom: 2px solid #3498db;
                         padding-bottom: 10px;
                         margin-bottom: 20px;
-                    }}
-                    .modal-actions {{
+                    }
+                    .modal-actions {
                         margin-top: 20px;
                         text-align: right;
                         border-top: 1px solid #ddd;
                         padding-top: 15px;
-                    }}
+                    }
                 </style>
             </head>
             <body>
@@ -1543,8 +1551,8 @@ def index():
                     </div>
                     
                     <div class="day-info">
-                        <h2>📅 Сегодня: {current_day_name}</h2>
-                        <p>Тема дня: {content_scheduler._get_day_theme(current_weekday)}</p>
+                        <h2>📅 Сегодня: """ + current_day_name + """</h2>
+                        <p>Тема дня: """ + content_scheduler._get_day_theme(current_weekday) + """</p>
                     </div>
                     
                     <div class="quick-actions">
@@ -1580,7 +1588,7 @@ def index():
                     
                     <div class="stats-card">
                         <h2>📊 СТАТИСТИКА КАНАЛА</h2>
-                        <p><strong>👥 Подписчиков: {member_count}</strong></p>
+                        <p><strong>👥 Подписчиков: """ + str(member_count) + """</strong></p>
                         <p><strong>📈 Контент: 28 постов/неделя</strong></p>
                         <p><strong>🎯 Философия: Осознанное долголетие</strong></p>
                     </div>
@@ -1590,27 +1598,27 @@ def index():
                         <div class="metric-grid">
                             <div class="metric-card">
                                 <h3>🎯 Engagement Rate</h3>
-                                <p><strong>{engagement_report.get('engagement_rate', 0):.1f}%</strong></p>
+                                <p><strong>""" + f"{engagement_report.get('engagement_rate', 0):.1f}" + """%</strong></p>
                             </div>
                             <div class="metric-card">
                                 <h3>💬 Конверсия в чат</h3>
-                                <p><strong>{engagement_report.get('chat_conversion_rate', 0):.1f}%</strong></p>
+                                <p><strong>""" + f"{engagement_report.get('chat_conversion_rate', 0):.1f}" + """%</strong></p>
                             </div>
                             <div class="metric-card">
                                 <h3>⭐ Релевантность</h3>
-                                <p><strong>{engagement_report['engagement_metrics'].get('avg_relevance', 0):.0f}/100</strong></p>
+                                <p><strong>""" + f"{engagement_report['engagement_metrics'].get('avg_relevance', 0):.0f}" + """/100</strong></p>
                             </div>
                             <div class="metric-card">
                                 <h3>📝 Всего постов</h3>
-                                <p><strong>{engagement_report.get('total_posts', 0)}</strong></p>
+                                <p><strong>""" + str(engagement_report.get('total_posts', 0)) + """</strong></p>
                             </div>
                         </div>
                     </div>
                     
                     <div class="time-info">
                         <h3>🌍 ИНФОРМАЦИЯ О ВРЕМЕНИ</h3>
-                        <p>Сервер: <strong>{current_times['server_time']}</strong> • Кемерово: <strong>{current_times['kemerovo_time']}</strong></p>
-                        <p>Следующая публикация: <strong>{next_kemerovo_time} - {next_event['name']}</strong></p>
+                        <p>Сервер: <strong>""" + current_times['server_time'] + """</strong> • Кемерово: <strong>""" + current_times['kemerovo_time'] + """</strong></p>
+                        <p>Следующая публикация: <strong>""" + next_kemerovo_time + """ - """ + next_event['name'] + """</strong></p>
                     </div>
                 </div>
 
@@ -1641,109 +1649,109 @@ def index():
                 </div>
 
                 <script>
-                    function testConnection() {{
+                    function testConnection() {
                         fetch('/test-channel')
                             .then(response => response.json())
                             .then(data => alert('Результат теста: ' + (data.status === 'success' ? '✅ Успешно' : '❌ Ошибка')));
-                    }}
+                    }
 
-                    function healthCheck() {{
+                    function healthCheck() {
                         fetch('/health')
                             .then(response => response.json())
                             .then(data => alert('Статус системы: ' + (data.status === 'healthy' ? '✅ Здорова' : '❌ Проблемы')));
-                    }}
+                    }
 
-                    function showDebug() {{
+                    function showDebug() {
                         fetch('/debug')
                             .then(response => response.json())
                             .then(data => alert('Отладка: ' + JSON.stringify(data, null, 2)));
-                    }}
+                    }
 
-                    function testChannel() {{
+                    function testChannel() {
                         fetch('/test-channel')
                             .then(response => response.json())
                             .then(data => alert('Тест канала: ' + (data.status === 'success' ? '✅ Успешно' : '❌ Ошибка')));
-                    }}
+                    }
 
-                    function sendPublicReport() {{
+                    function sendPublicReport() {
                         fetch('/send-public-report')
                             .then(response => response.json())
                             .then(data => alert('Отчет: ' + (data.status === 'success' ? '✅ Отправлен' : '❌ Ошибка')));
-                    }}
+                    }
 
-                    function sendPoll() {{
+                    function sendPoll() {
                         fetch('/send-poll')
                             .then(response => response.json())
                             .then(data => alert('Опрос: ' + (data.status === 'success' ? '✅ Создан' : '❌ Ошибка')));
-                    }}
+                    }
 
-                    function sendVisualContent() {{
+                    function sendVisualContent() {
                         fetch('/send-visual-content')
                             .then(response => response.json())
                             .then(data => alert('Визуальный контент: ' + (data.status === 'success' ? '✅ Отправлен' : '❌ Ошибка')));
-                    }}
+                    }
 
-                    function sendShoppingList() {{
+                    function sendShoppingList() {
                         fetch('/send-shopping-list')
                             .then(response => response.json())
                             .then(data => alert('Чек-лист: ' + (data.status === 'success' ? '✅ Отправлен' : '❌ Ошибка')));
-                    }}
+                    }
 
-                    function showFormatPreview() {{
+                    function showFormatPreview() {
                         fetch('/format-preview')
                             .then(response => response.json())
-                            .then(data => {{
-                                if (data.status === 'success') {{
+                            .then(data => {
+                                if (data.status === 'success') {
                                     alert('Предпросмотр формата отправлен в канал');
-                                }} else {{
+                                } else {
                                     alert('Ошибка: ' + data.message);
-                                }}
-                            }});
-                    }}
+                                }
+                            });
+                    }
 
-                    function sendContent(type) {{
-                        const endpoints = {{
+                    function sendContent(type) {
+                        const endpoints = {
                             'breakfast': '/send-breakfast',
                             'lunch': '/send-lunch', 
                             'science': '/send-science',
                             'interval': '/send-interval',
                             'dinner': '/send-dinner',
                             'advice': '/send-advice'
-                        }};
+                        };
 
-                        if (endpoints[type]) {{
+                        if (endpoints[type]) {
                             fetch(endpoints[type])
                                 .then(response => response.json())
                                 .then(data => alert('Контент отправлен: ' + (data.status === 'success' ? '✅ Успешно' : '❌ Ошибка')));
-                        }}
-                    }}
+                        }
+                    }
 
-                    function sendManualContent() {{
+                    function sendManualContent() {
                         const content = document.getElementById('manualContent').value;
-                        if (!content) {{
+                        if (!content) {
                             alert('Введите текст сообщения');
                             return;
-                        }}
+                        }
 
-                        fetch('/send-manual-content', {{
+                        fetch('/send-manual-content', {
                             method: 'POST',
-                            headers: {{
+                            headers: {
                                 'Content-Type': 'application/json',
-                            }},
-                            body: JSON.stringify({{ content: content }})
-                        }})
+                            },
+                            body: JSON.stringify({ content: content })
+                        })
                         .then(response => response.json())
-                        .then(data => {{
-                            if (data.status === 'success') {{
+                        .then(data => {
+                            if (data.status === 'success') {
                                 alert('✅ Сообщение отправлено в канал');
                                 document.getElementById('manualContent').value = '';
-                            }} else {{
+                            } else {
                                 alert('❌ Ошибка: ' + data.message);
-                            }}
-                        }});
-                    }}
+                            }
+                        });
+                    }
 
-                    function runChannelDiagnostics() {{
+                    function runChannelDiagnostics() {
                         document.getElementById('diagnosticsModal').style.display = 'block';
                         document.getElementById('diagnosticsResults').innerHTML = `
                             <div class="diagnostics-loading">
@@ -1754,10 +1762,10 @@ def index():
                         
                         fetch('/channel-diagnostics')
                             .then(response => response.json())
-                            .then(data => {{
+                            .then(data => {
                                 let resultsHtml = '';
                                 
-                                if (data.status === 'completed') {{
+                                if (data.status === 'completed') {
                                     resultsHtml = `
                                         <div class="diagnostics-header">
                                             <h3>📊 Результаты диагностики</h3>
@@ -1767,33 +1775,33 @@ def index():
                                         <div class="diagnostics-steps">
                                             <h4>📋 Выполненные проверки:</h4>
                                             <ul>
-                                                ${"".join([f"<li>{step}</li>" for step in data.steps])}
+                                                ${data.steps ? data.steps.map(step => '<li>' + step + '</li>').join('') : ''}
                                             </ul>
                                         </div>
                                         
                                         <div class="diagnostics-success" style="color: #27ae60; margin: 15px 0;">
                                             <h4>✅ Успешные проверки:</h4>
                                             <ul>
-                                                ${data.success.map(item => `<li>${item}</li>`).join('')}
+                                                ${data.success ? data.success.map(item => '<li>' + item + '</li>').join('') : ''}
                                             </ul>
                                         </div>
                                     `;
                                     
-                                    if (data.errors && data.errors.length > 0) {{
+                                    if (data.errors && data.errors.length > 0) {
                                         resultsHtml += `
                                             <div class="diagnostics-errors" style="color: #e74c3c; margin: 15px 0;">
                                                 <h4>❌ Обнаруженные ошибки:</h4>
                                                 <ul>
-                                                    ${data.errors.map(error => `<li>${error}</li>`).join('')}
+                                                    ${data.errors.map(error => '<li>' + error + '</li>').join('')}
                                                 </ul>
                                             </div>
                                         `;
                                         
                                         // Показываем секцию исправления токена если есть ошибка бота
-                                        if (data.bot_status === 'token_error' || data.bot_status === 'connection_error') {{
+                                        if (data.bot_status === 'token_error' || data.bot_status === 'connection_error') {
                                             document.getElementById('tokenFixSection').style.display = 'block';
-                                        }}
-                                    }}
+                                        }
+                                    }
                                     
                                     // Статус канала и метрики
                                     resultsHtml += `
@@ -1812,21 +1820,19 @@ def index():
                                         </div>
                                     `;
                                     
-                                }} else {{
-                                    resultsHtml = `<div class="diagnostics-error">❌ Ошибка диагностики: ${data.message}</div>`;
-                                }}
+                                } else {
+                                    resultsHtml = '<div class="diagnostics-error">❌ Ошибка диагностики: ' + data.message + '</div>';
+                                }
                                 
                                 document.getElementById('diagnosticsResults').innerHTML = resultsHtml;
-                            }})
-                            .catch(error => {{
-                                document.getElementById('diagnosticsResults').innerHTML = `
-                                    <div class="diagnostics-error">❌ Ошибка загрузки диагностики: ${error}</div>
-                                `;
-                            }});
-                    }}
+                            })
+                            .catch(error => {
+                                document.getElementById('diagnosticsResults').innerHTML = '<div class="diagnostics-error">❌ Ошибка загрузки диагностики: ' + error + '</div>';
+                            });
+                    }
 
-                    function getStatusText(status) {{
-                        const statusMap = {{
+                    function getStatusText(status) {
+                        const statusMap = {
                             'active': '✅ Активен',
                             'token_ok': '✅ Токен валиден',
                             'accessible': '✅ Доступен',
@@ -1834,51 +1840,51 @@ def index():
                             'connection_error': '❌ Ошибка подключения',
                             'access_error': '❌ Ошибка доступа',
                             'unknown': '⚪ Неизвестно'
-                        }};
+                        };
                         return statusMap[status] || status;
-                    }}
+                    }
 
-                    function updateBotToken() {{
+                    function updateBotToken() {
                         const newToken = document.getElementById('newBotToken').value.trim();
                         
-                        if (!newToken) {{
+                        if (!newToken) {
                             alert('Введите новый токен бота');
                             return;
-                        }}
+                        }
                         
-                        fetch('/fix-bot-token', {{
+                        fetch('/fix-bot-token', {
                             method: 'POST',
-                            headers: {{
+                            headers: {
                                 'Content-Type': 'application/json',
-                            }},
-                            body: JSON.stringify({{ token: newToken }})
-                        }})
+                            },
+                            body: JSON.stringify({ token: newToken })
+                        })
                         .then(response => response.json())
-                        .then(data => {{
-                            if (data.status === 'success') {{
+                        .then(data => {
+                            if (data.status === 'success') {
                                 alert('✅ Токен успешно обновлен!');
                                 document.getElementById('tokenFixSection').style.display = 'none';
                                 runChannelDiagnostics(); // Перезапускаем диагностику
-                            }} else {{
+                            } else {
                                 alert('❌ Ошибка: ' + data.message);
-                            }}
-                        }})
-                        .catch(error => {{
+                            }
+                        })
+                        .catch(error => {
                             alert('❌ Ошибка обновления токена: ' + error);
-                        }});
-                    }}
+                        });
+                    }
 
-                    function closeDiagnostics() {{
+                    function closeDiagnostics() {
                         document.getElementById('diagnosticsModal').style.display = 'none';
-                    }}
+                    }
 
                     // Закрытие модального окна при клике вне его
-                    window.onclick = function(event) {{
+                    window.onclick = function(event) {
                         const modal = document.getElementById('diagnosticsModal');
-                        if (event.target === modal) {{
+                        if (event.target === modal) {
                             closeDiagnostics();
-                        }}
-                    }}
+                        }
+                    }
                 </script>
             </body>
         </html>
@@ -2214,14 +2220,14 @@ if __name__ == '__main__':
     
     SecureLogger.safe_log(f"🚀 Запуск Клуба Осознанного Долголетия: @ppsupershef")
     SecureLogger.safe_log(f"🎯 Философия: Осознанное питание как инвестиция в качество жизни")
+    SecureLogger.safe_log(f"📊 Контент-план: 28 постов в неделю (оптимизировано)")
+    SecureLogger.safe_log(f"🛡️ Безопасность: Rate limiting и защита токенов активированы")
     
-    # Получаем порт из переменной окружения (для хостингов)
+    # Получаем порт из переменной окружения (для Render)
     port = int(os.environ.get('PORT', 10000))
     
-    # Запускаем Flask
     app.run(
         host='0.0.0.0',
         port=port,
         debug=False
     )
-
