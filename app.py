@@ -69,7 +69,7 @@ class ServiceMonitor:
             "uptime_seconds": (datetime.now() - self.start_time).total_seconds(),
             "requests_handled": self.request_count,
             "keep_alive_count": self.keep_alive_count,
-            "last_keep_alive": self.last_keep_alive.isoformat() if self.last_keep_alive else "Never",
+            "last_keep_alive": self.last_keep_alive.isoformat() if self.last_keep_alive else None,
             "timestamp": datetime.now().isoformat()
         }
 
@@ -335,6 +335,19 @@ class TelegramManager:
     
     def send_message(self, text, parse_mode='HTML'):
         try:
+            # Определяем источник сообщения
+            source = "manual" if "ТЕСТОВЫЙ ПОСТ" in text or "РУЧНОЙ ПОСТ" in text else "scheduled"
+            logger.info(f"📤 [{source}] Попытка отправки сообщения ({len(text)} символов)")
+            
+            # Проверка конфигурации
+            if not self.token or self.token == 'your-telegram-bot-token':
+                logger.error("❌ Токен бота не настроен! Проверьте .env файл")
+                return False
+                
+            if not self.channel:
+                logger.error("❌ ID канала не настроен!")
+                return False
+
             content_hash = hashlib.md5(text.encode()).hexdigest()
             if content_hash in self.sent_hashes:
                 logger.warning("⚠️ Попытка отправить дубликат контента")
@@ -348,19 +361,36 @@ class TelegramManager:
                 'disable_web_page_preview': False
             }
             
+            logger.info(f"🔗 Отправка запроса к Telegram API...")
             response = requests.post(url, json=payload, timeout=30)
+            
+            # Детальная обработка ответа
+            logger.info(f"📡 Статус ответа: {response.status_code}")
+            
+            if response.status_code != 200:
+                logger.error(f"❌ HTTP ошибка: {response.status_code} - {response.text}")
+                return False
+                
             result = response.json()
+            logger.info(f"📨 Ответ Telegram: {result}")
             
             if result.get('ok'):
                 self.sent_hashes.add(content_hash)
-                logger.info(f"✅ Сообщение отправлено в канал")
+                logger.info(f"✅ [{source}] Сообщение успешно отправлено в канал")
                 return True
             else:
-                logger.error(f"❌ Ошибка отправки: {result}")
+                error_description = result.get('description', 'Неизвестная ошибка')
+                logger.error(f"❌ Ошибка Telegram API: {error_description}")
                 return False
                 
+        except requests.exceptions.Timeout:
+            logger.error("❌ Таймаут при отправке сообщения")
+            return False
+        except requests.exceptions.ConnectionError:
+            logger.error("❌ Ошибка соединения с Telegram API")
+            return False
         except Exception as e:
-            logger.error(f"❌ Исключение при отправке: {str(e)}")
+            logger.error(f"❌ Критическая ошибка при отправке: {str(e)}")
             return False
     
     def get_member_count(self):
@@ -476,7 +506,7 @@ class ContentGenerator:
 • Сметана 15% - для смазывания
 
 Детальное приготовление (20 мин + 25 мин выпекание):
-1. Творог протереть через сито для однородности
+1. Творог протереть через сино для однородности
 2. Добавить яйца, мед, ванилин - тщательно перемешать
 3. Миндаль измельчить, добавить в творожную массу
 4. Добавить семена чиа, оставить на 10 минут для набухания
@@ -492,7 +522,7 @@ class ContentGenerator:
 • ⏱️ На весь день: энергии хватит до обеда"""
         
         return self.visual_manager.generate_attractive_post(
-            "💪 БЕЛКОВЫЙ ЗАВТРАк: ТВОРОЖНАЯ ЗАПЕКАНКА С МИНДАЛЕМ",
+            "💪 БЕЛКОВЫЙ ЗАВТРАК: ТВОРОЖНАЯ ЗАПЕКАНКА С МИНДАЛЕМ",
             content,
             "protein_breakfast",
             benefits
@@ -578,7 +608,7 @@ class ContentGenerator:
 
 Ингредиенты для семейной готовки:
 • Чечевица красная - 300 г
-• Брокколи - 300 г
+• Брокколи - 300 g
 • Лук - 1 шт
 • Морковь - 1 шт
 • Яйцо - 2 шт
@@ -622,7 +652,7 @@ class ContentGenerator:
 🍰 ТВОРОЖНО-БАНАНОВЫЕ РОЛЛЫ С СЕМЕНАМИ ЧИА
 
 Ингредиенты для радости:
-• Творог 5% - 400 г
+• Творог 5% - 400 g
 • Бананы - 3 шт
 • Мед - 2 ст.л.
 • Семена чиа - 1 ст.л.
@@ -691,8 +721,6 @@ class ContentGenerator:
             benefits
         )
 
-    # НОВЫЕ МЕТОДЫ ДЛЯ СОВЕТОВ НУТРИЦИОЛОГА
-    
     def generate_neuro_advice(self):
         content = """
 🧠 КАК ЕДА ВЛИЯЕТ НА ВАШ МОЗГ
@@ -835,7 +863,7 @@ class ContentGenerator:
 • ❌ ВЕЧЕРОМ - ограничить простые углеводы
 
 🎯 ПРАВИЛО:
-80% сложных углеводов + 20% простых!
+80% сложных углеводы + 20% простых!
 """
         
         benefits = """• ⚡ Стабильная энергия в течение дня
@@ -1540,6 +1568,7 @@ def smart_dashboard():
                         <h3>🔧 Быстрые действия</h3>
                         <div class="actions-grid">
                             <button class="btn" onclick="testChannel()">📤 Тест канала</button>
+                            <button class="btn btn-success" onclick="testQuickPost()">🧪 Тест отправки</button>
                             <button class="btn" onclick="sendPoll()">🔄 Опрос</button>
                             <button class="btn btn-success" onclick="sendReport()">📊 Отчет</button>
                             <button class="btn" onclick="sendVisual()">🎨 Визуал</button>
@@ -1599,6 +1628,26 @@ def smart_dashboard():
                     }});
                 }}
                 
+                function testQuickPost() {{
+                    const btn = event.target;
+                    const originalText = btn.textContent;
+                    btn.textContent = '⏳ Тест...';
+                    btn.disabled = true;
+                    
+                    fetch('/test-quick-post')
+                        .then(r => r.json())
+                        .then(data => {{
+                            alert(data.status === 'success' ? '✅ Тестовый пост отправлен!' : '❌ Ошибка: ' + data.message);
+                        }})
+                        .catch(error => {{
+                            alert('❌ Ошибка сети: ' + error);
+                        }})
+                        .finally(() => {{
+                            btn.textContent = originalText;
+                            btn.disabled = false;
+                        }});
+                }}
+                
                 function sendPoll() {{
                     fetch('/send-poll').then(r => r.json()).then(data => {{
                         alert(data.status === 'success' ? '✅ Опрос создан!' : '❌ Ошибка создания опроса');
@@ -1624,14 +1673,30 @@ def smart_dashboard():
                 }}
                 
                 function showManualPost() {{
-                    const content = prompt('Введите текст поста:');
+                    const content = prompt('Введите текст поста (поддерживается HTML разметка):');
                     if (content) {{
-                        fetch('/manual-post', {{
+                        // Показываем индикатор загрузки
+                        const btn = event.target;
+                        const originalText = btn.textContent;
+                        btn.textContent = '⏳ Отправка...';
+                        btn.disabled = true;
+                        
+                        fetch('/quick-post', {{
                             method: 'POST',
                             headers: {{'Content-Type': 'application/json'}},
                             body: JSON.stringify({{content: content}})
                         }}).then(r => r.json()).then(data => {{
-                            alert(data.status === 'success' ? '✅ Пост отправлен!' : '❌ Ошибка отправки');
+                            if (data.status === 'success') {{
+                                alert('✅ Пост успешно отправлен в канал!');
+                            }} else {{
+                                alert('❌ Ошибка: ' + (data.message || 'Неизвестная ошибка'));
+                            }}
+                        }}).catch(error => {{
+                            alert('❌ Ошибка сети: ' + error);
+                        }}).finally(() => {{
+                            // Восстанавливаем кнопку
+                            btn.textContent = originalText;
+                            btn.disabled = false;
                         }});
                     }}
                 }}
@@ -1766,6 +1831,65 @@ def manual_post():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
+# НОВЫЕ МАРШРУТЫ ДЛЯ РУЧНОЙ ОТПРАВКИ
+@app.route('/quick-post', methods=['POST'])
+@rate_limit
+def quick_post():
+    """Упрощенный маршрут для ручной отправки из дашборда"""
+    try:
+        data = request.get_json()
+        content = data.get('content', '')
+        
+        if not content:
+            return jsonify({"status": "error", "message": "Пустое сообщение"})
+        
+        # Добавляем временную метку
+        current_times = TimeManager.get_current_times()
+        content_with_time = f"{content}\n\n⏰ Опубликовано: {current_times['kemerovo_time']}"
+        
+        # Отправляем сообщение
+        success = telegram_manager.send_message(content_with_time)
+        
+        if success:
+            logger.info(f"✅ Ручной пост отправлен: {content[:50]}...")
+            return jsonify({"status": "success", "message": "Пост успешно отправлен"})
+        else:
+            return jsonify({"status": "error", "message": "Ошибка отправки в Telegram"})
+            
+    except Exception as e:
+        logger.error(f"❌ Ошибка ручной отправки: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/test-quick-post')
+@rate_limit
+def test_quick_post():
+    """Тестовая отправка предопределенного сообщения"""
+    try:
+        test_content = """🎪 <b>ТЕСТОВЫЙ ПОСТ ИЗ ДАШБОРДА</b>
+
+✅ <b>Проверка системы отправки</b>
+
+Это тестовое сообщение подтверждает, что ручная отправка из дашборда работает корректно.
+
+💫 <b>Функции проверены:</b>
+• 📤 Отправка HTML сообщений
+• ⏰ Временные метки
+• 🔗 Ссылки и форматирование
+• 🛡️ Система безопасности
+
+📊 <b>Статус:</b> Все системы работают нормально!
+
+#тест #дашборд #управление"""
+        
+        success = telegram_manager.send_message(test_content)
+        return jsonify({
+            "status": "success" if success else "error", 
+            "message": "Тестовое сообщение отправлено" if success else "Ошибка отправки"
+        })
+        
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
 # ЗАПУСК ПРИЛОЖЕНИЯ
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
@@ -1776,6 +1900,7 @@ if __name__ == '__main__':
     print("💡 Особенность: Ежедневные советы нутрициолога")
     print("📸 Визуалы: Готовые фото для каждой категории")
     print("🛡️ Keep-alive: Активен (каждые 5 минут)")
+    print("🎮 Ручная отправка: Активирована")
     
     app.run(
         host='0.0.0.0',
