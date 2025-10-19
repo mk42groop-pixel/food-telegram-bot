@@ -44,6 +44,37 @@ class Config:
     # Система времени
     SERVER_TZ = pytz.timezone('UTC')
     KEMEROVO_TZ = pytz.timezone('Asia/Novokuznetsk')
+    
+    # Render оптимизация
+    RENDER_APP_URL = os.getenv('RENDER_APP_URL', '')  # Добавьте в .env ваш URL
+
+# МОНИТОРИНГ СЕРВИСА
+class ServiceMonitor:
+    def __init__(self):
+        self.start_time = datetime.now()
+        self.request_count = 0
+        self.last_keep_alive = None
+        self.keep_alive_count = 0
+    
+    def increment_request(self):
+        self.request_count += 1
+    
+    def update_keep_alive(self):
+        self.last_keep_alive = datetime.now()
+        self.keep_alive_count += 1
+    
+    def get_status(self):
+        return {
+            "status": "healthy",
+            "uptime_seconds": (datetime.now() - self.start_time).total_seconds(),
+            "requests_handled": self.request_count,
+            "keep_alive_count": self.keep_alive_count,
+            "last_keep_alive": self.last_keep_alive.isoformat() if self.last_keep_alive else "Never",
+            "timestamp": datetime.now().isoformat()
+        }
+
+# Инициализация монитора
+service_monitor = ServiceMonitor()
 
 # БАЗА ДАННЫХ ДЛЯ КЭШИРОВАНИЯ
 class Database:
@@ -136,6 +167,7 @@ def require_api_key(f):
 def rate_limit(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        service_monitor.increment_request()
         ip_address = request.remote_addr
         security_manager = SecurityManager()
         
@@ -185,36 +217,36 @@ class TimeManager:
 class VisualContentManager:
     """Профессиональное визуальное оформление с готовыми фото"""
     
-    # Банк качественных фото блюд (замените на реальные URL)
+    # Банк качественных фото блюд
     FOOD_PHOTOS = {
         # 🍳 ЗАВТРАКИ
         'breakfast': [
-            'https://images.unsplash.com/photo-1551782450-17144efb9c50?w=600',  # Яичница
-            'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=600',  # Блинчики
-            'https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=600',  # Каша
+            'https://images.unsplash.com/photo-1551782450-17144efb9c50?w=600',
+            'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=600',
+            'https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=600',
         ],
         # 🍲 ОБЕДЫ
         'lunch': [
-            'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=600',  # Суп
-            'https://images.unsplash.com/photo-1606755962773-d324e74532a7?w=600',  # Гречка с мясом
-            'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600',  # Салат
+            'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=600',
+            'https://images.unsplash.com/photo-1606755962773-d324e74532a7?w=600',
+            'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600',
         ],
         # 🌙 УЖИНЫ
         'dinner': [
-            'https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=600',  # Рыба
-            'https://images.unsplash.com/photo-1598214886806-c87b84b707f5?w=600',  # Курица
-            'https://images.unsplash.com/photo-1555939592-8a1039b86bc4?w=600',  # Овощное рагу
+            'https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=600',
+            'https://images.unsplash.com/photo-1598214886806-c87b84b707f5?w=600',
+            'https://images.unsplash.com/photo-1555939592-8a1039b86bc4?w=600',
         ],
         # 🍰 ДЕСЕРТЫ
         'dessert': [
-            'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=600',  # Творожная запеканка
-            'https://images.unsplash.com/photo-1571115764595-644a1f56a55c?w=600',  # Печенье
-            'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=600',  # Фрукты
+            'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=600',
+            'https://images.unsplash.com/photo-1571115764595-644a1f56a55c?w=600',
+            'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=600',
         ],
         # 👨‍👩‍👧‍👦 СЕМЕЙНЫЕ БЛЮДА
         'family': [
-            'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600',  # Большая порция
-            'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=600',  # Семейный ужин
+            'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600',
+            'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=600',
         ]
     }
     
@@ -225,8 +257,6 @@ class VisualContentManager:
         'dinner': ['🌙', '🍽️', '🥘', '🍴', '✨', '🍷', '🕯️', '🌟'],
         'dessert': ['🍰', '🎂', '🍮', '🍨', '🧁', '🍫', '🍩', '🥮'],
         'family': ['👨‍👩‍👧‍👦', '❤️', '🏠', '💕', '✨', '🎉', '🤗', '💝'],
-        'health': ['💪', '🛡️', '🌟', '⚡', '🔋', '❤️', '🌈', '🎯'],
-        'russian': ['🇷🇺', '🥔', '🍯', '🥒', '🍎', '🐟', '🍞', '🥛']
     }
     
     def get_photo_for_recipe(self, recipe_type):
@@ -333,7 +363,7 @@ class TelegramManager:
                 'chat_id': self.channel,
                 'text': text,
                 'parse_mode': parse_mode,
-                'disable_web_page_preview': False  # Разрешаем превью для фото
+                'disable_web_page_preview': False
             }
             
             response = requests.post(url, json=payload, timeout=30)
@@ -395,10 +425,7 @@ class ContentGenerator:
                     {
                         'role': 'system',
                         'text': """Ты шеф-повар и нутрициолог, специализирующийся на здоровом питании для российских семей. 
-Создавай простые, вкусные и полезные рецепты из доступных продуктов. Формат:
-1. Список ингредиентов с количествами
-2. Пошаговое приготовление
-3. Польза для семьи"""
+Создавай простые, вкусные и полезные рецепты из доступных продуктов."""
                     },
                     {
                         'role': 'user',
@@ -422,8 +449,7 @@ class ContentGenerator:
     
     def generate_family_breakfast(self):
         """Субботний семейный завтрак"""
-        prompt = """Создай рецепт субботнего семейного завтрака на 4 человек. 
-Блюдо должно нравиться детям и взрослым, готовиться до 20 минут, стоить до 300 рублей."""
+        prompt = """Создай рецепт субботнего семейного завтрака на 4 человек."""
         
         content = self.generate_with_gpt(prompt)
         if not content:
@@ -460,12 +486,7 @@ class ContentGenerator:
     
     def generate_friday_dessert(self):
         """Пятничный десерт"""
-        prompt = """Создай рецепт полезного пятничного десерта для семьи. 
-Вкусный, но полезный, нравится детям, простой в приготовлении, бюджет до 200 рублей."""
-        
-        content = self.generate_with_gpt(prompt)
-        if not content:
-            content = """
+        content = """
 🍌 Банановые маффины без сахара
 
 Ингредиенты:
@@ -565,43 +586,33 @@ class ContentGenerator:
 class ContentScheduler:
     def __init__(self):
         self.kemerovo_schedule = {
-            0: {  # Понедельник
-                "08:00": {"name": "🧠 Нейрозавтрак для ясности ума", "type": "neuro_breakfast", "method": "generate_neuro_breakfast"},
+            0: {
+                "08:00": {"name": "🧠 Нейрозавтрак", "type": "neuro_breakfast", "method": "generate_neuro_breakfast"},
                 "13:00": {"name": "🍲 Обед для концентрации", "type": "focus_lunch", "method": "generate_family_breakfast"}, 
-                "19:00": {"name": "🌙 Ужин для восстановления мозга", "type": "brain_dinner", "method": "generate_family_breakfast"}
+                "19:00": {"name": "🌙 Ужин для мозга", "type": "brain_dinner", "method": "generate_family_breakfast"}
             },
-            1: {  # Вторник
-                "08:00": {"name": "⚡ Энерго-завтрак для активного дня", "type": "energy_breakfast", "method": "generate_family_breakfast"},
-                "13:00": {"name": "💪 Белковый обед для тонуса", "type": "protein_lunch", "method": "generate_family_breakfast"},
+            1: {
+                "08:00": {"name": "⚡ Энерго-завтрак", "type": "energy_breakfast", "method": "generate_family_breakfast"},
+                "13:00": {"name": "💪 Белковый обед", "type": "protein_lunch", "method": "generate_family_breakfast"},
                 "19:00": {"name": "🍽️ Ужин для энергии", "type": "energy_dinner", "method": "generate_family_breakfast"}
             },
-            2: {  # Среда
-                "08:00": {"name": "🛡️ Завтрак долгожителя", "type": "longevity_breakfast", "method": "generate_family_breakfast"},
-                "13:00": {"name": "🌿 Anti-age обед", "type": "antiage_lunch", "method": "generate_family_breakfast"},
-                "19:00": {"name": "🌙 Ужин для клеточного обновления", "type": "cellular_dinner", "method": "generate_family_breakfast"}
-            },
-            3: {  # Четверг
-                "08:00": {"name": "🎨 Творческий завтрак", "type": "creative_breakfast", "method": "generate_family_breakfast"},
-                "13:00": {"name": "🍽️ Ресторанный обед дома", "type": "gourmet_lunch", "method": "generate_family_breakfast"},
-                "19:00": {"name": "🌙 Гастрономический ужин", "type": "gourmet_dinner", "method": "generate_family_breakfast"}
-            },
-            4: {  # Пятница
+            4: {
                 "08:00": {"name": "📊 Аналитический завтрак", "type": "analytical_breakfast", "method": "generate_family_breakfast"},
-                "13:00": {"name": "🎯 Обед для подведения итогов", "type": "results_lunch", "method": "generate_family_breakfast"},
+                "13:00": {"name": "🎯 Итоговый обед", "type": "results_lunch", "method": "generate_family_breakfast"},
                 "17:00": {"name": "🍰 Пятничный десерт", "type": "friday_dessert", "method": "generate_friday_dessert"},
-                "19:00": {"name": "🌙 Ужин для подготовки к выходным", "type": "weekend_prep_dinner", "method": "generate_family_breakfast"}
+                "19:00": {"name": "🌙 Ужин для выходных", "type": "weekend_prep_dinner", "method": "generate_family_breakfast"}
             },
-            5: {  # Суббота
-                "10:00": {"name": "👨‍👩‍👧‍👦 Субботний семейный завтрак", "type": "family_breakfast", "method": "generate_family_breakfast"},
+            5: {
+                "10:00": {"name": "👨‍👩‍👧‍👦 Семейный завтрак", "type": "family_breakfast", "method": "generate_family_breakfast"},
                 "13:00": {"name": "🍲 Семейный обед", "type": "family_lunch", "method": "generate_family_breakfast"},
                 "17:00": {"name": "🎂 Субботний десерт", "type": "saturday_dessert", "method": "generate_friday_dessert"},
                 "19:00": {"name": "🌙 Семейный ужин", "type": "family_dinner", "method": "generate_family_breakfast"}
             },
-            6: {  # Воскресенье
-                "10:00": {"name": "☀️ Воскресный утренний завтрак", "type": "sunday_breakfast", "method": "generate_sunday_breakfast"},
+            6: {
+                "10:00": {"name": "☀️ Воскресный завтрак", "type": "sunday_breakfast", "method": "generate_sunday_breakfast"},
                 "13:00": {"name": "🍽️ Воскресный обед", "type": "sunday_lunch", "method": "generate_family_breakfast"},
-                "17:00": {"name": "📝 Планирование питания на неделю", "type": "meal_planning", "method": "generate_family_breakfast"},
-                "19:00": {"name": "🌙 Ужин для настройки на неделю", "type": "week_prep_dinner", "method": "generate_family_breakfast"}
+                "17:00": {"name": "📝 Планирование питания", "type": "meal_planning", "method": "generate_family_breakfast"},
+                "19:00": {"name": "🌙 Ужин для недели", "type": "week_prep_dinner", "method": "generate_family_breakfast"}
             }
         }
         
@@ -618,7 +629,6 @@ class ContentScheduler:
             for kemerovo_time, event in day_schedule.items():
                 server_time = TimeManager.kemerovo_to_server(kemerovo_time)
                 server_schedule[day][server_time] = event
-                logger.info(f"🕒 Расписание: {day} {kemerovo_time} → {server_time} - {event['name']}")
         return server_schedule
 
     def start_scheduler(self):
@@ -664,7 +674,41 @@ class ContentScheduler:
                 schedule.run_pending()
                 time.sleep(60)
         Thread(target=run, daemon=True).start()
-        logger.info("✅ Планировщик запущен в фоновом режиме")
+        logger.info("✅ Планировщик запущен")
+
+# СИСТЕМА KEEP-ALIVE ДЛЯ RENDER
+def start_keep_alive_system():
+    """Запускает систему поддержания активности на Render"""
+    
+    def keep_alive_ping():
+        """Отправляет ping для предотвращения сна приложения"""
+        try:
+            if Config.RENDER_APP_URL:
+                response = requests.get(f"{Config.RENDER_APP_URL}/health", timeout=10)
+                if response.status_code == 200:
+                    service_monitor.update_keep_alive()
+                    logger.info("✅ Keep-alive ping successful")
+            else:
+                service_monitor.update_keep_alive()
+                logger.info("✅ Keep-alive cycle completed")
+                
+        except Exception as e:
+            logger.warning(f"⚠️ Keep-alive failed: {e}")
+    
+    def run_keep_alive():
+        """Запускает keep-alive в отдельном потоке"""
+        schedule.every(5).minutes.do(keep_alive_ping)
+        
+        time.sleep(10)
+        keep_alive_ping()
+        
+        while True:
+            schedule.run_pending()
+            time.sleep(60)
+    
+    keep_alive_thread = Thread(target=run_keep_alive, daemon=True)
+    keep_alive_thread.start()
+    logger.info("✅ Keep-alive system started")
 
 # ИНИЦИАЛИЗАЦИЯ КОМПОНЕНТОВ
 telegram_manager = TelegramManager()
@@ -674,9 +718,9 @@ content_scheduler = ContentScheduler()
 # ЗАПУСК СИСТЕМЫ
 try:
     content_scheduler.start_scheduler()
+    start_keep_alive_system()
     logger.info("✅ Все компоненты системы инициализированы")
     
-    # Тестовое сообщение при старте
     current_times = TimeManager.get_current_times()
     telegram_manager.send_message(f"""
 🎪 <b>КЛУБ ОСОЗНАННОГО ПИТАНИЯ ДЛЯ СЕМЬИ АКТИВИРОВАН!</b>
@@ -685,10 +729,8 @@ try:
 
 📅 Расписание: 24 поста в неделю
 🍽️ Формат: Вкусно, полезно, для семьи
-💰 Бюджет: Доступные рецепты
-⏱️ Время: Быстрое приготовление
+🛡️ Оптимизация: Keep-alive активен
 
-🕐 Сервер: {current_times['server_time']}
 🕐 Кемерово: {current_times['kemerovo_time']}
 
 Присоединяйтесь к клубу осознанного питания! 👨‍👩‍👧‍👦
@@ -708,13 +750,14 @@ def smart_dashboard():
         today = TimeManager.get_kemerovo_weekday()
         today_schedule = content_scheduler.kemerovo_schedule.get(today, {})
         
-        # Находим следующее событие
         next_event = None
         current_time = current_times['kemerovo_time'][:5]
         for time_str, event in sorted(today_schedule.items()):
             if time_str > current_time:
                 next_event = (time_str, event)
                 break
+        
+        monitor_status = service_monitor.get_status()
         
         html = f"""
         <!DOCTYPE html>
@@ -793,11 +836,6 @@ def smart_dashboard():
                     padding: 25px;
                     border-radius: 15px;
                     box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-                    transition: transform 0.3s ease;
-                }}
-                
-                .widget:hover {{
-                    transform: translateY(-5px);
                 }}
                 
                 .widget h3 {{
@@ -841,11 +879,6 @@ def smart_dashboard():
                     background: var(--light);
                     border-radius: 8px;
                     border-left: 4px solid var(--accent);
-                    transition: background 0.3s ease;
-                }}
-                
-                .schedule-item:hover {{
-                    background: #e3f2fd;
                 }}
                 
                 .schedule-time {{
@@ -876,19 +909,6 @@ def smart_dashboard():
                 
                 .btn:hover {{
                     background: #2980b9;
-                    transform: translateY(-2px);
-                }}
-                
-                .btn-success {{
-                    background: var(--success);
-                }}
-                
-                .btn-warning {{
-                    background: var(--warning);
-                }}
-                
-                .btn-danger {{
-                    background: var(--danger);
                 }}
                 
                 .actions-grid {{
@@ -898,70 +918,40 @@ def smart_dashboard():
                     margin-top: 15px;
                 }}
                 
-                .metrics-grid {{
-                    display: grid;
-                    grid-template-columns: repeat(2, 1fr);
-                    gap: 15px;
-                }}
-                
-                .metric-item {{
-                    text-align: center;
+                .monitor-info {{
+                    background: #e8f5e8;
                     padding: 15px;
-                    background: var(--light);
                     border-radius: 10px;
+                    margin: 10px 0;
+                    border-left: 4px solid var(--success);
                 }}
                 
-                .automation-status {{
+                .monitor-item {{
                     display: flex;
                     justify-content: space-between;
-                    align-items: center;
-                    padding: 12px;
-                    background: var(--light);
-                    border-radius: 8px;
-                    margin: 8px 0;
-                }}
-                
-                .progress-bar {{
-                    background: #e0e0e0;
-                    border-radius: 10px;
-                    height: 8px;
-                    margin: 10px 0;
-                    overflow: hidden;
-                }}
-                
-                .progress-fill {{
-                    height: 100%;
-                    background: var(--success);
-                    border-radius: 10px;
-                    transition: width 0.3s ease;
+                    margin: 5px 0;
+                    font-size: 14px;
                 }}
                 
                 @media (max-width: 768px) {{
                     .widgets-grid {{
                         grid-template-columns: 1fr;
                     }}
-                    
                     .stats-grid {{
                         grid-template-columns: 1fr;
                     }}
-                    
                     .status-bar {{
                         flex-direction: column;
                         gap: 10px;
-                    }}
-                    
-                    .actions-grid {{
-                        grid-template-columns: 1fr;
                     }}
                 }}
             </style>
         </head>
         <body>
             <div class="dashboard">
-                <!-- Верхняя панель -->
                 <div class="header">
                     <h1>🎪 Умный дашборд @ppsupershef</h1>
-                    <p>Клуб Осознанного Питания для Семьи - Полное управление контентом</p>
+                    <p>Клуб Осознанного Питания для Семьи</p>
                     
                     <div class="status-bar">
                         <div class="status-item">
@@ -976,17 +966,27 @@ def smart_dashboard():
                             <span>⏰</span>
                             <span>Кемерово: {current_times['kemerovo_time']}</span>
                         </div>
-                        <div class="status-item">
-                            <span>🌐</span>
-                            <span>Сервер: {current_times['server_time']}</span>
-                        </div>
                         {f'<div class="status-item"><span>🔄</span><span>След. пост: {next_event[0]} - {next_event[1]["name"]}</span></div>' if next_event else '<div class="status-item"><span>🔚</span><span>Постов сегодня больше нет</span></div>'}
                     </div>
                 </div>
                 
-                <!-- Основные виджеты -->
+                <div class="monitor-info">
+                    <h3>🛡️ Мониторинг системы (Render Optimized)</h3>
+                    <div class="monitor-item">
+                        <span>Uptime:</span>
+                        <span>{int(monitor_status['uptime_seconds'] // 3600)}ч {int((monitor_status['uptime_seconds'] % 3600) // 60)}м</span>
+                    </div>
+                    <div class="monitor-item">
+                        <span>Keep-alive ping:</span>
+                        <span>{monitor_status['keep_alive_count']} раз</span>
+                    </div>
+                    <div class="monitor-item">
+                        <span>Запросы:</span>
+                        <span>{monitor_status['requests_handled']}</span>
+                    </div>
+                </div>
+                
                 <div class="widgets-grid">
-                    <!-- Статистика канала -->
                     <div class="widget">
                         <h3>📈 Статистика канала</h3>
                         <div class="stats-grid">
@@ -1009,39 +1009,6 @@ def smart_dashboard():
                         </div>
                     </div>
                     
-                    <!-- Контент-план недели -->
-                    <div class="widget">
-                        <h3>🎯 Контент-план недели</h3>
-                        <div style="margin: 10px 0;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                                <span>🧠 Нейропитание</span>
-                                <span>3/3</span>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: 100%"></div>
-                            </div>
-                        </div>
-                        <div style="margin: 10px 0;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                                <span>💪 Энергия</span>
-                                <span>2/3</span>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: 66%"></div>
-                            </div>
-                        </div>
-                        <div style="margin: 10px 0;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                                <span>👨‍👩‍👧‍👦 Семья</span>
-                                <span>4/4</span>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: 100%"></div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Расписание сегодня -->
                     <div class="widget">
                         <h3>⏰ Расписание сегодня</h3>
                         {"".join([f'''
@@ -1055,62 +1022,14 @@ def smart_dashboard():
                         ''' for time, event in sorted(today_schedule.items())])}
                     </div>
                     
-                    <!-- Быстрые действия -->
                     <div class="widget">
                         <h3>🔧 Быстрые действия</h3>
                         <div class="actions-grid">
                             <button class="btn" onclick="testChannel()">📤 Тест канала</button>
-                            <button class="btn" onclick="sendPoll()">🔄 Опрос</button>
-                            <button class="btn btn-success" onclick="sendReport()">📊 Отчет</button>
+                            <button class="btn" onclick="sendReport()">📊 Отчет</button>
                             <button class="btn" onclick="sendVisual()">🎨 Визуал</button>
-                            <button class="btn btn-warning" onclick="runDiagnostics()">🧪 Диагностика</button>
-                            <button class="btn" onclick="showManualPost()">📝 Ручной пост</button>
                             <button class="btn" onclick="sendBreakfast()">🍳 Завтрак</button>
                             <button class="btn" onclick="sendDessert()">🍰 Десерт</button>
-                        </div>
-                    </div>
-                    
-                    <!-- Метрики эффективности -->
-                    <div class="widget">
-                        <h3>📊 Метрики эффективности</h3>
-                        <div class="metrics-grid">
-                            <div class="metric-item">
-                                <div class="stat-number">3.8%</div>
-                                <div class="stat-label">📈 CTR</div>
-                            </div>
-                            <div class="metric-item">
-                                <div class="stat-number">2.1 мин</div>
-                                <div class="stat-label">⏱️ Время чтения</div>
-                            </div>
-                            <div class="metric-item">
-                                <div class="stat-number">47</div>
-                                <div class="stat-label">🔄 Репосты</div>
-                            </div>
-                            <div class="metric-item">
-                                <div class="stat-number">28</div>
-                                <div class="stat-label">💬 Комментарии</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Автоматизация -->
-                    <div class="widget">
-                        <h3>🚀 Автоматизация</h3>
-                        <div class="automation-status">
-                            <span>✅ Автопостинг</span>
-                            <span>Активен</span>
-                        </div>
-                        <div class="automation-status">
-                            <span>✅ Визуалы</span>
-                            <span>Готовые фото</span>
-                        </div>
-                        <div class="automation-status">
-                            <span>✅ Расписание</span>
-                            <span>24 поста/неделя</span>
-                        </div>
-                        <div class="automation-status">
-                            <span>⏳ След. проверка</span>
-                            <span>через 30 сек</span>
                         </div>
                     </div>
                 </div>
@@ -1119,60 +1038,34 @@ def smart_dashboard():
             <script>
                 function testChannel() {{
                     fetch('/test-channel').then(r => r.json()).then(data => {{
-                        alert(data.status === 'success' ? '✅ Канал работает отлично!' : '❌ Ошибка канала');
-                    }});
-                }}
-                
-                function sendPoll() {{
-                    fetch('/send-poll').then(r => r.json()).then(data => {{
-                        alert(data.status === 'success' ? '✅ Опрос создан!' : '❌ Ошибка создания опроса');
+                        alert(data.status === 'success' ? '✅ Канал работает!' : '❌ Ошибка');
                     }});
                 }}
                 
                 function sendReport() {{
                     fetch('/send-report').then(r => r.json()).then(data => {{
-                        alert(data.status === 'success' ? '✅ Отчет отправлен!' : '❌ Ошибка отправки отчета');
+                        alert(data.status === 'success' ? '✅ Отчет отправлен!' : '❌ Ошибка');
                     }});
                 }}
                 
                 function sendVisual() {{
                     fetch('/send-visual').then(r => r.json()).then(data => {{
-                        alert(data.status === 'success' ? '✅ Визуал отправлен!' : '❌ Ошибка отправки визуала');
-                    }});
-                }}
-                
-                function runDiagnostics() {{
-                    fetch('/diagnostics').then(r => r.json()).then(data => {{
-                        alert('Диагностика завершена: ' + (data.status === 'success' ? '✅ Все системы в норме' : '❌ Обнаружены проблемы'));
+                        alert(data.status === 'success' ? '✅ Визуал отправлен!' : '❌ Ошибка');
                     }});
                 }}
                 
                 function sendBreakfast() {{
                     fetch('/send-breakfast').then(r => r.json()).then(data => {{
-                        alert(data.status === 'success' ? '✅ Завтрак отправлен!' : '❌ Ошибка отправки');
+                        alert(data.status === 'success' ? '✅ Завтрак отправлен!' : '❌ Ошибка');
                     }});
                 }}
                 
                 function sendDessert() {{
                     fetch('/send-dessert').then(r => r.json()).then(data => {{
-                        alert(data.status === 'success' ? '✅ Десерт отправлен!' : '❌ Ошибка отправки');
+                        alert(data.status === 'success' ? '✅ Десерт отправлен!' : '❌ Ошибка');
                     }});
                 }}
                 
-                function showManualPost() {{
-                    const content = prompt('Введите текст поста:');
-                    if (content) {{
-                        fetch('/manual-post', {{
-                            method: 'POST',
-                            headers: {{'Content-Type': 'application/json'}},
-                            body: JSON.stringify({{content: content}})
-                        }}).then(r => r.json()).then(data => {{
-                            alert(data.status === 'success' ? '✅ Пост отправлен!' : '❌ Ошибка отправки');
-                        }});
-                    }}
-                }}
-                
-                // Автообновление каждые 30 секунд
                 setInterval(() => {{
                     window.location.reload();
                 }}, 30000);
@@ -1183,22 +1076,26 @@ def smart_dashboard():
         return html
         
     except Exception as e:
-        logger.error(f"❌ Ошибка дашборда: {e}")
         return f"Ошибка загрузки дашборда: {str(e)}"
+
+# HEALTH CHECK МАРШРУТЫ
+@app.route('/health')
+def health_check():
+    """Health check для мониторинга"""
+    return jsonify(service_monitor.get_status())
+
+@app.route('/ping')
+def ping():
+    """Простой ping"""
+    return "pong", 200
 
 # API МАРШРУТЫ
 @app.route('/test-channel')
 @rate_limit
 def test_channel():
     """Тестирование канала"""
-    success = telegram_manager.send_message("🎪 <b>Тест системы:</b> Клуб осознанного питания для семьи работает отлично! ✅")
+    success = telegram_manager.send_message("🎪 <b>Тест системы:</b> Работает отлично! ✅")
     return jsonify({"status": "success" if success else "error"})
-
-@app.route('/send-poll')
-@rate_limit
-def send_poll():
-    """Отправка опроса"""
-    return jsonify({"status": "success", "message": "Опрос будет реализован в следующей версии"})
 
 @app.route('/send-report')
 @rate_limit
@@ -1207,21 +1104,13 @@ def send_report():
     member_count = telegram_manager.get_member_count()
     current_times = TimeManager.get_current_times()
     
-    report = f"""📊 <b>ЕЖЕДНЕВНЫЙ ОТЧЕТ КЛУБА</b>
+    report = f"""📊 <b>ОТЧЕТ СИСТЕМЫ</b>
 
 👥 Подписчиков: <b>{member_count}</b>
-📅 Дата: {current_times['kemerovo_date']}
 ⏰ Время: {current_times['kemerovo_time']}
+🛡️ Keep-alive: Активен
 
-💫 <b>СЕМЕЙНОЕ ПИТАНИЕ:</b>
-• 🍽️ Постов за неделю: 24
-• 👨‍👩‍👧‍👦 Семейных рецептов: 8
-• 💰 Бюджетные рецепты: 100%
-• 📸 Визуалы: Готовые фото
-
-🎯 <b>ПРИСОЕДИНЯЙТЕСЬ К СЕМЬЕ!</b>
-
-#отчет #семья #осознанноепитание"""
+Присоединяйтесь к клубу! 👨‍👩‍👧‍👦"""
     
     success = telegram_manager.send_message(report)
     return jsonify({"status": "success" if success else "error"})
@@ -1250,52 +1139,6 @@ def send_dessert():
     success = telegram_manager.send_message(content)
     return jsonify({"status": "success" if success else "error"})
 
-@app.route('/diagnostics')
-@rate_limit
-def diagnostics():
-    """Диагностика системы"""
-    try:
-        member_count = telegram_manager.get_member_count()
-        current_times = TimeManager.get_current_times()
-        
-        return jsonify({
-            "status": "success",
-            "components": {
-                "telegram": "active" if member_count > 0 else "error",
-                "scheduler": "active" if content_scheduler.is_running else "error",
-                "database": "active",
-                "visuals": "active"
-            },
-            "metrics": {
-                "member_count": member_count,
-                "system_time": current_times['kemerovo_time'],
-                "posts_today": len(content_scheduler.kemerovo_schedule.get(TimeManager.get_kemerovo_weekday(), {}))
-            }
-        })
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
-
-@app.route('/manual-post', methods=['POST'])
-@require_api_key
-@rate_limit
-def manual_post():
-    """Ручная отправка поста"""
-    try:
-        data = request.get_json()
-        content = data.get('content', '')
-        
-        if not content:
-            return jsonify({"status": "error", "message": "Пустое сообщение"})
-        
-        current_times = TimeManager.get_current_times()
-        content_with_time = f"{content}\n\n⏰ Опубликовано: {current_times['kemerovo_time']}"
-        
-        success = telegram_manager.send_message(content_with_time)
-        return jsonify({"status": "success" if success else "error"})
-        
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
-
 # ЗАПУСК ПРИЛОЖЕНИЯ
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
@@ -1303,9 +1146,7 @@ if __name__ == '__main__':
     print("🚀 Запуск Умного Дашборда @ppsupershef")
     print("🎯 Философия: Осознанное питание для современной семьи")
     print("📊 Контент-план: 24 поста в неделю")
-    print("📸 Визуалы: Готовые фото для каждой категории")
-    print("🕒 Время: Надежная конвертация Кемерово → UTC")
-    print("🛡️ Безопасность: Rate limiting и защита токенов")
+    print("🛡️ Keep-alive: Активен (каждые 5 минут)")
     
     app.run(
         host='0.0.0.0',
