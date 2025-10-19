@@ -647,6 +647,34 @@ class ContentScheduler:
         Thread(target=run, daemon=True).start()
         logger.info("✅ Планировщик запущен")
 
+    def get_next_event(self):
+        """Получает следующее событие для отображения в дашборде"""
+        try:
+            current_times = TimeManager.get_current_times()
+            current_kemerovo_time = current_times['kemerovo_time'][:5]
+            
+            current_weekday = TimeManager.get_kemerovo_weekday()
+            today_schedule = self.kemerovo_schedule.get(current_weekday, {})
+            
+            # Ищем следующее событие сегодня
+            for time_str, event in sorted(today_schedule.items()):
+                if time_str > current_kemerovo_time:
+                    return time_str, event
+            
+            # Если сегодня событий больше нет, берем первое завтра
+            tomorrow = (current_weekday + 1) % 7
+            tomorrow_schedule = self.kemerovo_schedule.get(tomorrow, {})
+            if tomorrow_schedule:
+                first_time = min(tomorrow_schedule.keys())
+                return first_time, tomorrow_schedule[first_time]
+            
+            # Если ничего не найдено
+            return "09:00", {"name": "Следующий пост", "type": "general"}
+            
+        except Exception as e:
+            logger.error(f"❌ Ошибка получения следующего события: {e}")
+            return "09:00", {"name": "Следующий пост", "type": "general"}
+
 # СИСТЕМА KEEP-ALIVE
 def start_keep_alive_system():
     def keep_alive_ping():
@@ -715,7 +743,6 @@ except Exception as e:
 def smart_dashboard():
     try:
         member_count = telegram_manager.get_member_count()
-        analytics = {"avg_views": 8542, "total_reactions": 284}
         next_time, next_event = content_scheduler.get_next_event()
         current_times = TimeManager.get_current_times()
         current_weekday = TimeManager.get_kemerovo_weekday()
@@ -1029,7 +1056,7 @@ def smart_dashboard():
                                 <div class="stat-label">👥 Аудитория</div>
                             </div>
                             <div class="stat-card">
-                                <div class="stat-number">{analytics['avg_views']}</div>
+                                <div class="stat-number">8542</div>
                                 <div class="stat-label">📊 Охват</div>
                             </div>
                             <div class="stat-card">
