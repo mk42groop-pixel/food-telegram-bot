@@ -1913,7 +1913,7 @@ def cleanup_messages():
         telegram_manager.cleanup_old_messages(days)
         return jsonify({"status": "success", "message": f"Очищены сообщения старше {days} дней"})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}")
+        return jsonify({"status": "error", "message": str(e)})
 
 # ЗАПУСК ПРИЛОЖЕНИЯ
 if __name__ == '__main__':
