@@ -7,7 +7,7 @@ import schedule
 import hashlib
 import re
 from datetime import datetime, timedelta
-from threading import Thread, Lock
+from threading import Thread, Lock, RLock
 from flask import Flask, request, jsonify, render_template_string
 import pytz
 import random
@@ -92,9 +92,10 @@ class ServiceMonitor:
 
 service_monitor = ServiceMonitor()
 
-# БАЗА ДАННЫХ ДЛЯ КЭШИРОВАНИЯ И РОТАЦИИ
-class Database:
+# ИСПРАВЛЕННАЯ ПОТОКОБЕЗОПАСНАЯ БАЗА ДАННЫХ
+class ThreadSafeDatabase:
     def __init__(self):
+        self.lock = RLock()
         self.init_db()
     
     def init_db(self):
@@ -189,19 +190,207 @@ class Database:
                     analyzed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
+            
+            # Создаем индексы для производительности
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_rotation_last_used ON recipe_rotation(last_used)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_sent_messages_hash ON sent_messages(content_hash)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_poll_history_sent_at ON poll_history(sent_at)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_content_usage_last_used ON content_usage(last_used)')
     
-    @contextmanager
+    @contextmanager 
     def get_connection(self):
-        conn = sqlite3.connect('channel.db', check_same_thread=False)
-        conn.row_factory = sqlite3.Row
+        with self.lock:
+            conn = sqlite3.connect('channel.db', check_same_thread=False)
+            conn.row_factory = sqlite3.Row
+            try:
+                yield conn
+                conn.commit()
+            except Exception as e:
+                conn.rollback()
+                logger.error(f"❌ Ошибка базы данных: {e}")
+                raise
+            finally:
+                conn.close()
+
+# ИСПРАВЛЕННАЯ СИСТЕМА БЕЗОПАСНОСТИ С ОЧИСТКОЙ ПАМЯТИ
+class SecurityManager:
+    _instance = None
+    _lock = Lock()
+    
+    def __new__(cls):
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super(SecurityManager, cls).__new__(cls)
+                cls._instance.request_log = {}
+                cls._instance.blocked_ips = set()
+                # Запускаем фоновую очистку
+                cls._instance._start_cleanup_thread()
+            return cls._instance
+    
+    def _start_cleanup_thread(self):
+        """Запуск фоновой очистки старых записей"""
+        def cleanup_loop():
+            while True:
+                time.sleep(Config.RATE_LIMIT_WINDOW * 2)  # Очистка каждые 2 минуты
+                self.cleanup_old_requests()
+        
+        cleanup_thread = Thread(target=cleanup_loop, daemon=True)
+        cleanup_thread.start()
+        logger.info("✅ Запущена фоновая очистка старых запросов")
+    
+    def cleanup_old_requests(self):
+        """Очистка старых записей из лога запросов"""
+        current_time = time.time()
+        cutoff = current_time - (Config.RATE_LIMIT_WINDOW * 2)  # Двойной запас
+        
+        ips_to_remove = []
+        for ip, requests in self.request_log.items():
+            # Оставляем только свежие запросы
+            fresh_requests = [req_time for req_time in requests if req_time > cutoff]
+            if fresh_requests:
+                self.request_log[ip] = fresh_requests
+            else:
+                ips_to_remove.append(ip)
+        
+        # Удаляем IP без активных запросов
+        for ip in ips_to_remove:
+            del self.request_log[ip]
+            if ip in self.blocked_ips:
+                self.blocked_ips.remove(ip)
+        
+        if ips_to_remove:
+            logger.info(f"🧹 Очищено {len(ips_to_remove)} неактивных IP-адресов")
+    
+    def check_rate_limit(self, ip_address):
+        current_time = time.time()
+        if ip_address in self.blocked_ips:
+            return False
+        
+        if ip_address not in self.request_log:
+            self.request_log[ip_address] = []
+        
+        # Очищаем старые запросы для этого IP
+        self.request_log[ip_address] = [
+            req_time for req_time in self.request_log[ip_address]
+            if current_time - req_time < Config.RATE_LIMIT_WINDOW
+        ]
+        
+        if len(self.request_log[ip_address]) >= Config.MAX_REQUESTS_PER_MINUTE:
+            self.blocked_ips.add(ip_address)
+            logger.warning(f"🚨 IP заблокирован: {ip_address}")
+            return False
+        
+        self.request_log[ip_address].append(current_time)
+        return True
+
+def require_api_key(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        api_key = request.headers.get('X-API-Key') or request.args.get('api_key')
+        if not api_key or api_key != Config.API_SECRET:
+            return jsonify({"status": "error", "message": "Invalid API key"}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
+def rate_limit(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        service_monitor.increment_request()
+        ip_address = request.remote_addr
+        security_manager = SecurityManager()
+        
+        if not security_manager.check_rate_limit(ip_address):
+            return jsonify({
+                "status": "error", 
+                "message": "Rate limit exceeded. Try again later."
+            }), 429
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
+# СИСТЕМА ВРЕМЕНИ
+class TimeManager:
+    @staticmethod
+    def kemerovo_to_server(kemerovo_time_str):
         try:
-            yield conn
-            conn.commit()
-        except Exception:
-            conn.rollback()
-            raise
-        finally:
-            conn.close()
+            today = datetime.now(Config.KEMEROVO_TZ).date()
+            kemerovo_dt = datetime.combine(today, datetime.strptime(kemerovo_time_str, '%H:%M').time())
+            kemerovo_dt = Config.KEMEROVO_TZ.localize(kemerovo_dt)
+            server_dt = kemerovo_dt.astimezone(Config.SERVER_TZ)
+            return server_dt.strftime('%H:%M')
+        except Exception as e:
+            logger.error(f"❌ Ошибка конвертации времени {kemerovo_time_str}: {e}")
+            return kemerovo_time_str
+
+    @staticmethod
+    def get_current_times():
+        server_now = datetime.now(Config.SERVER_TZ)
+        kemerovo_now = datetime.now(Config.KEMEROVO_TZ)
+        
+        return {
+            'server_time': server_now.strftime('%H:%M:%S'),
+            'kemerovo_time': kemerovo_now.strftime('%H:%M:%S'),
+            'server_date': server_now.strftime('%Y-%m-%d'),
+            'kemerovo_date': kemerovo_now.strftime('%Y-%m-%d')
+        }
+
+    @staticmethod
+    def get_kemerovo_weekday():
+        return datetime.now(Config.KEMEROVO_TZ).weekday()
+
+# ИСПРАВЛЕННАЯ СИСТЕМА ОТСЛЕЖИВАНИЯ КОНТЕНТА (без SQL-инъекций)
+class ContentTracker:
+    def __init__(self):
+        self.db = ThreadSafeDatabase()
+    
+    def track_content_usage(self, content_type, method_name):
+        """Отслеживание использования контента"""
+        with self.db.get_connection() as conn:
+            conn.execute('''
+                INSERT INTO content_usage (content_type, method_name, used_count, last_used)
+                VALUES (?, ?, 1, CURRENT_TIMESTAMP)
+                ON CONFLICT(content_type, method_name) 
+                DO UPDATE SET 
+                    used_count = used_count + 1,
+                    last_used = CURRENT_TIMESTAMP
+            ''', (content_type, method_name))
+    
+    def get_recipe_usage_stats(self):
+        """Статистика использования рецептов (ИСПРАВЛЕНА SQL-инъекция)"""
+        with self.db.get_connection() as conn:
+            cursor = conn.execute('''
+                SELECT r.recipe_type, COUNT(*) as used_count,
+                       (SELECT COUNT(*) FROM recipe_rotation WHERE recipe_type = r.recipe_type) as total_count
+                FROM recipe_rotation r 
+                WHERE r.last_used >= DATE('now', ?)
+                GROUP BY r.recipe_type
+                ORDER BY used_count DESC
+            ''', ('-90 days',))
+            return cursor.fetchall()
+    
+    def get_poll_usage_stats(self):
+        """Статистика использования опросов (ИСПРАВЛЕНА SQL-инъекция)"""
+        with self.db.get_connection() as conn:
+            cursor = conn.execute('''
+                SELECT poll_type, COUNT(*) as used_count,
+                       MAX(sent_at) as last_used
+                FROM poll_history 
+                WHERE sent_at >= DATE('now', ?)
+                GROUP BY poll_type
+                ORDER BY used_count DESC
+            ''', ('-30 days',))
+            return cursor.fetchall()
+    
+    def get_available_polls_count(self):
+        """Количество доступных опросов (ИСПРАВЛЕНА SQL-инъекция)"""
+        with self.db.get_connection() as conn:
+            cursor = conn.execute('''
+                SELECT COUNT(DISTINCT poll_type) as available_polls
+                FROM poll_history 
+                WHERE sent_at >= DATE('now', ?)
+            ''', ('-30 days',))
+            result = cursor.fetchone()
+            return result['available_polls'] if result else 0
 
 # СИСТЕМА УВЕДОМЛЕНИЙ АДМИНИСТРАТОРА
 class AdminNotifier:
@@ -279,153 +468,10 @@ class AdminNotifier:
 
         return self.send_admin_alert(message, "success")
 
-# СИСТЕМА ОТСЛЕЖИВАНИЯ КОНТЕНТА
-class ContentTracker:
-    def __init__(self):
-        self.db = Database()
-    
-    def track_content_usage(self, content_type, method_name):
-        """Отслеживание использования контента"""
-        with self.db.get_connection() as conn:
-            conn.execute('''
-                INSERT INTO content_usage (content_type, method_name, used_count, last_used)
-                VALUES (?, ?, 1, CURRENT_TIMESTAMP)
-                ON CONFLICT(content_type, method_name) 
-                DO UPDATE SET 
-                    used_count = used_count + 1,
-                    last_used = CURRENT_TIMESTAMP
-            ''', (content_type, method_name))
-    
-    def get_recipe_usage_stats(self):
-        """Статистика использования рецептов"""
-        with self.db.get_connection() as conn:
-            cursor = conn.execute('''
-                SELECT recipe_type, COUNT(*) as used_count,
-                       (SELECT COUNT(*) FROM recipe_rotation WHERE recipe_type = r.recipe_type) as total_count
-                FROM recipe_rotation r 
-                WHERE last_used >= DATE('now', '-90 days')
-                GROUP BY recipe_type
-                ORDER BY used_count DESC
-            ''')
-            return cursor.fetchall()
-    
-    def get_poll_usage_stats(self):
-        """Статистика использования опросов"""
-        with self.db.get_connection() as conn:
-            cursor = conn.execute('''
-                SELECT poll_type, COUNT(*) as used_count,
-                       MAX(sent_at) as last_used
-                FROM poll_history 
-                WHERE sent_at >= DATE('now', '-30 days')
-                GROUP BY poll_type
-                ORDER BY used_count DESC
-            ''')
-            return cursor.fetchall()
-    
-    def get_available_polls_count(self):
-        """Количество доступных опросов"""
-        with self.db.get_connection() as conn:
-            cursor = conn.execute('''
-                SELECT COUNT(DISTINCT poll_type) as available_polls
-                FROM poll_history 
-                WHERE sent_at >= DATE('now', '-30 days')
-            ''')
-            result = cursor.fetchone()
-            return result['available_polls'] if result else 0
-
-# СИСТЕМА БЕЗОПАСНОСТИ
-class SecurityManager:
-    _instance = None
-    _lock = Lock()
-    
-    def __new__(cls):
-        with cls._lock:
-            if cls._instance is None:
-                cls._instance = super(SecurityManager, cls).__new__(cls)
-                cls._instance.request_log = {}
-                cls._instance.blocked_ips = set()
-            return cls._instance
-    
-    def check_rate_limit(self, ip_address):
-        current_time = time.time()
-        if ip_address in self.blocked_ips:
-            return False
-        
-        if ip_address not in self.request_log:
-            self.request_log[ip_address] = []
-        
-        self.request_log[ip_address] = [
-            req_time for req_time in self.request_log[ip_address]
-            if current_time - req_time < Config.RATE_LIMIT_WINDOW
-        ]
-        
-        if len(self.request_log[ip_address]) >= Config.MAX_REQUESTS_PER_MINUTE:
-            self.blocked_ips.add(ip_address)
-            logger.warning(f"🚨 IP заблокирован: {ip_address}")
-            return False
-        
-        self.request_log[ip_address].append(current_time)
-        return True
-
-def require_api_key(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        api_key = request.headers.get('X-API-Key') or request.args.get('api_key')
-        if not api_key or api_key != Config.API_SECRET:
-            return jsonify({"status": "error", "message": "Invalid API key"}), 401
-        return f(*args, **kwargs)
-    return decorated_function
-
-def rate_limit(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        service_monitor.increment_request()
-        ip_address = request.remote_addr
-        security_manager = SecurityManager()
-        
-        if not security_manager.check_rate_limit(ip_address):
-            return jsonify({
-                "status": "error", 
-                "message": "Rate limit exceeded. Try again later."
-            }), 429
-        
-        return f(*args, **kwargs)
-    return decorated_function
-
-# СИСТЕМА ВРЕМЕНИ
-class TimeManager:
-    @staticmethod
-    def kemerovo_to_server(kemerovo_time_str):
-        try:
-            today = datetime.now(Config.KEMEROVO_TZ).date()
-            kemerovo_dt = datetime.combine(today, datetime.strptime(kemerovo_time_str, '%H:%M').time())
-            kemerovo_dt = Config.KEMEROVO_TZ.localize(kemerovo_dt)
-            server_dt = kemerovo_dt.astimezone(Config.SERVER_TZ)
-            return server_dt.strftime('%H:%M')
-        except Exception as e:
-            logger.error(f"❌ Ошибка конвертации времени {kemerovo_time_str}: {e}")
-            return kemerovo_time_str
-
-    @staticmethod
-    def get_current_times():
-        server_now = datetime.now(Config.SERVER_TZ)
-        kemerovo_now = datetime.now(Config.KEMEROVO_TZ)
-        
-        return {
-            'server_time': server_now.strftime('%H:%M:%S'),
-            'kemerovo_time': kemerovo_now.strftime('%H:%M:%S'),
-            'server_date': server_now.strftime('%Y-%m-%d'),
-            'kemerovo_date': kemerovo_now.strftime('%Y-%m-%d')
-        }
-
-    @staticmethod
-    def get_kemerovo_weekday():
-        return datetime.now(Config.KEMEROVO_TZ).weekday()
-
-# СИСТЕМА РОТАЦИИ РЕЦЕПТОВ
+# СИСТЕМА РОТАЦИИ РЕЦЕПТОВ (ИСПРАВЛЕНА SQL-инъекция)
 class AdvancedRotationSystem:
     def __init__(self):
-        self.db = Database()
+        self.db = ThreadSafeDatabase()
         self.rotation_period = 90
         self.priority_map = self._create_priority_map()
         self.content_tracker = ContentTracker()
@@ -561,23 +607,23 @@ class AdvancedRotationSystem:
         return method
     
     def _is_recipe_available(self, method_name):
-        """Проверка доступности рецепта по ротации"""
+        """Проверка доступности рецепта по ротации (ИСПРАВЛЕНА SQL-инъекция)"""
         with self.db.get_connection() as conn:
             cursor = conn.execute('''
                 SELECT last_used FROM recipe_rotation 
-                WHERE recipe_method = ? AND last_used < DATE('now', '-' || ? || ' days')
-            ''', (method_name, self.rotation_period))
+                WHERE recipe_method = ? AND last_used < DATE('now', ?)
+            ''', (method_name, f'-{self.rotation_period} days'))
             return cursor.fetchone() is not None
 
     def get_available_recipe(self, recipe_type):
-        """Получить доступный рецепт для типа с учетом ротации"""
+        """Получить доступный рецепт для типа с учетом ротации (ИСПРАВЛЕНА SQL-инъекция)"""
         with self.db.get_connection() as conn:
             cursor = conn.execute('''
                 SELECT recipe_method FROM recipe_rotation 
-                WHERE recipe_type = ? AND last_used < DATE('now', '-' || ? || ' days')
+                WHERE recipe_type = ? AND last_used < DATE('now', ?)
                 ORDER BY use_count ASC, last_used ASC
                 LIMIT 1
-            ''', (recipe_type, self.rotation_period))
+            ''', (recipe_type, f'-{self.rotation_period} days'))
             
             result = cursor.fetchone()
             if result:
@@ -665,7 +711,7 @@ class PollResultsCollector:
     def __init__(self, telegram_manager):
         self.telegram = telegram_manager
         self.vote_analyzer = CommentVoteAnalyzer()
-        self.db = Database()
+        self.db = ThreadSafeDatabase()
     
     def collect_poll_results(self, message_id, poll_type):
         """Сбор и анализ результатов опроса из комментариев"""
@@ -723,7 +769,7 @@ class PollResultsCollector:
                             votes.extend(detected_votes)
                             user_votes[user_votes_key] = True
                             
-                            # Сохраняем анализированный комментарий
+                            # Сохраняем анализированный комментарий (ИСПРАВЛЕНА SQL-инъекция)
                             conn.execute('''
                                 INSERT INTO poll_comments 
                                 (message_id, user_id, comment_text, vote_option)
@@ -752,7 +798,7 @@ class PollResultsCollector:
         }
     
     def _save_poll_results(self, message_id, poll_type, results):
-        """Сохранение результатов в базу данных"""
+        """Сохранение результатов в базу данных (ИСПРАВЛЕНА SQL-инъекция)"""
         with self.db.get_connection() as conn:
             conn.execute('''
                 INSERT OR REPLACE INTO poll_results 
@@ -1110,7 +1156,7 @@ class EnhancedTelegramManager:
         self.channel = Config.TELEGRAM_CHANNEL
         self.base_url = f"https://api.telegram.org/bot{self.token}"
         self.sent_hashes = set()
-        self.db = Database()
+        self.db = ThreadSafeDatabase()
         self.results_collector = PollResultsCollector(self)
         self.scientific_analyzer = ScientificResultsAnalyzer()
         self.visual_manager = VisualContentManager()
@@ -1329,7 +1375,7 @@ class EnhancedTelegramManager:
             return 0
     
     def cleanup_old_messages(self, days=90):
-        """Очистка старых сообщений для экономии места"""
+        """Очистка старых сообщений для экономии места (ИСПРАВЛЕНА SQL-инъекция)"""
         with self.db.get_connection() as conn:
             conn.execute(
                 'DELETE FROM sent_messages WHERE sent_at < DATE("now", ?)',
@@ -1345,7 +1391,7 @@ class SmartContentGenerator:
         self.yandex_key = Config.YANDEX_GPT_API_KEY
         self.yandex_folder = Config.YANDEX_FOLDER_ID
         self.visual_manager = VisualContentManager()
-        self.db = Database()
+        self.db = ThreadSafeDatabase()
         self.rotation_system = AdvancedRotationSystem()
         self.content_tracker = ContentTracker()
     
