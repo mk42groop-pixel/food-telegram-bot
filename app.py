@@ -1955,8 +1955,222 @@ try:
 except Exception as e:
     logger.error(f"❌ Ошибка инициализации: {e}")
 
-# МАРШРУТЫ FLASK (остаются без изменений)
-# ... (весь остальной код маршрутов Flask без изменений)
+# МАРШРУТЫ FLASK
+@app.route('/')
+@rate_limit
+def dashboard():
+    """Главный дашборд"""
+    try:
+        # Получаем данные для дашборда
+        current_times = TimeManager.get_current_times()
+        next_time, next_event = content_scheduler.get_next_event()
+        rotation_status = content_scheduler.rotation_system.check_rotation_status()
+        service_status = service_monitor.get_status()
+        member_count = telegram_manager.get_member_count()
+        
+        # Генерируем таблицу ротации
+        rotation_table = """
+        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+            <tr style="background: #f8f9fa;">
+                <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Категория</th>
+                <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Доступно</th>
+                <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Всего</th>
+                <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">%</th>
+            </tr>
+        """
+        
+        for category, stats in rotation_status.items():
+            color = "green" if stats['availability_percent'] > 50 else "orange" if stats['availability_percent'] > 20 else "red"
+            rotation_table += f"""
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd;"><strong>{category}</strong></td>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">{stats['available']}</td>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">{stats['total']}</td>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center; color: {color};">{stats['availability_percent']}%</td>
+            </tr>
+            """
+        
+        rotation_table += "</table>"
+        
+        dashboard_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>@ppsupershef - Умный Дашборд</title>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }}
+                .container {{ max-width: 1200px; margin: 0 auto; }}
+                .header {{ background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }}
+                .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 20px; }}
+                .stat-card {{ background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }}
+                .next-event {{ background: #e8f5e8; padding: 20px; border-radius: 10px; margin-bottom: 20px; }}
+                .rotation-status {{ background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }}
+                .btn {{ background: #007cba; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }}
+                .btn-test {{ background: #28a745; }}
+                .btn-danger {{ background: #dc3545; }}
+                table {{ width: 100%; border-collapse: collapse; }}
+                th, td {{ padding: 8px; text-align: left; border: 1px solid #ddd; }}
+                th {{ background-color: #f8f9fa; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🎯 @ppsupershef - Умный Дашборд</h1>
+                    <p>Система автоматического контента с научной нутрициологией</p>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>⏰ Время</h3>
+                        <p><strong>Сервер:</strong> {current_times['server_time']}</p>
+                        <p><strong>Кемерово:</strong> {current_times['kemerovo_time']}</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>📊 Статистика</h3>
+                        <p><strong>Подписчики:</strong> {member_count}</p>
+                        <p><strong>Запросов:</strong> {service_status['requests_handled']}</p>
+                        <p><strong>Аптайм:</strong> {round(service_status['uptime_seconds'] / 3600, 1)}ч</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>🔄 Ротация</h3>
+                        <p><strong>Методов:</strong> 185</p>
+                        <p><strong>Период:</strong> 90 дней</p>
+                        <p><strong>Статус:</strong> <span style="color: green;">Активна</span></p>
+                    </div>
+                </div>
+                
+                <div class="next-event">
+                    <h3>📅 Следующее событие</h3>
+                    <p><strong>Время:</strong> {next_time}</p>
+                    <p><strong>Событие:</strong> {next_event['name']}</p>
+                    <p><strong>Тип:</strong> {next_event['type']}</p>
+                </div>
+                
+                <div class="rotation-status">
+                    <h3>📈 Статус ротации по категориям</h3>
+                    {rotation_table}
+                </div>
+                
+                <div style="background: white; padding: 20px; border-radius: 10px;">
+                    <h3>🛠 Управление</h3>
+                    <button class="btn btn-test" onclick="sendTestMessage()">📤 Тестовый пост</button>
+                    <button class="btn" onclick="checkRotation()">🔄 Проверить ротацию</button>
+                    <button class="btn" onclick="healthCheck()">❤️ Проверить здоровье</button>
+                    <button class="btn btn-danger" onclick="forceRotationReset()">♻️ Сбросить ротацию</button>
+                </div>
+            </div>
+            
+            <script>
+            function sendTestMessage() {{
+                fetch('/api/test-message', {{ method: 'POST' }})
+                    .then(r => r.json())
+                    .then(data => alert(data.message || data.error));
+            }}
+            
+            function checkRotation() {{
+                fetch('/api/rotation-status')
+                    .then(r => r.json())
+                    .then(data => alert('Статус ротации обновлен в дашборде'));
+            }}
+            
+            function healthCheck() {{
+                fetch('/health')
+                    .then(r => r.json())
+                    .then(data => alert('Статус: ' + data.status));
+            }}
+            
+            function forceRotationReset() {{
+                if (confirm('Вы уверены? Это сбросит всю историю ротации!')) {{
+                    fetch('/api/reset-rotation', {{ method: 'POST' }})
+                        .then(r => r.json())
+                        .then(data => alert(data.message));
+                }}
+            }}
+            
+            // Автообновление каждые 30 секунд
+            setTimeout(() => location.reload(), 30000);
+            </script>
+        </body>
+        </html>
+        """
+        
+        return render_template_string(dashboard_html)
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка дашборда: {e}")
+        return render_template_string("<h1>Ошибка дашборда</h1><p>{}</p>".format(str(e)))
+
+@app.route('/health')
+@rate_limit
+def health_check():
+    """Проверка здоровья сервиса"""
+    status = service_monitor.get_status()
+    return jsonify(status)
+
+@app.route('/api/test-message', methods=['POST'])
+@require_api_key
+@rate_limit
+def send_test_message():
+    """Отправка тестового сообщения"""
+    try:
+        test_content = content_generator.generate_brain_nutrition_advice()
+        test_content = "🧪 ТЕСТОВЫЙ ПОСТ: " + test_content
+        
+        success = telegram_manager.send_message(test_content)
+        if success:
+            return jsonify({"status": "success", "message": "Тестовое сообщение отправлено"})
+        else:
+            return jsonify({"status": "error", "message": "Ошибка отправки"}), 500
+    except Exception as e:
+        logger.error(f"❌ Ошибка тестового сообщения: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/rotation-status')
+@rate_limit
+def get_rotation_status():
+    """Получить статус ротации"""
+    try:
+        status = content_scheduler.rotation_system.check_rotation_status()
+        return jsonify({"status": "success", "data": status})
+    except Exception as e:
+        logger.error(f"❌ Ошибка получения статуса ротации: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/reset-rotation', methods=['POST'])
+@require_api_key
+@rate_limit
+def reset_rotation():
+    """Принудительный сброс ротации"""
+    try:
+        content_scheduler.rotation_system.fix_rotation_dates()
+        return jsonify({"status": "success", "message": "Ротация сброшена"})
+    except Exception as e:
+        logger.error(f"❌ Ошибка сброса ротации: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/send-manual', methods=['POST'])
+@require_api_key
+@rate_limit
+def send_manual_message():
+    """Отправка ручного сообщения"""
+    try:
+        data = request.get_json()
+        if not data or 'message' not in data:
+            return jsonify({"status": "error", "message": "Отсутствует сообщение"}), 400
+        
+        message = "👨‍💻 РУЧНОЙ ПОСТ: " + data['message']
+        success = telegram_manager.send_message(message)
+        
+        if success:
+            return jsonify({"status": "success", "message": "Сообщение отправлено"})
+        else:
+            return jsonify({"status": "error", "message": "Ошибка отправки"}), 500
+    except Exception as e:
+        logger.error(f"❌ Ошибка ручного сообщения: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
