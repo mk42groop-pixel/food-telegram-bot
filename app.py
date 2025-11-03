@@ -227,12 +227,17 @@ class TimeManager:
     def get_kemerovo_weekday():
         return datetime.now(Config.KEMEROVO_TZ).weekday()
 
-# СИСТЕМА РОТАЦИИ РЕЦЕПТОВ С ПРИОРИТЕТАМИ
+    @staticmethod
+    def get_kemerovo_hour():
+        return datetime.now(Config.KEMEROVO_TZ).hour
+
+# СИСТЕМА РОТАЦИИ РЕЦЕПТОВ С ПРИОРИТЕТАМИ И ВАЛИДАЦИЕЙ
 class AdvancedRotationSystem:
     def __init__(self):
         self.db = Database()
         self.rotation_period = 90
         self.priority_map = self._create_priority_map()
+        self.type_validation_map = self._create_type_validation_map()
         self.init_rotation_data()
     
     def _create_priority_map(self):
@@ -302,6 +307,17 @@ class AdvancedRotationSystem:
                 'meal_prep_dinner': ['generate_weekly_prep_chicken', 'generate_batch_cooking', 'generate_container_meal'],
                 'planning_advice': ['generate_meal_prep_guide_advice', 'generate_weekly_planning_advice', 'generate_efficient_cooking_advice']
             }
+        }
+    
+    def _create_type_validation_map(self):
+        """Карта валидации типов контента по времени суток"""
+        return {
+            'breakfast': {'valid_hours': range(5, 11), 'fallback': 'lunch'},
+            'lunch': {'valid_hours': range(11, 16), 'fallback': 'dinner'},
+            'dinner': {'valid_hours': range(16, 22), 'fallback': 'advice'},
+            'dessert': {'valid_hours': range(14, 23), 'fallback': 'advice'},
+            'science': {'valid_hours': range(0, 24), 'fallback': 'science'},
+            'advice': {'valid_hours': range(0, 24), 'fallback': 'advice'}
         }
     
     def init_rotation_data(self):
@@ -392,8 +408,60 @@ class AdvancedRotationSystem:
                     VALUES (?, ?, DATE('now', '-90 days'), 0)
                 ''', (method.replace('generate_', ''), method))
     
+    def validate_content_type_for_current_time(self, requested_type):
+        """Валидация типа контента по текущему времени"""
+        current_hour = TimeManager.get_kemerovo_hour()
+        
+        # Определяем категорию контента
+        content_category = self._get_content_category(requested_type)
+        
+        # Проверяем валидность времени для данной категории
+        validation_rules = self.type_validation_map.get(content_category, {'valid_hours': range(0, 24), 'fallback': 'advice'})
+        
+        if current_hour not in validation_rules['valid_hours']:
+            logger.warning(f"⚠️ Неподходящее время для {requested_type} ({content_category}) в {current_hour}:00")
+            # Возвращаем корректный тип для текущего времени
+            return self._get_appropriate_type_for_hour(current_hour, requested_type)
+        
+        return requested_type
+    
+    def _get_content_category(self, recipe_type):
+        """Определяет категорию контента по типу рецепта"""
+        if 'breakfast' in recipe_type:
+            return 'breakfast'
+        elif 'lunch' in recipe_type:
+            return 'lunch'
+        elif 'dinner' in recipe_type:
+            return 'dinner'
+        elif 'dessert' in recipe_type:
+            return 'dessert'
+        elif 'science' in recipe_type:
+            return 'science'
+        elif 'advice' in recipe_type:
+            return 'advice'
+        else:
+            return 'advice'
+    
+    def _get_appropriate_type_for_hour(self, current_hour, original_type):
+        """Возвращает подходящий тип контента для текущего часа"""
+        if 5 <= current_hour < 11:
+            return original_type.replace('lunch', 'breakfast').replace('dinner', 'breakfast').replace('dessert', 'breakfast')
+        elif 11 <= current_hour < 16:
+            return original_type.replace('breakfast', 'lunch').replace('dinner', 'lunch').replace('dessert', 'lunch')
+        elif 16 <= current_hour < 22:
+            return original_type.replace('breakfast', 'dinner').replace('lunch', 'dinner').replace('dessert', 'dinner')
+        else:
+            return original_type.replace('breakfast', 'advice').replace('lunch', 'advice').replace('dinner', 'advice')
+    
     def get_priority_recipe(self, recipe_type, weekday):
-        """Умная ротация с учетом дня недели и темы"""
+        """Умная ротация с учетом дня недели, темы и ВАЛИДАЦИИ ВРЕМЕНИ"""
+        # ВАЛИДАЦИЯ: проверяем подходит ли тип контента для текущего времени
+        validated_type = self.validate_content_type_for_current_time(recipe_type)
+        
+        if validated_type != recipe_type:
+            logger.info(f"🕒 Автокоррекция типа: {recipe_type} -> {validated_type}")
+            recipe_type = validated_type
+        
         # ПРИОРИТЕТ 1: Тематические рецепты для дня
         if weekday in self.priority_map and recipe_type in self.priority_map[weekday]:
             for method in self.priority_map[weekday][recipe_type]:
@@ -413,9 +481,9 @@ class AdvancedRotationSystem:
             return cursor.fetchone() is not None
 
     def get_available_recipe(self, recipe_type):
-        """Получить доступный рецепт для типа с учетом ротации"""
+        """Получить доступный рецепт для типа с учетом ротации и ВАЛИДАЦИИ"""
         with self.db.get_connection() as conn:
-            # ТОЧНОЕ СООТВЕТСТВИЕ ТИПУ (исправлено с LIKE на =)
+            # ТОЧНОЕ СООТВЕТСТВИЕ ТИПУ
             cursor = conn.execute('''
                 SELECT recipe_method FROM recipe_rotation 
                 WHERE recipe_type = ? AND last_used < DATE('now', '-' || ? || ' days')
@@ -426,6 +494,12 @@ class AdvancedRotationSystem:
             result = cursor.fetchone()
             if result:
                 method = result['recipe_method']
+                # ДОПОЛНИТЕЛЬНАЯ ВАЛИДАЦИЯ: проверяем что метод соответствует типу
+                if not self._validate_method_type(method, recipe_type):
+                    logger.warning(f"⚠️ Несоответствие типа метода: {method} для типа {recipe_type}")
+                    # Ищем альтернативный метод
+                    return self._get_validated_fallback(recipe_type)
+                
                 # Обновляем статистику использования
                 conn.execute('''
                     UPDATE recipe_rotation 
@@ -434,11 +508,11 @@ class AdvancedRotationSystem:
                 ''', (method,))
                 return method
             else:
-                # Если все рецепты использовались недавно, берем случайный из того же типа
+                # Если все рецепты использовались недавно, берем С ОГРАНИЧЕНИЕМ по типу
                 cursor = conn.execute('''
                     SELECT recipe_method FROM recipe_rotation 
                     WHERE recipe_type = ?
-                    ORDER BY RANDOM()
+                    ORDER BY use_count ASC, last_used ASC
                     LIMIT 1
                 ''', (recipe_type,))
                 
@@ -452,8 +526,43 @@ class AdvancedRotationSystem:
                     ''', (method,))
                     return method
         
-        # Fallback на базовый метод
-        return f'generate_{recipe_type}'
+        # Fallback на базовый метод С ВАЛИДАЦИЕЙ
+        return self._get_validated_fallback(recipe_type)
+    
+    def _validate_method_type(self, method_name, expected_type):
+        """Проверяет что метод соответствует ожидаемому типу"""
+        method_type = method_name.replace('generate_', '')
+        return expected_type in method_type or method_type in expected_type
+    
+    def _get_validated_fallback(self, recipe_type):
+        """Возвращает валидированный fallback метод"""
+        fallback_methods = {
+            'neuro_breakfast': 'generate_brain_boost_breakfast',
+            'neuro_lunch': 'generate_brain_salmon_bowl', 
+            'neuro_dinner': 'generate_memory_fish',
+            'protein_breakfast': 'generate_muscle_breakfast',
+            'protein_lunch': 'generate_amino_acids_bowl',
+            'protein_dinner': 'generate_night_protein',
+            'veggie_breakfast': 'generate_green_smoothie_bowl',
+            'veggie_lunch': 'generate_rainbow_salad',
+            'veggie_dinner': 'generate_roasted_vegetables',
+            'carbs_breakfast': 'generate_energy_porridge',
+            'carbs_lunch': 'generate_glycogen_replenishment',
+            'carbs_dinner': 'generate_slow_carbs_dinner',
+            'energy_breakfast': 'generate_fun_breakfast',
+            'mediterranean_lunch': 'generate_mediterranean_feast',
+            'light_dinner': 'generate_social_dinner',
+            'saturday_breakfast': 'generate_family_brunch',
+            'saturday_cooking': 'generate_cooking_workshop',
+            'saturday_dessert': 'generate_family_dessert',
+            'family_dinner': 'generate_family_lasagna',
+            'sunday_breakfast': 'generate_brunch_feast',
+            'sunday_lunch': 'generate_weekly_prep_lunch',
+            'sunday_dessert': 'generate_weekly_treat',
+            'meal_prep_dinner': 'generate_weekly_prep_chicken'
+        }
+        
+        return fallback_methods.get(recipe_type, 'generate_brain_boost_breakfast')
 
 # МЕНЕДЖЕР ВИЗУАЛЬНОГО КОНТЕНТА
 class VisualContentManager:
@@ -818,7 +927,7 @@ BCAA: лейцин - ключевой активатор mTOR пути
         content = """
 🍠 ЧЕТВЕРГ: ЗАПАСАЕМ ЭНЕРГИЮ ДЛЯ ПРОДУКТИВНОСТИ!
 
-⚡️ СЕГОДНЯШНИЙ ФОКУС: устойчивая энергия и ментальный фокус
+⚡️ СЕГОДНЯШНИКИЙ ФОКУС: устойчивая энергия и ментальный фокус
 
 🎯 НАУЧНАЯ СТРАТЕГИЯ:
 
@@ -965,7 +1074,7 @@ BCAA: лейцин - ключевой активатор mTOR пути
 Снижение decision fatigue в рабочие дни
 Гарантия соблюдения здорового рациона
 
-• ⚖️ БАЛАНС МАКРОНУТРИЕНТОВ
+• ⚖️ БАЛANS МАКРОНУТРИЕНТОВ
 Расчет потребностей на предстоящую неделю
 Распределение белков, жиров, углеводов
 Учет предполагаемой физической активности
@@ -1131,17 +1240,32 @@ BCAA: лейцин - ключевой активатор mTOR пути
             content, "neuro_advice", benefits
         )
 
-    # 🔄 МЕТОД ДЛЯ ПОЛУЧЕНИЯ РЕЦЕПТА С УМНОЙ РОТАЦИЕЙ
+    # 🔄 МЕТОД ДЛЯ ПОЛУЧЕНИЯ РЕЦЕПТА С УМНОЙ РОТАЦИЕЙ И ВАЛИДАЦИЕЙ
     def get_rotated_recipe(self, recipe_type):
-        """Получить рецепт с учетом умной ротации и приоритетов"""
+        """Получить рецепт с учетом умной ротации, приоритетов и ВАЛИДАЦИИ ВРЕМЕНИ"""
         weekday = TimeManager.get_kemerovo_weekday()
         method_name = self.rotation_system.get_priority_recipe(recipe_type, weekday)
+        
+        # ФИНАЛЬНАЯ ПРОВЕРКА: убеждаемся что метод существует
+        if not hasattr(self, method_name):
+            logger.error(f"❌ Метод {method_name} не существует! Использую fallback")
+            method_name = self.rotation_system._get_validated_fallback(recipe_type)
+        
         method = getattr(self, method_name, self._get_fallback_recipe)
         return method()
 
     def _get_fallback_recipe(self):
-        """Резервный рецепт при ошибках"""
-        return self.generate_brain_boost_breakfast()
+        """Резервный рецепт при ошибках с ВАЛИДАЦИЕЙ"""
+        current_hour = TimeManager.get_kemerovo_hour()
+        
+        if 5 <= current_hour < 11:
+            return self.generate_brain_boost_breakfast()
+        elif 11 <= current_hour < 16:
+            return self.generate_brain_salmon_bowl()
+        elif 16 <= current_hour < 22:
+            return self.generate_memory_fish()
+        else:
+            return self.generate_brain_nutrition_advice()
 
     # 🔄 ОСТАЛЬНЫЕ МЕТОДЫ РЕЦЕПТОВ
     def generate_focus_oatmeal(self): 
@@ -1158,10 +1282,70 @@ BCAA: лейцин - ключевой активатор mTOR пути
     
     def generate_avocado_toast(self):
         return self.generate_brain_boost_breakfast()
-    
-    # ... и так для всех остальных методов ...
 
-# ПЛАНИРОВЩИК КОНТЕНТА С УМНОЙ РОТАЦИЕЙ И НАУЧНЫМИ СООБЩЕНИЯМИ
+    def generate_brain_salmon_bowl(self):
+        """Обед для мозга - лососевая чаша"""
+        content = """
+🧠 ОБЕД ДЛЯ МОЗГА: ЛОСОСЕВАЯ ЧАША С КИНОА
+КБЖУ: 420 ккал • Белки: 35г • Жиры: 18г • Углеводы: 32г
+
+Ингредиенты на 2 порции:
+• Лосось - 200 г (Омега-3 - 2.5г/100г)
+• Киноа - 100 г (белок - 14г/100г)
+• Авокадо - 1 шт (мононенасыщенные жиры)
+• Шпинат - 100 г (железо - 2.7мг/100г)
+• Морковь - 1 шт (витамин A)
+• Лимонный сок - 2 ст.л.
+
+Приготовление (20 минут):
+1. Киноа варить 15 минут
+2. Лосось запечь 12 минут при 200°C
+3. Овощи нарезать, смешать с киноа
+4. Добавить лосось, полить лимонным соком
+"""
+        benefits = """• 🐟 Лосось - ДГК для нейронов
+• 🌾 Киноа - полный набор аминокислот
+• 🥑 Авокадо - витамин E для защиты
+• 🥬 Шпинат - железо для оксигенации"""
+        
+        return self.visual_manager.generate_attractive_post(
+            "🧠 ОБЕД ДЛЯ МОЗГА: ЛОСОСЕВАЯ ЧАША",
+            content, "neuro_lunch", benefits
+        )
+
+    def generate_memory_fish(self):
+        """Ужин для памяти - запеченная рыба"""
+        content = """
+🧠 УЖИН ДЛЯ ПАМЯТИ: ЗАПЕЧЕННАЯ РЫБА С ОВОЩАМИ
+КБЖУ: 380 ккал • Белки: 30г • Жиры: 20г • Углеводы: 18г
+
+Ингредиенты на 2 порции:
+• Белая рыба (треска) - 250 г (йод - 110мкг/100г)
+• Брокколи - 200 г (витамин K - 101мкг/100г)
+• Сладкий перец - 2 шт (витамин C - 128мг/100г)
+• Чеснок - 3 зубчика (аллицин)
+• Оливковое масло - 1 ст.л.
+• Лимон - 1/2 шт
+
+Приготовление (25 минут):
+1. Рыбу посолить, поперчить
+2. Овощи нарезать, смешать с чесноком
+3. Запекать 20 минут при 180°C
+4. Полить лимонным соком перед подачей
+"""
+        benefits = """• 🐟 Треска - йод для функции щитовидки
+• 🥦 Брокколи - витамин K для когнитивных функций
+• 🌶️ Перец - витамин C для антиоксидантной защиты
+• 🧄 Чеснок - противовоспалительные свойства"""
+        
+        return self.visual_manager.generate_attractive_post(
+            "🧠 УЖИН ДЛЯ ПАМЯТИ: ЗАПЕЧЕННАЯ РЫБА",
+            content, "neuro_dinner", benefits
+        )
+
+    # Добавьте остальные методы по аналогии...
+
+# ИСПРАВЛЕННЫЙ ПЛАНИРОВЩИК КОНТЕНТА С ВАЛИДАЦИЕЙ ВРЕМЕНИ
 class ContentScheduler:
     def __init__(self):
         self.kemerovo_schedule = {
@@ -1238,19 +1422,24 @@ class ContentScheduler:
         self.generator = SmartContentGenerator()
         
     def _convert_schedule_to_server(self):
+        """Конвертирует расписание в серверное время с ВАЛИДАЦИЕЙ"""
         server_schedule = {}
         for day, day_schedule in self.kemerovo_schedule.items():
             server_schedule[day] = {}
             for kemerovo_time, event in day_schedule.items():
                 server_time = TimeManager.kemerovo_to_server(kemerovo_time)
-                server_schedule[day][server_time] = event
+                # ДУБЛИРУЕМ информацию о кемеровском времени для валидации
+                event_with_validation = event.copy()
+                event_with_validation['kemerovo_time'] = kemerovo_time
+                event_with_validation['server_time'] = server_time
+                server_schedule[day][server_time] = event_with_validation
         return server_schedule
 
     def start_scheduler(self):
         if self.is_running:
             return
             
-        logger.info("🚀 Запуск планировщика контента с научными сообщениями...")
+        logger.info("🚀 Запуск планировщика контента с ВАЛИДАЦИЕЙ ВРЕМЕНИ...")
         
         for day, day_schedule in self.server_schedule.items():
             for server_time, event in day_schedule.items():
@@ -1261,20 +1450,53 @@ class ContentScheduler:
     
     def _schedule_event(self, day, server_time, event):
         def job():
-            current_times = TimeManager.get_current_times()
-            logger.info(f"🕒 Выполнение: {event['name']}")
-            
-            # Используем умную ротацию рецептов
-            content = self.generator.get_rotated_recipe(event['type'])
-            
-            if content:
-                content_with_time = f"{content}\n\n⏰ Опубликовано: {current_times['kemerovo_time']}"
-                success = self.telegram.send_message(content_with_time)
-                if success:
-                    logger.info(f"✅ Успешная публикация: {event['name']}")
+            try:
+                current_times = TimeManager.get_current_times()
+                current_hour = TimeManager.get_kemerovo_hour()
+                
+                logger.info(f"🕒 Выполнение: {event['name']} (Кемерово: {event['kemerovo_time']})")
+                
+                # ФИНАЛЬНАЯ ВАЛИДАЦИЯ: проверяем соответствие времени и типа контента
+                validated_type = self._validate_event_time(event['type'], current_hour, event['kemerovo_time'])
+                
+                # Используем умную ротацию рецептов С ВАЛИДАЦИЕЙ
+                content = self.generator.get_rotated_recipe(validated_type)
+                
+                if content:
+                    content_with_time = f"{content}\n\n⏰ Опубликовано: {current_times['kemerovo_time']}"
+                    success = self.telegram.send_message(content_with_time)
+                    if success:
+                        logger.info(f"✅ Успешная публикация: {event['name']} (тип: {validated_type})")
+                    else:
+                        logger.error(f"❌ Ошибка публикации: {event['name']}")
+                else:
+                    logger.error(f"❌ Не удалось сгенерировать контент для: {event['name']}")
+                    
+            except Exception as e:
+                logger.error(f"❌ Критическая ошибка в планировщике: {e}")
         
         job_func = getattr(schedule.every(), self._get_day_name(day))
         job_func.at(server_time).do(job)
+    
+    def _validate_event_time(self, event_type, current_hour, scheduled_time):
+        """Валидация типа события по текущему времени"""
+        scheduled_hour = int(scheduled_time.split(':')[0])
+        
+        # Если текущий час сильно отличается от запланированного, корректируем тип
+        if abs(current_hour - scheduled_hour) >= 3:
+            logger.warning(f"⚠️ Расхождение времени: запланировано {scheduled_time}, сейчас {current_hour}:00")
+            
+            if scheduled_hour < 11 and current_hour >= 11:
+                # Перенос утреннего события на дневное
+                return event_type.replace('breakfast', 'lunch')
+            elif scheduled_hour < 16 and current_hour >= 16:
+                # Перенос дневного события на вечернее
+                return event_type.replace('lunch', 'dinner')
+            elif scheduled_hour >= 16 and current_hour < 16:
+                # Перенос вечернего события на дневное
+                return event_type.replace('dinner', 'lunch')
+        
+        return event_type
     
     def _get_day_name(self, day_num):
         days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
@@ -1286,7 +1508,7 @@ class ContentScheduler:
                 schedule.run_pending()
                 time.sleep(60)
         Thread(target=run, daemon=True).start()
-        logger.info("✅ Планировщик с научными сообщениями запущен")
+        logger.info("✅ Планировщик с ВАЛИДАЦИЕЙ ВРЕМЕНИ запущен")
 
     def get_next_event(self):
         """Получает следующее событие для отображения в дашборде"""
@@ -1355,17 +1577,18 @@ content_scheduler = ContentScheduler()
 try:
     content_scheduler.start_scheduler()
     start_keep_alive_system()
-    logger.info("✅ Все компоненты системы с научными сообщениями инициализированы")
+    logger.info("✅ Все компоненты системы с ВАЛИДАЦИЕЙ ВРЕМЕНИ инициализированы")
     
     current_times = TimeManager.get_current_times()
     telegram_manager.send_message(f"""
-🎪 <b>СИСТЕМА ОБНОВЛЕНА: НАУЧНЫЕ СООБЩЕНИЯ + УМНАЯ РОТАЦИЯ</b>
+🎪 <b>СИСТЕМА ОБНОВЛЕНА: ВАЛИДАЦИЯ ВРЕМЕНИ + УМНАЯ РОТАЦИЯ</b>
 
 ✅ Запущена улучшенная система контента:
 • 🔬 7 НАУЧНЫХ СООБЩЕНИЙ перед завтраком
 • 📊 185 методов с умной ротацией
 • 🎯 СИСТЕМА ПРИОРИТЕТОВ для тематических дней
-• ⏰ Оптимальное время: 07:30 будни / 09:30 выходные
+• ⏰ ВАЛИДАЦИЯ ВРЕМЕНИ - предотвращение некорректных постов
+• 🛡️ Защита от завтраков в обеденное время
 
 📈 Новая структура дня:
 07:30/09:30 → Научное обоснование дня
@@ -1655,7 +1878,7 @@ def smart_dashboard():
             <div class="dashboard">
                 <div class="header">
                     <h1>🎪 Умный дашборд @ppsupershef</h1>
-                    <p>Клуб Осознанного Питания - Научные сообщения + Умная ротация</p>
+                    <p>Клуб Осознанного Питания - ВАЛИДАЦИЯ ВРЕМЕНИ + Умная ротация</p>
                     
                     <div class="status-bar">
                         <div class="status-item">
@@ -1678,7 +1901,7 @@ def smart_dashboard():
                 </div>
                 
                 <div class="monitor-info">
-                    <h3>🛡️ Мониторинг системы (Научные сообщения + Ротация)</h3>
+                    <h3>🛡️ Мониторинг системы (ВАЛИДАЦИЯ ВРЕМЕНИ + Ротация)</h3>
                     <div class="monitor-item">
                         <span>Uptime:</span>
                         <span>{int(monitor_status['uptime_seconds'] // 3600)}ч {int((monitor_status['uptime_seconds'] % 3600) // 60)}м</span>
@@ -1694,6 +1917,10 @@ def smart_dashboard():
                     <div class="monitor-item">
                         <span>Всего методов:</span>
                         <span>185 (7 научных + 178 рецептов)</span>
+                    </div>
+                    <div class="monitor-item">
+                        <span>Валидация времени:</span>
+                        <span style="color: var(--success)">✅ АКТИВНА</span>
                     </div>
                 </div>
                 
@@ -1793,7 +2020,7 @@ def smart_dashboard():
                             <span>185 методов × 90 дней</span>
                         </div>
                         <div class="automation-status">
-                            <span>✅ Система приоритетов</span>
+                            <span>✅ ВАЛИДАЦИЯ ВРЕМЕНИ</span>
                             <span>Активна</span>
                         </div>
                         <div class="automation-status">
@@ -1914,7 +2141,7 @@ def ping():
 @app.route('/test-channel')
 @rate_limit
 def test_channel():
-    success = telegram_manager.send_message("🎪 <b>Тест системы:</b> Научные сообщения работают отлично! ✅")
+    success = telegram_manager.send_message("🎪 <b>Тест системы:</b> ВАЛИДАЦИЯ ВРЕМЕНИ работает отлично! ✅")
     return jsonify({"status": "success" if success else "error"})
 
 @app.route('/test-quick-post')
@@ -1923,7 +2150,7 @@ def test_quick_post():
     try:
         test_content = """🎪 <b>ТЕСТОВЫЙ ПОСТ ИЗ ДАШБОРДА</b>
 
-✅ <b>Проверка системы научных сообщений</b>
+✅ <b>Проверка системы ВАЛИДАЦИИ ВРЕМЕНИ</b>
 
 Это тестовое сообщение подтверждает, что система из 185 методов работает корректно.
 
@@ -1931,11 +2158,12 @@ def test_quick_post():
 • 🔬 Научные сообщения перед завтраком
 • 🎯 Система приоритетов ротации
 • 📊 185 уникальных методов
-• 🛡️ Защита от дублирования
+• 🛡️ ВАЛИДАЦИЯ ВРЕМЕНИ - защита от некорректных постов
+• ⏰ Автокоррекция типа контента по времени
 
 📊 <b>Статус:</b> Все системы активны!
 
-#тест #наука #умнаяротация #дашборд"""
+#тест #наука #умнаяротация #валидация"""
         
         success = telegram_manager.send_message(test_content)
         return jsonify({
@@ -2010,7 +2238,8 @@ def diagnostics():
                 "duplicate_protection": "active",
                 "smart_generator": "active",
                 "priority_system": "active",
-                "science_messages": "active"
+                "science_messages": "active",
+                "time_validation": "active"  # НОВЫЙ КОМПОНЕНТ
             },
             "metrics": {
                 "member_count": member_count,
@@ -2020,7 +2249,8 @@ def diagnostics():
                 "science_messages": 7,
                 "recipes": 178,
                 "sent_messages": len(telegram_manager.sent_hashes),
-                "rotation_period": "90 дней"
+                "rotation_period": "90 дней",
+                "time_validation": "active"  # НОВАЯ МЕТРИКА
             }
         })
     except Exception as e:
@@ -2065,13 +2295,14 @@ def cleanup_messages():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     
-    print("🚀 Запуск Умного Дашборда @ppsupershef с научными сообщениями")
+    print("🚀 Запуск Умного Дашборда @ppsupershef с ВАЛИДАЦИЕЙ ВРЕМЕНИ")
     print("🎯 Философия: Научная нутрициология и осознанное питание")
     print("📊 Контент-план: 185 методов (7 научных + 178 рецептов)")
     print("🔄 Умная ротация: 90 дней без повторений")
     print("🔬 Научные сообщения: 07:30 будни / 09:30 выходные")
     print("🎯 Особенности: Тематические дни с научным обоснованием")
-    print("🛡️ Защита от дублирования: Активна (память + БД)")
+    print("🛡️ ВАЛИДАЦИЯ ВРЕМЕНИ: Активна - защита от некорректных постов")
+    print("⏰ Автокоррекция: Автоматическая смена типа по времени суток")
     print("📸 Визуалы: Отдельные фото для научных сообщений")
     print("🛡️ Keep-alive: Активен (каждые 5 минут)")
     print("🎮 Дашборд: Полностью функциональный с тестированием науки")
