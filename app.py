@@ -2833,92 +2833,121 @@ def smart_dashboard():
             </div>
 
             <script>
+                // Функция для управления состоянием кнопок
+                function manageButtonState(btn, isLoading) {{
+                    if (isLoading) {{
+                        btn.disabled = true;
+                        btn.innerHTML = '⏳ Загрузка...';
+                        btn.style.opacity = '0.7';
+                    }} else {{
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                    }}
+                }}
+                
+                // Функция для восстановления исходного текста кнопки
+                function restoreButtonText(btn, originalText) {{
+                    btn.innerHTML = originalText;
+                }}
+                
+                // Общая функция для API вызовов с обработкой состояния
+                async function makeApiCall(url, options = {{}}, btn = null) {{
+                    const originalText = btn ? btn.innerHTML : '';
+                    
+                    try {{
+                        if (btn) manageButtonState(btn, true);
+                        
+                        const response = await fetch(url, options);
+                        const data = await response.json();
+                        
+                        if (btn) {{
+                            manageButtonState(btn, false);
+                            restoreButtonText(btn, originalText);
+                        }}
+                        
+                        return data;
+                    }} catch (error) {{
+                        console.error('API Error:', error);
+                        if (btn) {{
+                            manageButtonState(btn, false);
+                            restoreButtonText(btn, originalText);
+                        }}
+                        alert('❌ Ошибка сети: ' + error.message);
+                        return {{ status: 'error', message: error.message }};
+                    }}
+                }}
+                
                 function testChannel() {{
-                    fetch('/test-channel').then(r => r.json()).then(data => {{
+                    const btn = event.target;
+                    makeApiCall('/test-channel', {{}}, btn).then(data => {{
                         alert(data.status === 'success' ? '✅ Канал работает отлично!' : '❌ Ошибка канала');
                     }});
                 }}
                 
                 function testQuickPost() {{
                     const btn = event.target;
-                    const originalText = btn.textContent;
-                    btn.textContent = '⏳ Тест...';
-                    btn.disabled = true;
-                    
-                    fetch('/test-quick-post')
-                        .then(r => r.json())
-                        .then(data => {{
-                            alert(data.status === 'success' ? '✅ Тестовый пост отправлен!' : '❌ Ошибка: ' + data.message);
-                        }})
-                        .catch(error => {{
-                            alert('❌ Ошибка сети: ' + error);
-                        }})
-                        .finally(() => {{
-                            btn.textContent = originalText;
-                            btn.disabled = false;
-                        }});
+                    makeApiCall('/test-quick-post', {{}}, btn).then(data => {{
+                        alert(data.status === 'success' ? '✅ Тестовый пост отправлен!' : '❌ Ошибка: ' + data.message);
+                    }});
                 }}
                 
                 function showManualPost() {{
                     const content = prompt('Введите текст поста (поддерживается HTML разметка):');
                     if (content) {{
                         const btn = event.target;
-                        const originalText = btn.textContent;
-                        btn.textContent = '⏳ Отправка...';
-                        btn.disabled = true;
-                        
-                        fetch('/quick-post', {{
+                        makeApiCall('/quick-post', {{
                             method: 'POST',
                             headers: {{'Content-Type': 'application/json'}},
                             body: JSON.stringify({{content: content}})
-                        }}).then(r => r.json()).then(data => {{
+                        }}, btn).then(data => {{
                             if (data.status === 'success') {{
                                 alert('✅ Пост успешно отправлен в канал!');
                             }} else {{
                                 alert('❌ Ошибка: ' + (data.message || 'Неизвестная ошибка'));
                             }}
-                        }}).catch(error => {{
-                            alert('❌ Ошибка сети: ' + error);
-                        }}).finally(() => {{
-                            btn.textContent = originalText;
-                            btn.disabled = false;
                         }});
                     }}
                 }}
                 
                 // ФУНКЦИИ ДЛЯ ОПРОСОВ
                 function sendGutHealthPoll() {{
-                    fetch('/poll/gut-health').then(r => r.json()).then(data => {{
+                    const btn = event.target;
+                    makeApiCall('/poll/gut-health', {{}}, btn).then(data => {{
                         alert(data.status === 'success' ? '✅ Опрос отправлен!' : '❌ Ошибка: ' + data.message);
                     }});
                 }}
                 
                 function sendFoodArchetypePoll() {{
-                    fetch('/poll/food-archetype').then(r => r.json()).then(data => {{
+                    const btn = event.target;
+                    makeApiCall('/poll/food-archetype', {{}}, btn).then(data => {{
                         alert(data.status === 'success' ? '✅ Опрос отправлен!' : '❌ Ошибка: ' + data.message);
                     }});
                 }}
                 
                 function sendFoodDilemmaPoll() {{
-                    fetch('/poll/food-dilemma').then(r => r.json()).then(data => {{
+                    const btn = event.target;
+                    makeApiCall('/poll/food-dilemma', {{}}, btn).then(data => {{
                         alert(data.status === 'success' ? '✅ Опрос отправлен!' : '❌ Ошибка: ' + data.message);
                     }});
                 }}
                 
                 function sendWeeklyChallengePoll() {{
-                    fetch('/poll/weekly-challenge').then(r => r.json()).then(data => {{
+                    const btn = event.target;
+                    makeApiCall('/poll/weekly-challenge', {{}}, btn).then(data => {{
                         alert(data.status === 'success' ? '✅ Опрос отправлен!' : '❌ Ошибка: ' + data.message);
                     }});
                 }}
                 
                 function sendCookingStylePoll() {{
-                    fetch('/poll/cooking-style').then(r => r.json()).then(data => {{
+                    const btn = event.target;
+                    makeApiCall('/poll/cooking-style', {{}}, btn).then(data => {{
                         alert(data.status === 'success' ? '✅ Опрос отправлен!' : '❌ Ошибка: ' + data.message);
                     }});
                 }}
                 
                 function sendRandomPoll() {{
-                    fetch('/poll/random').then(r => r.json()).then(data => {{
+                    const btn = event.target;
+                    makeApiCall('/poll/random', {{}}, btn).then(data => {{
                         if (data.status === 'success') {{
                             alert('✅ Случайный опрос отправлен! Тип: ' + data.poll_type);
                         }} else {{
@@ -2929,22 +2958,22 @@ def smart_dashboard():
                 
                 function toggleAnonymousVoting() {{
                     if (confirm('Изменить режим анонимного голосования?')) {{
-                        fetch('/toggle-anonymous-voting', {{ method: 'POST' }})
-                            .then(r => r.json())
-                            .then(data => {{
-                                if (data.status === 'success') {{
-                                    alert('✅ Режим анонимного голосования изменен!');
-                                    location.reload();
-                                }} else {{
-                                    alert('❌ Ошибка: ' + data.message);
-                                }}
-                            }});
+                        const btn = event.target;
+                        makeApiCall('/toggle-anonymous-voting', {{ method: 'POST' }}, btn).then(data => {{
+                            if (data.status === 'success') {{
+                                alert('✅ Режим анонимного голосования изменен!');
+                                location.reload();
+                            }} else {{
+                                alert('❌ Ошибка: ' + data.message);
+                            }}
+                        }});
                     }}
                 }}
                 
                 function forcePollResults() {{
                     if (confirm('Принудительно запустить сбор результатов для всех опросов?')) {{
-                        fetch('/force-poll-results').then(r => r.json()).then(data => {{
+                        const btn = event.target;
+                        makeApiCall('/force-poll-results', {{}}, btn).then(data => {{
                             alert(data.status === 'success' ? '✅ Сбор результатов запущен!' : '❌ Ошибка: ' + data.message);
                         }});
                     }}
@@ -2952,35 +2981,41 @@ def smart_dashboard():
                 
                 // СУЩЕСТВУЮЩИЕ ФУНКЦИИ
                 function sendScience() {{
-                    fetch('/send-science').then(r => r.json()).then(data => {{
+                    const btn = event.target;
+                    makeApiCall('/send-science', {{}}, btn).then(data => {{
                         alert(data.status === 'success' ? '✅ Научное сообщение отправлено!' : '❌ Ошибка отправки');
                     }});
                 }}
                 
                 function sendBreakfast() {{
-                    fetch('/send-breakfast').then(r => r.json()).then(data => {{
+                    const btn = event.target;
+                    makeApiCall('/send-breakfast', {{}}, btn).then(data => {{
                         alert(data.status === 'success' ? '✅ Завтрак отправлен!' : '❌ Ошибка отправки');
                     }});
                 }}
                 
                 function sendAdvice() {{
-                    fetch('/send-advice').then(r => r.json()).then(data => {{
+                    const btn = event.target;
+                    makeApiCall('/send-advice', {{}}, btn).then(data => {{
                         alert(data.status === 'success' ? '✅ Совет отправлен!' : '❌ Ошибка отправки');
                     }});
                 }}
                 
                 function sendDessert() {{
-                    fetch('/send-dessert').then(r => r.json()).then(data => {{
+                    const btn = event.target;
+                    makeApiCall('/send-dessert', {{}}, btn).then(data => {{
                         alert(data.status === 'success' ? '✅ Десерт отправлен!' : '❌ Ошибка отправки');
                     }});
                 }}
                 
                 function runDiagnostics() {{
-                    fetch('/diagnostics').then(r => r.json()).then(data => {{
+                    const btn = event.target;
+                    makeApiCall('/diagnostics', {{}}, btn).then(data => {{
                         alert('Диагностика завершена: ' + (data.status === 'success' ? '✅ Все системы в норме' : '❌ Обнаружены проблемы'));
                     }});
                 }}
                 
+                // Автообновление каждые 30 секунд
                 setInterval(() => {{
                     window.location.reload();
                 }}, 30000);
@@ -2993,6 +3028,133 @@ def smart_dashboard():
     except Exception as e:
         logger.error(f"❌ Ошибка дашборда: {e}")
         return f"Ошибка загрузки дашборда: {str(e)}"
+
+# НОВЫЕ МАРШРУТЫ ДЛЯ ОПРОСОВ
+@app.route('/poll/gut-health')
+@require_api_key
+def send_gut_health_poll():
+    """Отправка опроса про суперспособности ЖКТ"""
+    try:
+        question, options, poll_type = content_generator.generate_gut_health_poll()
+        message_id = telegram_manager.send_poll_with_instructions(question, options, poll_type)
+        
+        if message_id:
+            return jsonify({
+                "status": "success", 
+                "message": "Опрос про суперспособности ЖКТ отправлен",
+                "poll_type": poll_type
+            })
+        else:
+            return jsonify({"status": "error", "message": "Ошибка отправки опроса"})
+            
+    except Exception as e:
+        logger.error(f"❌ Ошибка отправки опроса gut-health: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/poll/food-archetype')
+@require_api_key
+def send_food_archetype_poll():
+    """Отправка опроса про пищевые архетипы"""
+    try:
+        question, options, poll_type = content_generator.generate_food_archetype_poll()
+        message_id = telegram_manager.send_poll_with_instructions(question, options, poll_type)
+        
+        if message_id:
+            return jsonify({
+                "status": "success", 
+                "message": "Опрос про пищевые архетипы отправлен",
+                "poll_type": poll_type
+            })
+        else:
+            return jsonify({"status": "error", "message": "Ошибка отправки опроса"})
+            
+    except Exception as e:
+        logger.error(f"❌ Ошибка отправки опроса food-archetype: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/poll/food-dilemma')
+@require_api_key
+def send_food_dilemma_poll():
+    """Отправка опроса про пищевые дилеммы"""
+    try:
+        question, options, poll_type = content_generator.generate_food_dilemma_poll()
+        message_id = telegram_manager.send_poll_with_instructions(question, options, poll_type)
+        
+        if message_id:
+            return jsonify({
+                "status": "success", 
+                "message": "Опрос про пищевые дилеммы отправлен",
+                "poll_type": poll_type
+            })
+        else:
+            return jsonify({"status": "error", "message": "Ошибка отправки опроса"})
+            
+    except Exception as e:
+        logger.error(f"❌ Ошибка отправки опроса food-dilemma: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/poll/weekly-challenge')
+@require_api_key
+def send_weekly_challenge_poll():
+    """Отправка опроса про недельный челлендж"""
+    try:
+        question, options, poll_type = content_generator.generate_weekly_challenge_poll()
+        message_id = telegram_manager.send_poll_with_instructions(question, options, poll_type)
+        
+        if message_id:
+            return jsonify({
+                "status": "success", 
+                "message": "Опрос про недельный челлендж отправлен",
+                "poll_type": poll_type
+            })
+        else:
+            return jsonify({"status": "error", "message": "Ошибка отправки опроса"})
+            
+    except Exception as e:
+        logger.error(f"❌ Ошибка отправки опроса weekly-challenge: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/poll/cooking-style')
+@require_api_key
+def send_cooking_style_poll():
+    """Отправка опроса про стили готовки"""
+    try:
+        question, options, poll_type = content_generator.generate_cooking_style_poll()
+        message_id = telegram_manager.send_poll_with_instructions(question, options, poll_type)
+        
+        if message_id:
+            return jsonify({
+                "status": "success", 
+                "message": "Опрос про стили готовки отправлен",
+                "poll_type": poll_type
+            })
+        else:
+            return jsonify({"status": "error", "message": "Ошибка отправки опроса"})
+            
+    except Exception as e:
+        logger.error(f"❌ Ошибка отправки опроса cooking-style: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/poll/random')
+@require_api_key
+def send_random_poll():
+    """Отправка случайного опроса"""
+    try:
+        question, options, poll_type = content_generator.get_random_poll()
+        message_id = telegram_manager.send_poll_with_instructions(question, options, poll_type)
+        
+        if message_id:
+            return jsonify({
+                "status": "success", 
+                "message": "Случайный опрос отправлен",
+                "poll_type": poll_type
+            })
+        else:
+            return jsonify({"status": "error", "message": "Ошибка отправки опроса"})
+            
+    except Exception as e:
+        logger.error(f"❌ Ошибка отправки случайного опроса: {e}")
+        return jsonify({"status": "error", "message": str(e)})
 
 # НОВЫЕ МАРШРУТЫ ДЛЯ АНОНИМНОГО ГОЛОСОВАНИЯ
 @app.route('/toggle-anonymous-voting', methods=['POST'])
@@ -3013,6 +3175,20 @@ def toggle_anonymous_voting():
         
     except Exception as e:
         logger.error(f"❌ Ошибка переключения анонимного голосования: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/force-poll-results')
+@require_api_key
+def force_poll_results():
+    """Принудительный сбор результатов для всех опросов"""
+    try:
+        content_scheduler._process_due_poll_results()
+        return jsonify({
+            "status": "success",
+            "message": "Принудительный сбор результатов запущен"
+        })
+    except Exception as e:
+        logger.error(f"❌ Ошибка принудительного сбора результатов: {e}")
         return jsonify({"status": "error", "message": str(e)})
 
 @app.route('/anonymous-votes/stats')
@@ -3066,6 +3242,163 @@ def get_anonymous_votes_stats():
         logger.error(f"❌ Ошибка получения статистики анонимных голосов: {e}")
         return jsonify({"status": "error", "message": str(e)})
 
+# СУЩЕСТВУЮЩИЕ МАРШРУТЫ
+@app.route('/test-channel')
+@require_api_key
+def test_channel():
+    try:
+        member_count = telegram_manager.get_member_count()
+        return jsonify({
+            "status": "success",
+            "message": f"Канал доступен, подписчиков: {member_count}",
+            "member_count": member_count
+        })
+    except Exception as e:
+        logger.error(f"❌ Ошибка тестирования канала: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/test-quick-post')
+@require_api_key
+def test_quick_post():
+    try:
+        test_message = "🧪 <b>ТЕСТОВЫЙ ПОСТ</b>\n\nЭто тестовое сообщение для проверки работы системы.\n\n✅ Система работает корректно!\n🕐 Время отправки: " + TimeManager.get_current_times()['kemerovo_time']
+        success = telegram_manager.send_message(test_message)
+        
+        if success:
+            return jsonify({"status": "success", "message": "Тестовый пост отправлен"})
+        else:
+            return jsonify({"status": "error", "message": "Ошибка отправки тестового поста"})
+    except Exception as e:
+        logger.error(f"❌ Ошибка тестового поста: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/quick-post', methods=['POST'])
+@require_api_key
+def quick_post():
+    try:
+        content = request.json.get('content')
+        if not content:
+            return jsonify({"status": "error", "message": "Отсутствует контент"})
+        
+        success = telegram_manager.send_message(content)
+        
+        if success:
+            return jsonify({"status": "success", "message": "Пост успешно отправлен"})
+        else:
+            return jsonify({"status": "error", "message": "Ошибка отправки поста"})
+    except Exception as e:
+        logger.error(f"❌ Ошибка быстрой отправки: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/send-science')
+@require_api_key
+def send_science():
+    try:
+        content = content_generator.get_rotated_recipe("science")
+        success = telegram_manager.send_message(content, content_type="science")
+        
+        if success:
+            return jsonify({"status": "success", "message": "Научное сообщение отправлено"})
+        else:
+            return jsonify({"status": "error", "message": "Ошибка отправки научного сообщения"})
+    except Exception as e:
+        logger.error(f"❌ Ошибка отправки науки: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/send-breakfast')
+@require_api_key
+def send_breakfast():
+    try:
+        content = content_generator.get_rotated_recipe("breakfast")
+        success = telegram_manager.send_message(content, content_type="breakfast")
+        
+        if success:
+            return jsonify({"status": "success", "message": "Завтрак отправлен"})
+        else:
+            return jsonify({"status": "error", "message": "Ошибка отправки завтрака"})
+    except Exception as e:
+        logger.error(f"❌ Ошибка отправки завтрака: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/send-advice')
+@require_api_key
+def send_advice():
+    try:
+        content = content_generator.get_rotated_recipe("advice")
+        success = telegram_manager.send_message(content, content_type="advice")
+        
+        if success:
+            return jsonify({"status": "success", "message": "Совет отправлен"})
+        else:
+            return jsonify({"status": "error", "message": "Ошибка отправки совета"})
+    except Exception as e:
+        logger.error(f"❌ Ошибка отправки совета: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/send-dessert')
+@require_api_key
+def send_dessert():
+    try:
+        content = content_generator.get_rotated_recipe("dessert")
+        success = telegram_manager.send_message(content, content_type="dessert")
+        
+        if success:
+            return jsonify({"status": "success", "message": "Десерт отправлен"})
+        else:
+            return jsonify({"status": "error", "message": "Ошибка отправки десерта"})
+    except Exception as e:
+        logger.error(f"❌ Ошибка отправки десерта: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/diagnostics')
+@require_api_key
+def diagnostics():
+    try:
+        # Проверяем основные компоненты системы
+        checks = {
+            "database": False,
+            "telegram_api": False,
+            "scheduler": False,
+            "content_generator": False
+        }
+        
+        # Проверка базы данных
+        try:
+            with ThreadSafeDatabase().get_connection() as conn:
+                cursor = conn.execute("SELECT 1")
+                checks["database"] = cursor.fetchone() is not None
+        except:
+            checks["database"] = False
+        
+        # Проверка Telegram API
+        try:
+            member_count = telegram_manager.get_member_count()
+            checks["telegram_api"] = member_count > 0
+        except:
+            checks["telegram_api"] = False
+        
+        # Проверка планировщика
+        checks["scheduler"] = content_scheduler.is_running
+        
+        # Проверка генератора контента
+        try:
+            content = content_generator.generate_monday_science()
+            checks["content_generator"] = bool(content and len(content) > 0)
+        except:
+            checks["content_generator"] = False
+        
+        all_ok = all(checks.values())
+        
+        return jsonify({
+            "status": "success" if all_ok else "warning",
+            "checks": checks,
+            "message": "Все системы в норме" if all_ok else "Обнаружены проблемы в системе"
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка диагностики: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
 # HEALTH CHECK
 @app.route('/health')
 def health_check():
@@ -3076,8 +3409,6 @@ def health_check():
 @app.route('/ping')
 def ping():
     return "pong", 200
-
-# ... (остальные существующие маршруты остаются без изменений)
 
 # ЗАПУСК ПРИЛОЖЕНИЯ
 if __name__ == '__main__':
@@ -3104,4 +3435,3 @@ if __name__ == '__main__':
         port=port,
         debug=False
     )
-
