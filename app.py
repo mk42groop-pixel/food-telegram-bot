@@ -5953,7 +5953,7 @@ BCAA: лейцин - ключевой активатор mTOR пути
             "⚡ СОВЕТ: ЭФФЕКТИВНАЯ ГОТОВКА ДЛЯ ЗАНЯТЫХ",
             content, "planning_advice", benefits
         )
-# 🚀 ЧАСТЬ 12 - ИНТЕРФЕЙС И ЗАПУСК СИСТЕМЫ
+# 🚀 ЧАСТЬ 12 - ИНТЕРФЕЙС И ЗАПУСК СИСТЕМЫ (ИСПРАВЛЕННАЯ)
 
 # Flask роуты для управления системой
 @app.route('/')
@@ -5965,17 +5965,228 @@ def dashboard():
     <head>
         <title>🍏 Умный Кулинарный Бот</title>
         <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
-            body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
-            .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-            .header { text-align: center; margin-bottom: 40px; }
-            .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
-            .stat-card { background: #f8f9fa; padding: 20px; border-radius: 10px; border-left: 4px solid #28a745; }
-            .btn { background: #007bff; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; margin: 5px; }
-            .btn-success { background: #28a745; }
-            .btn-warning { background: #ffc107; color: black; }
-            .btn-danger { background: #dc3545; }
-            .logs { background: #1a1a1a; color: #00ff00; padding: 20px; border-radius: 8px; font-family: monospace; height: 300px; overflow-y: scroll; margin-top: 20px; }
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            
+            body { 
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                margin: 0;
+                padding: 20px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+            }
+            
+            .container { 
+                max-width: 1200px; 
+                margin: 0 auto; 
+                background: white; 
+                padding: 30px; 
+                border-radius: 20px; 
+                box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+                backdrop-filter: blur(10px);
+            }
+            
+            .header { 
+                text-align: center; 
+                margin-bottom: 40px;
+                padding-bottom: 20px;
+                border-bottom: 3px solid #f0f0f0;
+            }
+            
+            .header h1 {
+                color: #2c3e50;
+                font-size: 2.5em;
+                margin-bottom: 10px;
+                background: linear-gradient(45deg, #667eea, #764ba2);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+            
+            .header p {
+                color: #7f8c8d;
+                font-size: 1.2em;
+            }
+            
+            .stats { 
+                display: grid; 
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+                gap: 25px; 
+                margin-bottom: 40px; 
+            }
+            
+            .stat-card { 
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 25px; 
+                border-radius: 15px; 
+                box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+            }
+            
+            .stat-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+            }
+            
+            .stat-card h3 {
+                font-size: 1.1em;
+                margin-bottom: 15px;
+                opacity: 0.9;
+            }
+            
+            .stat-card p {
+                font-size: 1.4em;
+                font-weight: bold;
+                margin: 5px 0;
+            }
+            
+            .actions-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 15px;
+                margin: 30px 0;
+            }
+            
+            .btn { 
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white; 
+                padding: 15px 25px; 
+                border: none; 
+                border-radius: 10px; 
+                cursor: pointer; 
+                margin: 5px; 
+                font-size: 16px;
+                font-weight: 600;
+                transition: all 0.3s ease;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            }
+            
+            .btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            }
+            
+            .btn:active {
+                transform: translateY(0);
+            }
+            
+            .btn-success { 
+                background: linear-gradient(135deg, #00b09b, #96c93d);
+            }
+            
+            .btn-warning { 
+                background: linear-gradient(135deg, #f46b45, #eea849);
+            }
+            
+            .btn-danger { 
+                background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            }
+            
+            .btn-info {
+                background: linear-gradient(135deg, #4facfe, #00f2fe);
+            }
+            
+            .logs { 
+                background: #1a1a1a; 
+                color: #00ff00; 
+                padding: 20px; 
+                border-radius: 10px; 
+                font-family: 'Courier New', monospace; 
+                height: 400px; 
+                overflow-y: auto; 
+                margin-top: 20px;
+                border: 2px solid #333;
+            }
+            
+            .log-entry {
+                margin: 5px 0;
+                padding: 3px 0;
+                border-bottom: 1px solid #333;
+            }
+            
+            .log-time {
+                color: #888;
+            }
+            
+            .log-info {
+                color: #00ff00;
+            }
+            
+            .log-warning {
+                color: #ffff00;
+            }
+            
+            .log-error {
+                color: #ff4444;
+            }
+            
+            .log-success {
+                color: #44ff44;
+            }
+            
+            .section {
+                background: #f8f9fa;
+                padding: 25px;
+                border-radius: 15px;
+                margin: 25px 0;
+                border-left: 5px solid #667eea;
+            }
+            
+            .section h3 {
+                color: #2c3e50;
+                margin-bottom: 15px;
+                font-size: 1.4em;
+            }
+            
+            .notification {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 25px;
+                border-radius: 10px;
+                color: white;
+                font-weight: 600;
+                z-index: 1000;
+                opacity: 0;
+                transform: translateX(100px);
+                transition: all 0.3s ease;
+            }
+            
+            .notification.success {
+                background: linear-gradient(135deg, #00b09b, #96c93d);
+                opacity: 1;
+                transform: translateX(0);
+            }
+            
+            .notification.error {
+                background: linear-gradient(135deg, #ff416c, #ff4b2b);
+                opacity: 1;
+                transform: translateX(0);
+            }
+            
+            @media (max-width: 768px) {
+                .container {
+                    padding: 15px;
+                    margin: 10px;
+                }
+                
+                .stats {
+                    grid-template-columns: 1fr;
+                }
+                
+                .actions-grid {
+                    grid-template-columns: 1fr;
+                }
+                
+                .header h1 {
+                    font-size: 2em;
+                }
+            }
         </style>
     </head>
     <body>
@@ -5988,133 +6199,356 @@ def dashboard():
             <div class="stats">
                 <div class="stat-card">
                     <h3>📊 Статус системы</h3>
-                    <p id="status">Загрузка...</p>
+                    <p id="status">🔄 Загрузка...</p>
                 </div>
                 <div class="stat-card">
                     <h3>⏰ Время</h3>
-                    <p id="timeInfo">Загрузка...</p>
+                    <p id="timeInfo">🔄 Загрузка...</p>
                 </div>
                 <div class="stat-card">
                     <h3>📨 Сообщения</h3>
-                    <p id="messageStats">Загрузка...</p>
+                    <p id="messageStats">🔄 Загрузка...</p>
                 </div>
                 <div class="stat-card">
                     <h3>🔄 Ротация</h3>
-                    <p id="rotationStats">Загрузка...</p>
+                    <p id="rotationStats">🔄 Загрузка...</p>
                 </div>
             </div>
 
-            <div style="text-align: center; margin: 30px 0;">
+            <div class="section">
                 <h3>🚀 Быстрые действия</h3>
-                <button class="btn btn-success" onclick="sendManualPost()">📝 Создать ручной пост</button>
-                <button class="btn" onclick="checkRotation()">🔄 Проверить ротацию</button>
-                <button class="btn btn-warning" onclick="forceCleanup()">🧹 Очистка кэша</button>
-                <button class="btn btn-danger" onclick="emergencyStop()">🛑 Аварийная остановка</button>
+                <div class="actions-grid">
+                    <button class="btn btn-success" onclick="sendManualPost()">
+                        📝 Создать ручной пост
+                    </button>
+                    <button class="btn btn-info" onclick="checkRotation()">
+                        🔄 Проверить ротацию
+                    </button>
+                    <button class="btn btn-warning" onclick="forceCleanup()">
+                        🧹 Очистка кэша
+                    </button>
+                    <button class="btn btn-danger" onclick="emergencyStop()">
+                        🛑 Аварийная остановка
+                    </button>
+                </div>
             </div>
 
-            <div>
-                <h3>📋 Логи системы</h3>
+            <div class="section">
+                <h3>📊 Статус ротации рецептов</h3>
+                <div id="rotationDetails" style="
+                    display: grid; 
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+                    gap: 15px;
+                    margin-top: 15px;
+                ">
+                    <!-- Динамически заполнится -->
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>📋 Логи системы (последние 20 записей)</h3>
                 <div class="logs" id="logs">
-                    Загрузка логов...
+                    <div class="log-entry">
+                        <span class="log-time">[Загрузка...]</span>
+                        <span class="log-info"> Загрузка логов системы...</span>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 15px;">
+                    <button class="btn btn-info" onclick="updateDashboard()">
+                        🔄 Обновить логи
+                    </button>
                 </div>
             </div>
         </div>
 
+        <div id="notification" class="notification"></div>
+
         <script>
+            // Глобальные переменные
+            let updateInterval;
+            const API_BASE = window.location.origin;
+
+            function showNotification(message, type = 'success') {
+                const notification = document.getElementById('notification');
+                notification.textContent = message;
+                notification.className = `notification ${type}`;
+                
+                setTimeout(() => {
+                    notification.style.opacity = '0';
+                    notification.style.transform = 'translateX(100px)';
+                }, 3000);
+            }
+
             function updateDashboard() {
+                console.log('🔄 Обновление дашборда...');
+                
+                // Статус системы
                 fetch('/api/status')
-                    .then(r => r.json())
+                    .then(r => {
+                        if (!r.ok) throw new Error('API недоступен');
+                        return r.json();
+                    })
                     .then(data => {
-                        document.getElementById('status').innerHTML = `🟢 Система активна<br>Аптайм: ${Math.round(data.uptime_seconds/3600)}ч`;
-                        document.getElementById('timeInfo').innerHTML = `Сервер: ${data.server_time}<br>Кемерово: ${data.kemerovo_time}`;
-                        document.getElementById('messageStats').innerHTML = `Отправлено: ${data.messages_sent}<br>Дубликатов: ${data.duplicate_rejections}`;
-                        document.getElementById('rotationStats').innerHTML = `Рецептов: ${data.total_recipes}<br>Доступно: ${data.available_recipes}`;
+                        document.getElementById('status').innerHTML = 
+                            `🟢 Система активна<br><small>Аптайм: ${Math.round(data.uptime_seconds/3600)}ч ${Math.round((data.uptime_seconds%3600)/60)}м</small>`;
+                        document.getElementById('timeInfo').innerHTML = 
+                            `Сервер: ${data.server_time}<br>Кемерово: ${data.kemerovo_time}`;
+                        document.getElementById('messageStats').innerHTML = 
+                            `Отправлено: ${data.messages_sent}<br>Дубликатов: ${data.duplicate_rejections}`;
+                        document.getElementById('rotationStats').innerHTML = 
+                            `Рецептов: ${data.total_recipes}<br>Доступно: ${data.available_recipes}`;
+                    })
+                    .catch(error => {
+                        console.error('❌ Ошибка статуса:', error);
+                        document.getElementById('status').innerHTML = '🔴 Ошибка подключения';
                     });
                 
+                // Логи системы
                 fetch('/api/logs')
-                    .then(r => r.text())
+                    .then(r => {
+                        if (!r.ok) throw new Error('Логи недоступны');
+                        return r.text();
+                    })
                     .then(logs => {
                         document.getElementById('logs').innerHTML = logs;
+                    })
+                    .catch(error => {
+                        console.error('❌ Ошибка логов:', error);
+                        document.getElementById('logs').innerHTML = 
+                            '<div class="log-entry"><span class="log-error">❌ Ошибка загрузки логов</span></div>';
+                    });
+                
+                // Статус ротации
+                fetch('/api/rotation-status')
+                    .then(r => r.json())
+                    .then(data => {
+                        const rotationDetails = document.getElementById('rotationDetails');
+                        rotationDetails.innerHTML = '';
+                        
+                        for (const [category, stats] of Object.entries(data.rotation_status)) {
+                            const card = document.createElement('div');
+                            card.style.cssText = `
+                                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                color: white;
+                                padding: 15px;
+                                border-radius: 10px;
+                                text-align: center;
+                            `;
+                            
+                            const emojiMap = {
+                                'breakfast': '🍳',
+                                'lunch': '🍝', 
+                                'dinner': '🌙',
+                                'dessert': '🍰',
+                                'advice': '💡',
+                                'science': '🔬',
+                                'cooking': '👨‍🍳'
+                            };
+                            
+                            card.innerHTML = `
+                                <div style="font-size: 2em; margin-bottom: 10px;">${emojiMap[category] || '📊'}</div>
+                                <div style="font-weight: bold; font-size: 1.1em;">${category}</div>
+                                <div style="font-size: 0.9em; opacity: 0.9;">
+                                    ${stats.available}/${stats.total} (${stats.availability_percent}%)
+                                </div>
+                            `;
+                            
+                            rotationDetails.appendChild(card);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('❌ Ошибка ротации:', error);
                     });
             }
 
             function sendManualPost() {
-                fetch('/api/manual-post', { method: 'POST' })
-                    .then(r => r.json())
-                    .then(data => {
-                        alert(data.message);
-                        updateDashboard();
-                    });
+                if (!confirm('📝 Создать тестовый пост в Telegram канал?')) return;
+                
+                showNotification('🔄 Отправка тестового поста...', 'info');
+                
+                fetch('/api/manual-post', { 
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(r => r.json())
+                .then(data => {
+                    showNotification(data.message, data.status === 'success' ? 'success' : 'error');
+                    updateDashboard();
+                })
+                .catch(error => {
+                    console.error('❌ Ошибка:', error);
+                    showNotification('❌ Ошибка отправки поста', 'error');
+                });
             }
 
             function checkRotation() {
                 fetch('/api/rotation-status')
                     .then(r => r.json())
                     .then(data => {
-                        let status = '📊 Статус ротации:\\n';
+                        let status = '📊 Статус ротации:\\n\\n';
                         for (const [category, stats] of Object.entries(data.rotation_status)) {
-                            status += `${category}: ${stats.available}/${stats.total} (${stats.availability_percent}%)\\n`;
+                            status += `• ${category}: ${stats.available}/${stats.total} (${stats.availability_percent}%)\\n`;
                         }
                         alert(status);
+                        showNotification('✅ Статус ротации обновлен', 'success');
+                    })
+                    .catch(error => {
+                        showNotification('❌ Ошибка проверки ротации', 'error');
                     });
             }
 
             function forceCleanup() {
+                if (!confirm('🧹 Очистить кэш и старые сообщения?')) return;
+                
                 fetch('/api/cleanup', { method: 'POST' })
                     .then(r => r.json())
                     .then(data => {
-                        alert(data.message);
+                        showNotification(data.message, data.status === 'success' ? 'success' : 'error');
                         updateDashboard();
+                    })
+                    .catch(error => {
+                        showNotification('❌ Ошибка очистки', 'error');
                     });
             }
 
             function emergencyStop() {
-                if (confirm('⚠️ ВЫ УВЕРЕНЫ? Это остановит все запланированные посты!')) {
-                    fetch('/api/emergency-stop', { method: 'POST' })
-                        .then(r => r.json())
-                        .then(data => {
-                            alert(data.message);
-                            updateDashboard();
-                        });
-                }
+                if (!confirm('🛑 ВЫ УВЕРЕНЫ? Это остановит все запланированные посты!')) return;
+                
+                fetch('/api/emergency-stop', { method: 'POST' })
+                    .then(r => r.json())
+                    .then(data => {
+                        showNotification(data.message, data.status === 'success' ? 'success' : 'error');
+                        if (data.status === 'success') {
+                            clearInterval(updateInterval);
+                            setTimeout(() => {
+                                document.getElementById('status').innerHTML = '🛑 СИСТЕМА ОСТАНОВЛЕНА';
+                            }, 1000);
+                        }
+                    })
+                    .catch(error => {
+                        showNotification('❌ Ошибка остановки', 'error');
+                    });
             }
 
-            // Обновляем каждые 10 секунд
-            setInterval(updateDashboard, 10000);
-            updateDashboard();
+            // Инициализация
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('🚀 Инициализация дашборда...');
+                updateDashboard();
+                
+                // Автообновление каждые 30 секунд
+                updateInterval = setInterval(updateDashboard, 30000);
+                
+                // Показать уведомление о запуске
+                setTimeout(() => {
+                    showNotification('✅ Дашборд успешно загружен!', 'success');
+                }, 1000);
+            });
+
+            // Остановка интервала при закрытии страницы
+            window.addEventListener('beforeunload', function() {
+                if (updateInterval) {
+                    clearInterval(updateInterval);
+                }
+            });
         </script>
     </body>
     </html>
     '''
     return dashboard_html
 
+# API РОУТЫ БЕЗ АВТОРИЗАЦИИ ДЛЯ ДАШБОРДА
 @app.route('/api/status')
-@require_api_key
 def api_status():
-    """API статуса системы"""
-    times = TimeManager.get_current_times()
-    rotation_status = AdvancedRotationSystem().check_rotation_status()
-    
-    total_recipes = sum(stats['total'] for stats in rotation_status.values())
-    available_recipes = sum(stats['available'] for stats in rotation_status.values())
-    
-    return jsonify({
-        "status": "active",
-        "uptime_seconds": service_monitor.get_status()["uptime_seconds"],
-        "server_time": times['server_time'],
-        "kemerovo_time": times['kemerovo_time'],
-        "messages_sent": service_monitor.request_count,
-        "duplicate_rejections": service_monitor.duplicate_rejections,
-        "total_recipes": total_recipes,
-        "available_recipes": available_recipes
-    })
+    """API статуса системы - БЕЗ АВТОРИЗАЦИИ"""
+    try:
+        times = TimeManager.get_current_times()
+        rotation_status = AdvancedRotationSystem().check_rotation_status()
+        
+        total_recipes = sum(stats['total'] for stats in rotation_status.values())
+        available_recipes = sum(stats['available'] for stats in rotation_status.values())
+        
+        return jsonify({
+            "status": "active",
+            "uptime_seconds": service_monitor.get_status()["uptime_seconds"],
+            "server_time": times['server_time'],
+            "kemerovo_time": times['kemerovo_time'],
+            "messages_sent": service_monitor.request_count,
+            "duplicate_rejections": service_monitor.duplicate_rejections,
+            "total_recipes": total_recipes,
+            "available_recipes": available_recipes
+        })
+    except Exception as e:
+        logger.error(f"❌ Ошибка в API статуса: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/api/logs')
+def get_logs():
+    """Получение последних логов - БЕЗ АВТОРИЗАЦИИ"""
+    try:
+        log_entries = []
+        try:
+            with open('bot.log', 'r', encoding='utf-8') as f:
+                lines = f.readlines()[-50:]  # Последние 50 строк
+        except FileNotFoundError:
+            lines = ["Лог-файл не найден\n"]
+        
+        for line in lines[-20:]:  # Показываем последние 20
+            line = line.strip()
+            if not line:
+                continue
+                
+            # Парсим лог для красивого отображения
+            let log_class = "log-info";
+            if "❌" in line or "ERROR" in line:
+                log_class = "log-error";
+            elif "⚠️" in line or "WARNING" in line:
+                log_class = "log-warning"; 
+            elif "✅" in line or "INFO" in line:
+                log_class = "log-success";
+                
+            # Извлекаем время и сообщение
+            let time_part = "";
+            let message_part = line;
+            
+            const time_match = line.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
+            if (time_match) {
+                time_part = time_match[1];
+                message_part = line.replace(time_part, '').replace(',', '').trim();
+            }
+            
+            log_entries.append(
+                f'<div class="log-entry">'
+                f'<span class="log-time">[{time_part}]</span> '
+                f'<span class="{log_class}">{message_part}</span>'
+                f'</div>'
+            )
+        
+        return ''.join(log_entries[::-1])  # Новые сверху
+    except Exception as e:
+        return f'<div class="log-entry"><span class="log-error">❌ Ошибка чтения логов: {str(e)}</span></div>'
+
+@app.route('/api/rotation-status')
+def rotation_status():
+    """Статус ротации рецептов - БЕЗ АВТОРИЗАЦИИ"""
+    try:
+        rotation_system = AdvancedRotationSystem()
+        status = rotation_system.check_rotation_status()
+        return jsonify({"rotation_status": status})
+    except Exception as e:
+        logger.error(f"❌ Ошибка получения статуса ротации: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+# API РОУТЫ С АВТОРИЗАЦИЕЙ ДЛЯ ОПЕРАЦИЙ
 @app.route('/api/manual-post', methods=['POST'])
 @require_api_key
 @rate_limit
 def manual_post():
-    """Ручная отправка поста"""
+    """Ручная отправка поста - С АВТОРИЗАЦИЕЙ"""
     try:
+        logger.info("🔄 ЗАПУСК РУЧНОЙ ОТПРАВКИ ПОСТА")
+        
         generator = SmartContentGenerator()
         telegram = TelegramManager()
         
@@ -6136,6 +6570,8 @@ def manual_post():
         rotation_system = AdvancedRotationSystem()
         method_name = rotation_system.get_priority_recipe(content_type, weekday)
         
+        logger.info(f"🎯 Ручной пост: {method_name} (тип: {content_type})")
+        
         if hasattr(generator, method_name):
             content = getattr(generator, method_name)()
             
@@ -6143,63 +6579,67 @@ def manual_post():
             content = content.replace("🎯 Основано на исследованиях", "🔄 РУЧНОЙ ПОСТ\\n🎯 Основано на исследованиях")
             
             if telegram.send_message(content):
-                return jsonify({"status": "success", "message": "✅ Пост успешно отправлен вручную"})
+                logger.info(f"✅ Ручной пост успешно отправлен: {method_name}")
+                return jsonify({
+                    "status": "success", 
+                    "message": "✅ Тестовый пост успешно отправлен в Telegram канал!"
+                })
             else:
-                return jsonify({"status": "error", "message": "❌ Ошибка отправки поста"})
+                logger.error(f"❌ Ошибка отправки ручного поста: {method_name}")
+                return jsonify({
+                    "status": "error", 
+                    "message": "❌ Ошибка отправки поста в Telegram"
+                })
         else:
-            return jsonify({"status": "error", "message": f"❌ Метод {method_name} не найден"})
+            logger.error(f"❌ Метод не найден: {method_name}")
+            return jsonify({
+                "status": "error", 
+                "message": f"❌ Метод генерации {method_name} не найден"
+            })
             
     except Exception as e:
-        logger.error(f"❌ Ошибка ручной отправки: {str(e)}")
-        return jsonify({"status": "error", "message": f"❌ Ошибка: {str(e)}"})
-
-@app.route('/api/rotation-status')
-@require_api_key
-def rotation_status():
-    """Статус ротации рецептов"""
-    try:
-        rotation_system = AdvancedRotationSystem()
-        status = rotation_system.check_rotation_status()
-        return jsonify({"rotation_status": status})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
+        logger.error(f"❌ Критическая ошибка в ручной отправке: {str(e)}")
+        return jsonify({
+            "status": "error", 
+            "message": f"❌ Ошибка: {str(e)}"
+        })
 
 @app.route('/api/cleanup', methods=['POST'])
 @require_api_key
 def cleanup():
-    """Очистка кэша и старых сообщений"""
+    """Очистка кэша и старых сообщений - С АВТОРИЗАЦИЕЙ"""
     try:
         telegram = TelegramManager()
-        telegram.cleanup_old_messages(30)  # Очистка сообщений старше 30 дней
+        deleted_count = telegram.cleanup_old_messages(30)  # Очистка сообщений старше 30 дней
         
         with Database().get_connection() as conn:
             conn.execute('DELETE FROM content_cache WHERE created_at < DATE("now", "-7 days")')
+            cache_deleted = conn.total_changes
         
-        return jsonify({"status": "success", "message": "✅ Кэш успешно очищен"})
+        logger.info(f"🧹 Очистка завершена: {deleted_count} сообщений, {cache_deleted} кэшей")
+        
+        return jsonify({
+            "status": "success", 
+            "message": f"✅ Кэш успешно очищен! Удалено: {deleted_count} сообщений, {cache_deleted} кэшей"
+        })
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
-
-@app.route('/api/logs')
-@require_api_key
-def get_logs():
-    """Получение последних логов"""
-    try:
-        with open('bot.log', 'r', encoding='utf-8') as f:
-            logs = f.readlines()[-50:]  # Последние 50 строк
-        return '<br>'.join(logs[::-1])  # Новые сверху
-    except Exception as e:
-        return f"Ошибка чтения логов: {str(e)}"
+        logger.error(f"❌ Ошибка очистки: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/emergency-stop', methods=['POST'])
 @require_api_key
 def emergency_stop():
-    """Аварийная остановка системы"""
+    """Аварийная остановка системы - С АВТОРИЗАЦИЕЙ"""
     try:
         schedule.clear()
         logger.critical("🛑 СИСТЕМА ОСТАНОВЛЕНА ПО КОМАНДЕ ПОЛЬЗОВАТЕЛЯ")
-        return jsonify({"status": "success", "message": "🛑 Система остановлена"})
+        return jsonify({
+            "status": "success", 
+            "message": "🛑 Система остановлена! Все запланированные посты отменены."
+        })
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
+        logger.error(f"❌ Ошибка остановки системы: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 # СИСТЕМА ПЛАНИРОВАНИЯ
 def schedule_posts():
@@ -6244,6 +6684,8 @@ def send_scheduled_post(scheduled_time):
         # Получаем метод для генерации контента
         method_name = rotation_system.get_priority_recipe(content_type, weekday)
         
+        logger.info(f"🎯 Запланированный пост: {method_name} (день: {weekday}, час: {current_hour})")
+        
         if hasattr(generator, method_name):
             content = getattr(generator, method_name)()
             
@@ -6260,13 +6702,13 @@ def send_scheduled_post(scheduled_time):
 def get_content_type_for_time(hour, weekday):
     """Определение типа контента по времени суток и дню недели"""
     day_themes = {
-        0: 'neuro',  # Понедельник
-        1: 'protein', # Вторник
-        2: 'veggie',  # Среда
-        3: 'carbs',   # Четверг
-        4: 'balance', # Пятница
-        5: 'family',  # Суббота
-        6: 'planning' # Воскресенье
+        0: 'neuro',    # Понедельник
+        1: 'protein',  # Вторник
+        2: 'veggie',   # Среда
+        3: 'carbs',    # Четверг
+        4: 'balance',  # Пятница
+        5: 'family',   # Суббота
+        6: 'planning'  # Воскресенье
     }
     
     theme = day_themes.get(weekday, 'neuro')
@@ -6283,6 +6725,8 @@ def get_content_type_for_time(hour, weekday):
 # СИСТЕМА МОНИТОРИНГА И ЗАПУСКА
 def run_scheduler():
     """Запуск планировщика в отдельном потоке"""
+    logger.info("🔄 Запуск планировщика заданий...")
+    
     while True:
         try:
             schedule.run_pending()
@@ -6294,6 +6738,8 @@ def run_scheduler():
 def start_keep_alive():
     """Функция поддержания активности на Render"""
     def keep_alive():
+        logger.info("♻️ Запуск keep-alive системы...")
+        
         while True:
             try:
                 if Config.RENDER_APP_URL:
@@ -6314,28 +6760,36 @@ if __name__ == '__main__':
         
         # Инициализация базы данных
         Database()
+        logger.info("✅ База данных инициализирована")
         
         # Настройка расписания
         schedule_posts()
+        logger.info("✅ Расписание публикаций настроено")
         
         # Запуск планировщика в отдельном потоке
         scheduler_thread = Thread(target=run_scheduler, daemon=True)
         scheduler_thread.start()
+        logger.info("✅ Планировщик заданий запущен")
         
         # Запуск keep-alive для Render
         start_keep_alive()
+        logger.info("✅ Keep-alive система запущена")
         
         # Проверка ротации
         rotation_system = AdvancedRotationSystem()
-        rotation_system.check_rotation_status()
+        rotation_status = rotation_system.check_rotation_status()
+        logger.info("✅ Система ротации проверена")
         
         logger.info("✅ СИСТЕМА УСПЕШНО ЗАПУЩЕНА")
         logger.info("📊 Статус доступен по адресу: /")
         
         # Запуск Flask приложения
         port = int(os.environ.get('PORT', 5000))
+        logger.info(f"🌐 Запуск Flask на порту {port}")
+        
         app.run(host='0.0.0.0', port=port, debug=False)
         
     except Exception as e:
         logger.critical(f"❌ КРИТИЧЕСКАЯ ОШИБКА ПРИ ЗАПУСКЕ: {e}")
         raise
+
