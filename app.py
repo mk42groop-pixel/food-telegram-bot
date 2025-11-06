@@ -5977,10 +5977,6 @@ def dashboard():
             .btn-danger { background: #dc3545; }
             .logs { background: #1a1a1a; color: #00ff00; padding: 20px; border-radius: 8px; font-family: monospace; height: 300px; overflow-y: scroll; margin-top: 20px; }
             .actions { text-align: center; margin: 30px 0; }
-            .notification {
-                position: fixed; top: 20px; right: 20px; padding: 15px 25px; border-radius: 10px; color: white; 
-                font-weight: 600; z-index: 1000; background: #28a745; display: none;
-            }
         </style>
     </head>
     <body>
@@ -6025,55 +6021,26 @@ def dashboard():
             </div>
         </div>
 
-        <div id="notification" class="notification"></div>
-
         <script>
-            function showNotification(message, type = 'success') {
-                const notification = document.getElementById('notification');
-                notification.textContent = message;
-                notification.style.display = 'block';
-                notification.style.background = type === 'success' ? '#28a745' : '#dc3545';
-                
-                setTimeout(() => {
-                    notification.style.display = 'none';
-                }, 3000);
-            }
-
             function updateDashboard() {
-                console.log('🔄 Обновление дашборда...');
-                
-                // Статус системы
                 fetch('/api/status')
-                    .then(r => {
-                        if (!r.ok) throw new Error('API недоступен');
-                        return r.json();
-                    })
+                    .then(r => r.json())
                     .then(data => {
-                        document.getElementById('status').innerHTML = 
-                            `🟢 Система активна<br>Аптайм: ${Math.round(data.uptime_seconds/3600)}ч`;
-                        document.getElementById('timeInfo').innerHTML = 
-                            `Сервер: ${data.server_time}<br>Кемерово: ${data.kemerovo_time}`;
-                        document.getElementById('messageStats').innerHTML = 
-                            `Отправлено: ${data.messages_sent}<br>Дубликатов: ${data.duplicate_rejections}`;
-                        document.getElementById('rotationStats').innerHTML = 
-                            `Рецептов: ${data.total_recipes}<br>Доступно: ${data.available_recipes}`;
+                        document.getElementById('status').innerHTML = `🟢 Система активна<br>Аптайм: ${Math.round(data.uptime_seconds/3600)}ч`;
+                        document.getElementById('timeInfo').innerHTML = `Сервер: ${data.server_time}<br>Кемерово: ${data.kemerovo_time}`;
+                        document.getElementById('messageStats').innerHTML = `Отправлено: ${data.messages_sent}<br>Дубликатов: ${data.duplicate_rejections}`;
+                        document.getElementById('rotationStats').innerHTML = `Рецептов: ${data.total_recipes}<br>Доступно: ${data.available_recipes}`;
                     })
                     .catch(error => {
-                        console.error('❌ Ошибка статуса:', error);
                         document.getElementById('status').innerHTML = '🔴 Ошибка подключения';
                     });
                 
-                // Логи системы
                 fetch('/api/logs')
-                    .then(r => {
-                        if (!r.ok) throw new Error('Логи недоступны');
-                        return r.text();
-                    })
+                    .then(r => r.text())
                     .then(logs => {
                         document.getElementById('logs').innerHTML = logs;
                     })
                     .catch(error => {
-                        console.error('❌ Ошибка логов:', error);
                         document.getElementById('logs').innerHTML = '❌ Ошибка загрузки логов';
                     });
             }
@@ -6081,38 +6048,26 @@ def dashboard():
             function sendManualPost() {
                 if (!confirm('Создать тестовый пост в Telegram канал?')) return;
                 
-                showNotification('🔄 Отправка тестового поста...', 'info');
-                
-                fetch('/api/manual-post', { 
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                })
-                .then(r => r.json())
-                .then(data => {
-                    showNotification(data.message, data.status === 'success' ? 'success' : 'error');
-                    updateDashboard();
-                })
-                .catch(error => {
-                    console.error('❌ Ошибка:', error);
-                    showNotification('❌ Ошибка отправки поста', 'error');
-                });
+                fetch('/api/manual-post', { method: 'POST' })
+                    .then(r => r.json())
+                    .then(data => {
+                        alert(data.message);
+                        updateDashboard();
+                    })
+                    .catch(error => {
+                        alert('❌ Ошибка отправки поста');
+                    });
             }
 
             function checkRotation() {
                 fetch('/api/rotation-status')
                     .then(r => r.json())
                     .then(data => {
-                        let status = '📊 Статус ротации:\\n\\n';
+                        let status = '📊 Статус ротации:\\n';
                         for (const [category, stats] of Object.entries(data.rotation_status)) {
-                            status += `• ${category}: ${stats.available}/${stats.total} (${stats.availability_percent}%)\\n`;
+                            status += `${category}: ${stats.available}/${stats.total} (${stats.availability_percent}%)\\n`;
                         }
                         alert(status);
-                        showNotification('✅ Статус ротации обновлен', 'success');
-                    })
-                    .catch(error => {
-                        showNotification('❌ Ошибка проверки ротации', 'error');
                     });
             }
 
@@ -6122,11 +6077,8 @@ def dashboard():
                 fetch('/api/cleanup', { method: 'POST' })
                     .then(r => r.json())
                     .then(data => {
-                        showNotification(data.message, data.status === 'success' ? 'success' : 'error');
+                        alert(data.message);
                         updateDashboard();
-                    })
-                    .catch(error => {
-                        showNotification('❌ Ошибка очистки', 'error');
                     });
             }
 
@@ -6136,27 +6088,13 @@ def dashboard():
                 fetch('/api/emergency-stop', { method: 'POST' })
                     .then(r => r.json())
                     .then(data => {
-                        showNotification(data.message, data.status === 'success' ? 'success' : 'error');
-                        if (data.status === 'success') {
-                            clearInterval(updateInterval);
-                            setTimeout(() => {
-                                document.getElementById('status').innerHTML = '🛑 СИСТЕМА ОСТАНОВЛЕНА';
-                            }, 1000);
-                        }
-                    })
-                    .catch(error => {
-                        showNotification('❌ Ошибка остановки', 'error');
+                        alert(data.message);
                     });
             }
 
-            // Инициализация
-            document.addEventListener('DOMContentLoaded', function() {
-                console.log('🚀 Инициализация дашборда...');
-                updateDashboard();
-                
-                // Автообновление каждые 30 секунд
-                updateInterval = setInterval(updateDashboard, 30000);
-            });
+            // Обновляем каждые 10 секунд
+            setInterval(updateDashboard, 10000);
+            updateDashboard();
         </script>
     </body>
     </html>
@@ -6185,7 +6123,6 @@ def api_status():
             "available_recipes": available_recipes
         })
     except Exception as e:
-        logger.error(f"❌ Ошибка в API статуса: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/logs')
@@ -6193,20 +6130,10 @@ def get_logs():
     """Получение последних логов - БЕЗ АВТОРИЗАЦИИ"""
     try:
         with open('bot.log', 'r', encoding='utf-8') as f:
-            lines = f.readlines()[-50:]  # Последние 50 строк
-        
-        log_entries = []
-        for line in lines[-20:]:  # Показываем последние 20
-            line = line.strip()
-            if not line:
-                continue
-                
-            # Простое форматирование логов
-            log_entries.append(f'<div style="margin: 2px 0; font-size: 12px;">{line}</div>')
-        
-        return ''.join(log_entries[::-1])  # Новые сверху
+            logs = f.readlines()[-50:]  # Последние 50 строк
+        return '<br>'.join(logs[::-1])  # Новые сверху
     except Exception as e:
-        return f'<div style="color: #ff4444;">❌ Ошибка чтения логов: {str(e)}</div>'
+        return f"Ошибка чтения логов: {str(e)}"
 
 @app.route('/api/rotation-status')
 def rotation_status():
@@ -6216,10 +6143,9 @@ def rotation_status():
         status = rotation_system.check_rotation_status()
         return jsonify({"rotation_status": status})
     except Exception as e:
-        logger.error(f"❌ Ошибка получения статуса ротации: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
-# ОПЕРАЦИОННЫЕ API - ТОЖЕ БЕЗ АВТОРИЗАЦИИ ДЛЯ ПРОСТОТЫ
+# ОПЕРАЦИОННЫЕ API - ТОЖЕ БЕЗ АВТОРИЗАЦИИ
 @app.route('/api/manual-post', methods=['POST'])
 def manual_post():
     """Ручная отправка поста - БЕЗ АВТОРИЗАЦИИ"""
@@ -6232,7 +6158,6 @@ def manual_post():
         weekday = TimeManager.get_kemerovo_weekday()
         hour = TimeManager.get_kemerovo_hour()
         
-        # Выбираем тип контента по текущему времени
         if 5 <= hour < 11:
             content_type = 'neuro_breakfast' if weekday == 0 else 'protein_breakfast'
         elif 11 <= hour < 16:
@@ -6245,57 +6170,32 @@ def manual_post():
         rotation_system = AdvancedRotationSystem()
         method_name = rotation_system.get_priority_recipe(content_type, weekday)
         
-        logger.info(f"🎯 Ручной пост: {method_name}")
-        
         if hasattr(generator, method_name):
             content = getattr(generator, method_name)()
             content = content.replace("🎯 Основано на исследованиях", "🔄 РУЧНОЙ ПОСТ\\n🎯 Основано на исследованиях")
             
             if telegram.send_message(content):
-                logger.info(f"✅ Ручной пост успешно отправлен: {method_name}")
-                return jsonify({
-                    "status": "success", 
-                    "message": "✅ Тестовый пост успешно отправлен в Telegram канал!"
-                })
+                return jsonify({"status": "success", "message": "✅ Тестовый пост успешно отправлен!"})
             else:
-                logger.error(f"❌ Ошибка отправки ручного поста: {method_name}")
-                return jsonify({
-                    "status": "error", 
-                    "message": "❌ Ошибка отправки поста в Telegram"
-                })
+                return jsonify({"status": "error", "message": "❌ Ошибка отправки поста"})
         else:
-            logger.error(f"❌ Метод не найден: {method_name}")
-            return jsonify({
-                "status": "error", 
-                "message": f"❌ Метод генерации {method_name} не найден"
-            })
+            return jsonify({"status": "error", "message": f"❌ Метод {method_name} не найден"})
             
     except Exception as e:
-        logger.error(f"❌ Критическая ошибка в ручной отправке: {str(e)}")
-        return jsonify({
-            "status": "error", 
-            "message": f"❌ Ошибка: {str(e)}"
-        })
+        return jsonify({"status": "error", "message": f"❌ Ошибка: {str(e)}"})
 
 @app.route('/api/cleanup', methods=['POST'])
 def cleanup():
     """Очистка кэша и старых сообщений - БЕЗ АВТОРИЗАЦИИ"""
     try:
         telegram = TelegramManager()
-        deleted_count = telegram.cleanup_old_messages(30)
+        telegram.cleanup_old_messages(30)
         
         with Database().get_connection() as conn:
             conn.execute('DELETE FROM content_cache WHERE created_at < DATE("now", "-7 days")')
-            cache_deleted = conn.total_changes
         
-        logger.info(f"🧹 Очистка завершена: {deleted_count} сообщений, {cache_deleted} кэшей")
-        
-        return jsonify({
-            "status": "success", 
-            "message": f"✅ Кэш успешно очищен! Удалено: {deleted_count} сообщений, {cache_deleted} кэшей"
-        })
+        return jsonify({"status": "success", "message": "✅ Кэш успешно очищен"})
     except Exception as e:
-        logger.error(f"❌ Ошибка очистки: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/emergency-stop', methods=['POST'])
@@ -6304,15 +6204,11 @@ def emergency_stop():
     try:
         schedule.clear()
         logger.critical("🛑 СИСТЕМА ОСТАНОВЛЕНА ПО КОМАНДЕ ПОЛЬЗОВАТЕЛЯ")
-        return jsonify({
-            "status": "success", 
-            "message": "🛑 Система остановлена! Все запланированные посты отменены."
-        })
+        return jsonify({"status": "success", "message": "🛑 Система остановлена"})
     except Exception as e:
-        logger.error(f"❌ Ошибка остановки системы: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
-# СИСТЕМА ПЛАНИРОВАНИЯ (без изменений)
+# СИСТЕМА ПЛАНИРОВАНИЯ
 def schedule_posts():
     """Настройка расписания публикаций"""
     schedule.clear()
@@ -6371,8 +6267,6 @@ def get_content_type_for_time(hour, weekday):
 # СИСТЕМА МОНИТОРИНГА И ЗАПУСКА
 def run_scheduler():
     """Запуск планировщика в отдельном потоке"""
-    logger.info("🔄 Запуск планировщика заданий...")
-    
     while True:
         try:
             schedule.run_pending()
@@ -6384,17 +6278,13 @@ def run_scheduler():
 def start_keep_alive():
     """Функция поддержания активности на Render"""
     def keep_alive():
-        logger.info("♻️ Запуск keep-alive системы...")
-        
         while True:
             try:
                 if Config.RENDER_APP_URL:
-                    response = requests.get(f"{Config.RENDER_APP_URL}/api/status", timeout=10)
+                    requests.get(f"{Config.RENDER_APP_URL}/api/status", timeout=10)
                     service_monitor.update_keep_alive()
-                    logger.info(f"♻️ Keep-alive: {response.status_code}")
                 time.sleep(300)
             except Exception as e:
-                logger.warning(f"⚠️ Keep-alive ошибка: {e}")
                 time.sleep(60)
     
     Thread(target=keep_alive, daemon=True).start()
@@ -6405,28 +6295,19 @@ if __name__ == '__main__':
         logger.info("🚀 ЗАПУСК СИСТЕМЫ УМНОГО КУЛИНАРНОГО БОТА")
         
         Database()
-        logger.info("✅ База данных инициализирована")
-        
         schedule_posts()
-        logger.info("✅ Расписание публикаций настроено")
         
         scheduler_thread = Thread(target=run_scheduler, daemon=True)
         scheduler_thread.start()
-        logger.info("✅ Планировщик заданий запущен")
         
         start_keep_alive()
-        logger.info("✅ Keep-alive система запущена")
         
         rotation_system = AdvancedRotationSystem()
         rotation_system.check_rotation_status()
-        logger.info("✅ Система ротации проверена")
         
         logger.info("✅ СИСТЕМА УСПЕШНО ЗАПУЩЕНА")
-        logger.info("📊 Статус доступен по адресу: /")
         
         port = int(os.environ.get('PORT', 5000))
-        logger.info(f"🌐 Запуск Flask на порту {port}")
-        
         app.run(host='0.0.0.0', port=port, debug=False)
         
     except Exception as e:
