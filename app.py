@@ -5953,9 +5953,9 @@ BCAA: лейцин - ключевой активатор mTOR пути
             "⚡ СОВЕТ: ЭФФЕКТИВНАЯ ГОТОВКА ДЛЯ ЗАНЯТЫХ",
             content, "planning_advice", benefits
         )
-# 🚀 ЧАСТЬ 12 - ИНТЕРФЕЙС И ЗАПУСК СИСТЕМЫ (ИСПРАВЛЕННАЯ)
+# 🚀 ЧАСТЬ 12 - ИНТЕРФЕЙС И ЗАПУСК (ПОЛНОСТЬЮ БЕЗ АВТОРИЗАЦИИ)
 
-# Flask роуты для управления системой
+# Flask роуты для управления системой - БЕЗ АВТОРИЗАЦИИ
 @app.route('/')
 def dashboard():
     """Главная панель управления ботом"""
@@ -5965,227 +5965,21 @@ def dashboard():
     <head>
         <title>🍏 Умный Кулинарный Бот</title>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
-            * {
-                box-sizing: border-box;
-                margin: 0;
-                padding: 0;
-            }
-            
-            body { 
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-                margin: 0;
-                padding: 20px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                min-height: 100vh;
-            }
-            
-            .container { 
-                max-width: 1200px; 
-                margin: 0 auto; 
-                background: white; 
-                padding: 30px; 
-                border-radius: 20px; 
-                box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-                backdrop-filter: blur(10px);
-            }
-            
-            .header { 
-                text-align: center; 
-                margin-bottom: 40px;
-                padding-bottom: 20px;
-                border-bottom: 3px solid #f0f0f0;
-            }
-            
-            .header h1 {
-                color: #2c3e50;
-                font-size: 2.5em;
-                margin-bottom: 10px;
-                background: linear-gradient(45deg, #667eea, #764ba2);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-            }
-            
-            .header p {
-                color: #7f8c8d;
-                font-size: 1.2em;
-            }
-            
-            .stats { 
-                display: grid; 
-                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
-                gap: 25px; 
-                margin-bottom: 40px; 
-            }
-            
-            .stat-card { 
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                padding: 25px; 
-                border-radius: 15px; 
-                box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-                transition: transform 0.3s ease, box-shadow 0.3s ease;
-            }
-            
-            .stat-card:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 15px 30px rgba(0,0,0,0.2);
-            }
-            
-            .stat-card h3 {
-                font-size: 1.1em;
-                margin-bottom: 15px;
-                opacity: 0.9;
-            }
-            
-            .stat-card p {
-                font-size: 1.4em;
-                font-weight: bold;
-                margin: 5px 0;
-            }
-            
-            .actions-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 15px;
-                margin: 30px 0;
-            }
-            
-            .btn { 
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white; 
-                padding: 15px 25px; 
-                border: none; 
-                border-radius: 10px; 
-                cursor: pointer; 
-                margin: 5px; 
-                font-size: 16px;
-                font-weight: 600;
-                transition: all 0.3s ease;
-                box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            }
-            
-            .btn:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-            }
-            
-            .btn:active {
-                transform: translateY(0);
-            }
-            
-            .btn-success { 
-                background: linear-gradient(135deg, #00b09b, #96c93d);
-            }
-            
-            .btn-warning { 
-                background: linear-gradient(135deg, #f46b45, #eea849);
-            }
-            
-            .btn-danger { 
-                background: linear-gradient(135deg, #ff416c, #ff4b2b);
-            }
-            
-            .btn-info {
-                background: linear-gradient(135deg, #4facfe, #00f2fe);
-            }
-            
-            .logs { 
-                background: #1a1a1a; 
-                color: #00ff00; 
-                padding: 20px; 
-                border-radius: 10px; 
-                font-family: 'Courier New', monospace; 
-                height: 400px; 
-                overflow-y: auto; 
-                margin-top: 20px;
-                border: 2px solid #333;
-            }
-            
-            .log-entry {
-                margin: 5px 0;
-                padding: 3px 0;
-                border-bottom: 1px solid #333;
-            }
-            
-            .log-time {
-                color: #888;
-            }
-            
-            .log-info {
-                color: #00ff00;
-            }
-            
-            .log-warning {
-                color: #ffff00;
-            }
-            
-            .log-error {
-                color: #ff4444;
-            }
-            
-            .log-success {
-                color: #44ff44;
-            }
-            
-            .section {
-                background: #f8f9fa;
-                padding: 25px;
-                border-radius: 15px;
-                margin: 25px 0;
-                border-left: 5px solid #667eea;
-            }
-            
-            .section h3 {
-                color: #2c3e50;
-                margin-bottom: 15px;
-                font-size: 1.4em;
-            }
-            
+            body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+            .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+            .header { text-align: center; margin-bottom: 40px; }
+            .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
+            .stat-card { background: #f8f9fa; padding: 20px; border-radius: 10px; border-left: 4px solid #28a745; }
+            .btn { background: #007bff; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; margin: 5px; }
+            .btn-success { background: #28a745; }
+            .btn-warning { background: #ffc107; color: black; }
+            .btn-danger { background: #dc3545; }
+            .logs { background: #1a1a1a; color: #00ff00; padding: 20px; border-radius: 8px; font-family: monospace; height: 300px; overflow-y: scroll; margin-top: 20px; }
+            .actions { text-align: center; margin: 30px 0; }
             .notification {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 15px 25px;
-                border-radius: 10px;
-                color: white;
-                font-weight: 600;
-                z-index: 1000;
-                opacity: 0;
-                transform: translateX(100px);
-                transition: all 0.3s ease;
-            }
-            
-            .notification.success {
-                background: linear-gradient(135deg, #00b09b, #96c93d);
-                opacity: 1;
-                transform: translateX(0);
-            }
-            
-            .notification.error {
-                background: linear-gradient(135deg, #ff416c, #ff4b2b);
-                opacity: 1;
-                transform: translateX(0);
-            }
-            
-            @media (max-width: 768px) {
-                .container {
-                    padding: 15px;
-                    margin: 10px;
-                }
-                
-                .stats {
-                    grid-template-columns: 1fr;
-                }
-                
-                .actions-grid {
-                    grid-template-columns: 1fr;
-                }
-                
-                .header h1 {
-                    font-size: 2em;
-                }
+                position: fixed; top: 20px; right: 20px; padding: 15px 25px; border-radius: 10px; color: white; 
+                font-weight: 600; z-index: 1000; background: #28a745; display: none;
             }
         </style>
     </head>
@@ -6199,64 +5993,34 @@ def dashboard():
             <div class="stats">
                 <div class="stat-card">
                     <h3>📊 Статус системы</h3>
-                    <p id="status">🔄 Загрузка...</p>
+                    <p id="status">Загрузка...</p>
                 </div>
                 <div class="stat-card">
                     <h3>⏰ Время</h3>
-                    <p id="timeInfo">🔄 Загрузка...</p>
+                    <p id="timeInfo">Загрузка...</p>
                 </div>
                 <div class="stat-card">
                     <h3>📨 Сообщения</h3>
-                    <p id="messageStats">🔄 Загрузка...</p>
+                    <p id="messageStats">Загрузка...</p>
                 </div>
                 <div class="stat-card">
                     <h3>🔄 Ротация</h3>
-                    <p id="rotationStats">🔄 Загрузка...</p>
+                    <p id="rotationStats">Загрузка...</p>
                 </div>
             </div>
 
-            <div class="section">
+            <div class="actions">
                 <h3>🚀 Быстрые действия</h3>
-                <div class="actions-grid">
-                    <button class="btn btn-success" onclick="sendManualPost()">
-                        📝 Создать ручной пост
-                    </button>
-                    <button class="btn btn-info" onclick="checkRotation()">
-                        🔄 Проверить ротацию
-                    </button>
-                    <button class="btn btn-warning" onclick="forceCleanup()">
-                        🧹 Очистка кэша
-                    </button>
-                    <button class="btn btn-danger" onclick="emergencyStop()">
-                        🛑 Аварийная остановка
-                    </button>
-                </div>
+                <button class="btn btn-success" onclick="sendManualPost()">📝 Создать ручной пост</button>
+                <button class="btn" onclick="checkRotation()">🔄 Проверить ротацию</button>
+                <button class="btn btn-warning" onclick="forceCleanup()">🧹 Очистка кэша</button>
+                <button class="btn btn-danger" onclick="emergencyStop()">🛑 Аварийная остановка</button>
             </div>
 
-            <div class="section">
-                <h3>📊 Статус ротации рецептов</h3>
-                <div id="rotationDetails" style="
-                    display: grid; 
-                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
-                    gap: 15px;
-                    margin-top: 15px;
-                ">
-                    <!-- Динамически заполнится -->
-                </div>
-            </div>
-
-            <div class="section">
-                <h3>📋 Логи системы (последние 20 записей)</h3>
+            <div>
+                <h3>📋 Логи системы</h3>
                 <div class="logs" id="logs">
-                    <div class="log-entry">
-                        <span class="log-time">[Загрузка...]</span>
-                        <span class="log-info"> Загрузка логов системы...</span>
-                    </div>
-                </div>
-                <div style="text-align: center; margin-top: 15px;">
-                    <button class="btn btn-info" onclick="updateDashboard()">
-                        🔄 Обновить логи
-                    </button>
+                    Загрузка логов...
                 </div>
             </div>
         </div>
@@ -6264,18 +6028,14 @@ def dashboard():
         <div id="notification" class="notification"></div>
 
         <script>
-            // Глобальные переменные
-            let updateInterval;
-            const API_BASE = window.location.origin;
-
             function showNotification(message, type = 'success') {
                 const notification = document.getElementById('notification');
                 notification.textContent = message;
-                notification.className = `notification ${type}`;
+                notification.style.display = 'block';
+                notification.style.background = type === 'success' ? '#28a745' : '#dc3545';
                 
                 setTimeout(() => {
-                    notification.style.opacity = '0';
-                    notification.style.transform = 'translateX(100px)';
+                    notification.style.display = 'none';
                 }, 3000);
             }
 
@@ -6290,7 +6050,7 @@ def dashboard():
                     })
                     .then(data => {
                         document.getElementById('status').innerHTML = 
-                            `🟢 Система активна<br><small>Аптайм: ${Math.round(data.uptime_seconds/3600)}ч ${Math.round((data.uptime_seconds%3600)/60)}м</small>`;
+                            `🟢 Система активна<br>Аптайм: ${Math.round(data.uptime_seconds/3600)}ч`;
                         document.getElementById('timeInfo').innerHTML = 
                             `Сервер: ${data.server_time}<br>Кемерово: ${data.kemerovo_time}`;
                         document.getElementById('messageStats').innerHTML = 
@@ -6314,55 +6074,12 @@ def dashboard():
                     })
                     .catch(error => {
                         console.error('❌ Ошибка логов:', error);
-                        document.getElementById('logs').innerHTML = 
-                            '<div class="log-entry"><span class="log-error">❌ Ошибка загрузки логов</span></div>';
-                    });
-                
-                // Статус ротации
-                fetch('/api/rotation-status')
-                    .then(r => r.json())
-                    .then(data => {
-                        const rotationDetails = document.getElementById('rotationDetails');
-                        rotationDetails.innerHTML = '';
-                        
-                        for (const [category, stats] of Object.entries(data.rotation_status)) {
-                            const card = document.createElement('div');
-                            card.style.cssText = `
-                                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                                color: white;
-                                padding: 15px;
-                                border-radius: 10px;
-                                text-align: center;
-                            `;
-                            
-                            const emojiMap = {
-                                'breakfast': '🍳',
-                                'lunch': '🍝', 
-                                'dinner': '🌙',
-                                'dessert': '🍰',
-                                'advice': '💡',
-                                'science': '🔬',
-                                'cooking': '👨‍🍳'
-                            };
-                            
-                            card.innerHTML = `
-                                <div style="font-size: 2em; margin-bottom: 10px;">${emojiMap[category] || '📊'}</div>
-                                <div style="font-weight: bold; font-size: 1.1em;">${category}</div>
-                                <div style="font-size: 0.9em; opacity: 0.9;">
-                                    ${stats.available}/${stats.total} (${stats.availability_percent}%)
-                                </div>
-                            `;
-                            
-                            rotationDetails.appendChild(card);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('❌ Ошибка ротации:', error);
+                        document.getElementById('logs').innerHTML = '❌ Ошибка загрузки логов';
                     });
             }
 
             function sendManualPost() {
-                if (!confirm('📝 Создать тестовый пост в Telegram канал?')) return;
+                if (!confirm('Создать тестовый пост в Telegram канал?')) return;
                 
                 showNotification('🔄 Отправка тестового поста...', 'info');
                 
@@ -6400,7 +6117,7 @@ def dashboard():
             }
 
             function forceCleanup() {
-                if (!confirm('🧹 Очистить кэш и старые сообщения?')) return;
+                if (!confirm('Очистить кэш и старые сообщения?')) return;
                 
                 fetch('/api/cleanup', { method: 'POST' })
                     .then(r => r.json())
@@ -6414,7 +6131,7 @@ def dashboard():
             }
 
             function emergencyStop() {
-                if (!confirm('🛑 ВЫ УВЕРЕНЫ? Это остановит все запланированные посты!')) return;
+                if (!confirm('ВЫ УВЕРЕНЫ? Это остановит все запланированные посты!')) return;
                 
                 fetch('/api/emergency-stop', { method: 'POST' })
                     .then(r => r.json())
@@ -6439,18 +6156,6 @@ def dashboard():
                 
                 // Автообновление каждые 30 секунд
                 updateInterval = setInterval(updateDashboard, 30000);
-                
-                // Показать уведомление о запуске
-                setTimeout(() => {
-                    showNotification('✅ Дашборд успешно загружен!', 'success');
-                }, 1000);
-            });
-
-            // Остановка интервала при закрытии страницы
-            window.addEventListener('beforeunload', function() {
-                if (updateInterval) {
-                    clearInterval(updateInterval);
-                }
             });
         </script>
     </body>
@@ -6458,7 +6163,7 @@ def dashboard():
     '''
     return dashboard_html
 
-# API РОУТЫ БЕЗ АВТОРИЗАЦИИ ДЛЯ ДАШБОРДА
+# API РОУТЫ БЕЗ АВТОРИЗАЦИИ - УБРАТЬ ВСЕ ДЕКОРАТОРЫ!
 @app.route('/api/status')
 def api_status():
     """API статуса системы - БЕЗ АВТОРИЗАЦИИ"""
@@ -6487,47 +6192,21 @@ def api_status():
 def get_logs():
     """Получение последних логов - БЕЗ АВТОРИЗАЦИИ"""
     try:
-        log_entries = []
-        try:
-            with open('bot.log', 'r', encoding='utf-8') as f:
-                lines = f.readlines()[-50:]  # Последние 50 строк
-        except FileNotFoundError:
-            lines = ["Лог-файл не найден\n"]
+        with open('bot.log', 'r', encoding='utf-8') as f:
+            lines = f.readlines()[-50:]  # Последние 50 строк
         
+        log_entries = []
         for line in lines[-20:]:  # Показываем последние 20
             line = line.strip()
             if not line:
                 continue
                 
-            # Парсим лог для красивого отображения
-            let log_class = "log-info";
-            if "❌" in line or "ERROR" in line:
-                log_class = "log-error";
-            elif "⚠️" in line or "WARNING" in line:
-                log_class = "log-warning"; 
-            elif "✅" in line or "INFO" in line:
-                log_class = "log-success";
-                
-            # Извлекаем время и сообщение
-            let time_part = "";
-            let message_part = line;
-            
-            const time_match = line.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
-            if (time_match) {
-                time_part = time_match[1];
-                message_part = line.replace(time_part, '').replace(',', '').trim();
-            }
-            
-            log_entries.append(
-                f'<div class="log-entry">'
-                f'<span class="log-time">[{time_part}]</span> '
-                f'<span class="{log_class}">{message_part}</span>'
-                f'</div>'
-            )
+            # Простое форматирование логов
+            log_entries.append(f'<div style="margin: 2px 0; font-size: 12px;">{line}</div>')
         
         return ''.join(log_entries[::-1])  # Новые сверху
     except Exception as e:
-        return f'<div class="log-entry"><span class="log-error">❌ Ошибка чтения логов: {str(e)}</span></div>'
+        return f'<div style="color: #ff4444;">❌ Ошибка чтения логов: {str(e)}</div>'
 
 @app.route('/api/rotation-status')
 def rotation_status():
@@ -6540,19 +6219,16 @@ def rotation_status():
         logger.error(f"❌ Ошибка получения статуса ротации: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
-# API РОУТЫ С АВТОРИЗАЦИЕЙ ДЛЯ ОПЕРАЦИЙ
+# ОПЕРАЦИОННЫЕ API - ТОЖЕ БЕЗ АВТОРИЗАЦИИ ДЛЯ ПРОСТОТЫ
 @app.route('/api/manual-post', methods=['POST'])
-@require_api_key
-@rate_limit
 def manual_post():
-    """Ручная отправка поста - С АВТОРИЗАЦИЕЙ"""
+    """Ручная отправка поста - БЕЗ АВТОРИЗАЦИИ"""
     try:
         logger.info("🔄 ЗАПУСК РУЧНОЙ ОТПРАВКИ ПОСТА")
         
         generator = SmartContentGenerator()
         telegram = TelegramManager()
         
-        # Определяем текущий день и время для контекста
         weekday = TimeManager.get_kemerovo_weekday()
         hour = TimeManager.get_kemerovo_hour()
         
@@ -6566,16 +6242,13 @@ def manual_post():
         else:
             content_type = 'neuro_advice'
         
-        # Получаем метод для генерации контента
         rotation_system = AdvancedRotationSystem()
         method_name = rotation_system.get_priority_recipe(content_type, weekday)
         
-        logger.info(f"🎯 Ручной пост: {method_name} (тип: {content_type})")
+        logger.info(f"🎯 Ручной пост: {method_name}")
         
         if hasattr(generator, method_name):
             content = getattr(generator, method_name)()
-            
-            # Добавляем пометку о ручной отправке
             content = content.replace("🎯 Основано на исследованиях", "🔄 РУЧНОЙ ПОСТ\\n🎯 Основано на исследованиях")
             
             if telegram.send_message(content):
@@ -6605,12 +6278,11 @@ def manual_post():
         })
 
 @app.route('/api/cleanup', methods=['POST'])
-@require_api_key
 def cleanup():
-    """Очистка кэша и старых сообщений - С АВТОРИЗАЦИЕЙ"""
+    """Очистка кэша и старых сообщений - БЕЗ АВТОРИЗАЦИИ"""
     try:
         telegram = TelegramManager()
-        deleted_count = telegram.cleanup_old_messages(30)  # Очистка сообщений старше 30 дней
+        deleted_count = telegram.cleanup_old_messages(30)
         
         with Database().get_connection() as conn:
             conn.execute('DELETE FROM content_cache WHERE created_at < DATE("now", "-7 days")')
@@ -6627,9 +6299,8 @@ def cleanup():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/emergency-stop', methods=['POST'])
-@require_api_key
 def emergency_stop():
-    """Аварийная остановка системы - С АВТОРИЗАЦИЕЙ"""
+    """Аварийная остановка системы - БЕЗ АВТОРИЗАЦИИ"""
     try:
         schedule.clear()
         logger.critical("🛑 СИСТЕМА ОСТАНОВЛЕНА ПО КОМАНДЕ ПОЛЬЗОВАТЕЛЯ")
@@ -6641,26 +6312,17 @@ def emergency_stop():
         logger.error(f"❌ Ошибка остановки системы: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
-# СИСТЕМА ПЛАНИРОВАНИЯ
+# СИСТЕМА ПЛАНИРОВАНИЯ (без изменений)
 def schedule_posts():
     """Настройка расписания публикаций"""
-    
-    # Очищаем предыдущее расписание
     schedule.clear()
     
-    # Время публикаций (время Кемерово)
-    post_times = [
-        '07:00',  # Утренний пост
-        '12:00',  # Обеденный пост  
-        '18:00',  # Вечерний пост
-        '21:00'   # Совет дня
-    ]
+    post_times = ['07:00', '12:00', '18:00', '21:00']
     
-    # Конвертируем время и настраиваем расписание
     for kemerovo_time in post_times:
         server_time = TimeManager.kemerovo_to_server(kemerovo_time)
         schedule.every().day.at(server_time).do(send_scheduled_post, kemerovo_time)
-        logger.info(f"📅 Настроено время публикации: {kemerovo_time} Кемерово -> {server_time} Сервер")
+        logger.info(f"📅 Настроено время: {kemerovo_time} -> {server_time}")
 
 def send_scheduled_post(scheduled_time):
     """Отправка запланированного поста"""
@@ -6671,55 +6333,39 @@ def send_scheduled_post(scheduled_time):
         telegram = TelegramManager()
         rotation_system = AdvancedRotationSystem()
         
-        # Определяем день недели и текущий час
         weekday = TimeManager.get_kemerovo_weekday()
         current_hour = TimeManager.get_kemerovo_hour()
         
-        # Определяем тип контента по времени суток
         content_type = rotation_system.validate_content_type_for_current_time(
             get_content_type_for_time(current_hour, weekday), 
             current_hour
         )
         
-        # Получаем метод для генерации контента
         method_name = rotation_system.get_priority_recipe(content_type, weekday)
-        
-        logger.info(f"🎯 Запланированный пост: {method_name} (день: {weekday}, час: {current_hour})")
         
         if hasattr(generator, method_name):
             content = getattr(generator, method_name)()
-            
-            if telegram.send_message(content):
-                logger.info(f"✅ Успешно отправлен пост: {method_name}")
-            else:
-                logger.error(f"❌ Ошибка отправки поста: {method_name}")
-        else:
-            logger.error(f"❌ Метод не найден: {method_name}")
+            telegram.send_message(content)
             
     except Exception as e:
-        logger.error(f"❌ Критическая ошибка в send_scheduled_post: {str(e)}")
+        logger.error(f"❌ Ошибка в send_scheduled_post: {str(e)}")
 
 def get_content_type_for_time(hour, weekday):
     """Определение типа контента по времени суток и дню недели"""
     day_themes = {
-        0: 'neuro',    # Понедельник
-        1: 'protein',  # Вторник
-        2: 'veggie',   # Среда
-        3: 'carbs',    # Четверг
-        4: 'balance',  # Пятница
-        5: 'family',   # Суббота
-        6: 'planning'  # Воскресенье
+        0: 'neuro', 1: 'protein', 2: 'veggie', 3: 'carbs', 
+        4: 'balance', 5: 'family', 6: 'planning'
     }
     
     theme = day_themes.get(weekday, 'neuro')
     
-    if 5 <= hour < 11:    # Утро: 5:00 - 10:59
+    if 5 <= hour < 11:
         return f'{theme}_breakfast'
-    elif 11 <= hour < 16: # День: 11:00 - 15:59
+    elif 11 <= hour < 16:
         return f'{theme}_lunch'
-    elif 16 <= hour < 20: # Ранний вечер: 16:00 - 19:59
+    elif 16 <= hour < 20:
         return f'{theme}_dinner'
-    else:                 # Поздний вечер: 20:00 - 4:59
+    else:
         return f'{theme}_advice'
 
 # СИСТЕМА МОНИТОРИНГА И ЗАПУСКА
@@ -6746,7 +6392,7 @@ def start_keep_alive():
                     response = requests.get(f"{Config.RENDER_APP_URL}/api/status", timeout=10)
                     service_monitor.update_keep_alive()
                     logger.info(f"♻️ Keep-alive: {response.status_code}")
-                time.sleep(300)  # Каждые 5 минут
+                time.sleep(300)
             except Exception as e:
                 logger.warning(f"⚠️ Keep-alive ошибка: {e}")
                 time.sleep(60)
@@ -6758,32 +6404,26 @@ if __name__ == '__main__':
     try:
         logger.info("🚀 ЗАПУСК СИСТЕМЫ УМНОГО КУЛИНАРНОГО БОТА")
         
-        # Инициализация базы данных
         Database()
         logger.info("✅ База данных инициализирована")
         
-        # Настройка расписания
         schedule_posts()
         logger.info("✅ Расписание публикаций настроено")
         
-        # Запуск планировщика в отдельном потоке
         scheduler_thread = Thread(target=run_scheduler, daemon=True)
         scheduler_thread.start()
         logger.info("✅ Планировщик заданий запущен")
         
-        # Запуск keep-alive для Render
         start_keep_alive()
         logger.info("✅ Keep-alive система запущена")
         
-        # Проверка ротации
         rotation_system = AdvancedRotationSystem()
-        rotation_status = rotation_system.check_rotation_status()
+        rotation_system.check_rotation_status()
         logger.info("✅ Система ротации проверена")
         
         logger.info("✅ СИСТЕМА УСПЕШНО ЗАПУЩЕНА")
         logger.info("📊 Статус доступен по адресу: /")
         
-        # Запуск Flask приложения
         port = int(os.environ.get('PORT', 5000))
         logger.info(f"🌐 Запуск Flask на порту {port}")
         
@@ -6792,4 +6432,3 @@ if __name__ == '__main__':
     except Exception as e:
         logger.critical(f"❌ КРИТИЧЕСКАЯ ОШИБКА ПРИ ЗАПУСКЕ: {e}")
         raise
-
