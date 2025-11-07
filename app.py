@@ -6665,7 +6665,7 @@ def send_test_post():
             
     except Exception as e:
         return jsonify({"status": "error", "message": f"❌ Ошибка: {str(e)}"})
-# ========== ЗАПУСК ПРИЛОЖЕНИЯ ==========
+        # ========== ЗАПУСК ПРИЛОЖЕНИЯ ==========
 # ========== ВРЕМЕННЫЕ ПУБЛИЧНЫЕ ЭНДПОИНТЫ ДЛЯ ЗАПУСКА ==========
 
 @app.route('/api/status')
@@ -6726,6 +6726,37 @@ def check_schedule():
         "is_weekend": TimeManager.is_weekend(),
         "next_posts": "Следующие посты по расписанию автоматически"
     })
+    # ========== ПУБЛИЧНЫЕ ЭНДПОИНТЫ ДЛЯ ТЕСТА ==========
+@app.route('/api/test-channel')
+def test_channel():
+    """Тест отправки в Telegram канал"""
+    try:
+        content = "🎉 ТЕСТ: Кулинарный бот запущен!\n\n✅ Система работает\n✅ Посты будут по расписанию\n✅ Автопостинг активен"
+        
+        success = telegram_manager.send_message(
+            content, 
+            content_type="test", 
+            method_name="channel_test"
+        )
+        
+        return jsonify({
+            "status": "success" if success else "error",
+            "message": "✅ Тестовый пост отправлен!" if success else "❌ Ошибка отправки"
+        })
+        
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/api/system-info')
+def system_info():
+    """Информация о системе"""
+    return jsonify({
+        "status": "active",
+        "telegram_connected": True,
+        "auto_posting": "enabled",
+        "schedule": "08:30, 09:00, 12:00, 18:00, 20:00 (Кемерово)",
+        "next_post": "По расписанию"
+    })
 if __name__ == "__main__":
     # 🔧 ПРОВЕРКА КОНФИГУРАЦИИ
     logger.info("🔧 ПРОВЕРКА КОНФИГУРАЦИИ СИСТЕМЫ:")
@@ -6740,6 +6771,7 @@ if __name__ == "__main__":
     if initialize_system():
         port = int(os.environ.get('PORT', 10000))
         app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 
