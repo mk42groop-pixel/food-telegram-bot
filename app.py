@@ -6,7 +6,10 @@ import jwt
 from functools import wraps
 from flask import request, jsonify
 import hashlib
-
+import requests  # ← ДОБАВИТЬ
+from threading import Thread  # ← ДОБАВИТЬ
+import time  # ← ДОБАВИТЬ (если используется)
+import schedule  # ← ДОБАВИТЬ (если используется)
 class Config:
     """Конфигурация приложения с безопасными настройками"""
     
@@ -6571,6 +6574,7 @@ if __name__ == '__main__':
     except Exception as e:
         logger.critical(f"❌ КРИТИЧЕСКАЯ ОШИБКА ПРИ ЗАПУСКЕ: {e}")
         raise
+
 
 
 
