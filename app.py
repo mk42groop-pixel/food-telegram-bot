@@ -6646,7 +6646,25 @@ def debug_config():
 def test_auth():
     """Тестовый защищенный эндпоинт"""
     return jsonify({"message": "✅ Аутентификация успешна!", "status": "authorized"})
-
+@app.route('/api/send-test-post')
+def send_test_post():
+    """Тестовая отправка поста в канал"""
+    try:
+        content = "🧪 ТЕСТОВЫЙ ПОСТ\n\nЭто проверка работы бота. Если вы видите этот пост - все системы работают!"
+        
+        success = telegram_manager.send_message(
+            content, 
+            content_type="test", 
+            method_name="manual_test"
+        )
+        
+        if success:
+            return jsonify({"status": "success", "message": "✅ Тестовый пост отправлен в канал!"})
+        else:
+            return jsonify({"status": "error", "message": "❌ Ошибка отправки поста"})
+            
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"❌ Ошибка: {str(e)}"})
 # ========== ЗАПУСК ПРИЛОЖЕНИЯ ==========
 if __name__ == "__main__":
     # 🔧 ПРОВЕРКА КОНФИГУРАЦИИ
@@ -6662,4 +6680,5 @@ if __name__ == "__main__":
     if initialize_system():
         port = int(os.environ.get('PORT', 10000))
         app.run(host='0.0.0.0', port=port, debug=False)
+
 
