@@ -5842,17 +5842,8 @@ import os
 app = Flask(__name__)
 
 # Импорт всех созданных компонентов
-from part1_config import Config, Database, SecurityManager, service_monitor, logger
-from part2_systems import TimeManager, AdvancedRotationSystem, VisualManager
-from part3_telegram import TelegramManager, EnhancedLogger
-from part4_scientific import ScientificContentGenerator
-from part5_monday import MondayContentGenerator
-from part6_tuesday import TuesdayContentGenerator
-from part7_wednesday import WednesdayContentGenerator
-from part8_thursday import ThursdayContentGenerator
-from part9_friday import FridayContentGenerator
-from part10_saturday import SaturdayContentGenerator
-from part11_sunday import SundayContentGenerator
+
+
 
 class SmartContentGenerator:
     """Умный генератор контента, объединяющий все дни недели"""
@@ -6580,5 +6571,6 @@ if __name__ == '__main__':
     except Exception as e:
         logger.critical(f"❌ КРИТИЧЕСКАЯ ОШИБКА ПРИ ЗАПУСКЕ: {e}")
         raise
+
 
 
