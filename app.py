@@ -67,7 +67,13 @@ class SecurityManager:
         """Проверка JWT токена"""
         try:
             payload = jwt.decode(token, Config.SECRET_KEY, algorithms=['HS256'])
-         @staticmethod
+            return payload['user_id']
+        except jwt.ExpiredSignatureError:
+            return None
+        except jwt.InvalidTokenError:
+            return None
+    
+    @staticmethod
     def hash_content(content):
         """Хеширование контента для проверки дубликатов"""
         return hashlib.md5(content.encode('utf-8')).hexdigest()
@@ -81,7 +87,7 @@ class SecurityManager:
             
             # 🔐 ОТЛАДОЧНАЯ ИНФОРМАЦИЯ
             logger.info(f"🔐 Запрос к {request.path}")
-            logger.info(f"📨 Метод: {request.method}")
+            logger.info(f"📨 Метод: {request.method}") 
             logger.info(f"🔑 Получен токен: {token}")
             
             if not token or not token.startswith('Bearer '):
@@ -103,7 +109,6 @@ class SecurityManager:
             logger.info("✅ Аутентификация успешна!")
             return f(*args, **kwargs)
         return decorated
-
 class Database:
     """Управление базой данных с защитой от дублирования"""
     
@@ -6641,6 +6646,7 @@ if __name__ == "__main__":
     if initialize_system():
         port = int(os.environ.get('PORT', 10000))
         app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 
