@@ -6610,13 +6610,13 @@ def home():
     })
 
 @app.route('/api/status')
-@security_manager.require_auth
+#@security_manager.require_auth
 def api_status():
     """Статус системы"""
     return jsonify(service_monitor.get_status())
 
 @app.route('/api/logs')  
-@security_manager.require_auth
+#@security_manager.require_auth
 def api_logs():
     """Получение логов"""
     try:
@@ -6642,7 +6642,7 @@ def debug_config():
     })
 
 @app.route('/api/test-auth')
-@security_manager.require_auth
+#@security_manager.require_auth
 def test_auth():
     """Тестовый защищенный эндпоинт"""
     return jsonify({"message": "✅ Аутентификация успешна!", "status": "authorized"})
@@ -6740,6 +6740,7 @@ if __name__ == "__main__":
     if initialize_system():
         port = int(os.environ.get('PORT', 10000))
         app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 
