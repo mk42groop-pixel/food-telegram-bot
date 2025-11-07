@@ -6582,13 +6582,9 @@ logger.info(f"TELEGRAM_CHANNEL: {Config.TELEGRAM_CHANNEL}")
 
 if not Config.ADMIN_TOKEN or 'default' in Config.ADMIN_TOKEN:
     logger.critical("❌ CRITICAL: ADMIN_TOKEN не установлен или используется значение по умолчанию!")
-    [Весь ваш текущий код...]
-...
-[Классы ScientificContentGenerator, MondayContentGenerator, etc...]
-...
-[Создание экземпляров генераторов]
+ 
 
-# ========== FLASK APP ========== (ДОБАВИТЬ ЭТО В САМЫЙ КОНЕЦ)
+# ========== FLASK APP ========== 
 app = Flask(__name__)
 
 @app.route('/')
@@ -6626,6 +6622,7 @@ if __name__ == "__main__":
     if initialize_system():
         port = int(os.environ.get('PORT', 10000))
         app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 
