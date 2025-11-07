@@ -67,13 +67,7 @@ class SecurityManager:
         """Проверка JWT токена"""
         try:
             payload = jwt.decode(token, Config.SECRET_KEY, algorithms=['HS256'])
-            return payload['user_id']
-        except jwt.ExpiredSignatureError:
-            return None
-        except jwt.InvalidTokenError:
-            return None
-    
-    @staticmethod
+         @staticmethod
     def hash_content(content):
         """Хеширование контента для проверки дубликатов"""
         return hashlib.md5(content.encode('utf-8')).hexdigest()
@@ -84,13 +78,29 @@ class SecurityManager:
         @wraps(f)
         def decorated(*args, **kwargs):
             token = request.headers.get('Authorization')
+            
+            # 🔐 ОТЛАДОЧНАЯ ИНФОРМАЦИЯ
+            logger.info(f"🔐 Запрос к {request.path}")
+            logger.info(f"📨 Метод: {request.method}")
+            logger.info(f"🔑 Получен токен: {token}")
+            
             if not token or not token.startswith('Bearer '):
+                logger.warning("❌ Отсутствует или неверный формат токена")
                 return jsonify({"error": "Требуется аутентификация"}), 401
             
-            token = token.replace('Bearer ', '')
-            if token != Config.ADMIN_TOKEN:
+            token_value = token.replace('Bearer ', '')
+            
+            # 🔍 Сравнение токенов (для отладки)
+            expected_start = Config.ADMIN_TOKEN[:5] if Config.ADMIN_TOKEN else "NONE"
+            received_start = token_value[:5]
+            
+            logger.info(f"🔍 Сравнение токенов: {received_start}... == {expected_start}...")
+            
+            if token_value != Config.ADMIN_TOKEN:
+                logger.warning(f"❌ Неверный токен! Ожидался: {expected_start}..., Получен: {received_start}...")
                 return jsonify({"error": "Неверный токен"}), 401
             
+            logger.info("✅ Аутентификация успешна!")
             return f(*args, **kwargs)
         return decorated
 
@@ -6618,11 +6628,19 @@ def health_check():
     return jsonify({"status": "healthy", "timestamp": datetime.now().isoformat()})
 
 if __name__ == "__main__":
+    # 🔧 ПРОВЕРКА КОНФИГУРАЦИИ - ДОБАВИТЬ ЭТО
+    logger.info("🔧 ПРОВЕРКА КОНФИГУРАЦИИ СИСТЕМЫ:")
+    logger.info(f"ADMIN_TOKEN установлен: {'ДА' if Config.ADMIN_TOKEN and 'default' not in Config.ADMIN_TOKEN else 'НЕТ!'}")
+    logger.info(f"TELEGRAM_BOT_TOKEN: {'ДА' if Config.TELEGRAM_BOT_TOKEN else 'НЕТ'}")
+    logger.info(f"TELEGRAM_CHANNEL: {Config.TELEGRAM_CHANNEL}")
+    
+    if not Config.ADMIN_TOKEN or 'default' in Config.ADMIN_TOKEN:
+        logger.error("❌ CRITICAL: ADMIN_TOKEN не установлен в переменных окружения!")
+    
     logger.info("🚀 Запуск Flask приложения...")
     if initialize_system():
         port = int(os.environ.get('PORT', 10000))
         app.run(host='0.0.0.0', port=port, debug=False)
-
 
 
 
