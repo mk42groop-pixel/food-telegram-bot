@@ -6574,6 +6574,58 @@ if __name__ == '__main__':
     except Exception as e:
         logger.critical(f"❌ КРИТИЧЕСКАЯ ОШИБКА ПРИ ЗАПУСКЕ: {e}")
         raise
+# ========== ДИАГНОСТИКА КОНФИГУРАЦИИ ==========
+logger.info("🔧 ПРОВЕРКА КОНФИГУРАЦИИ:")
+logger.info(f"ADMIN_TOKEN установлен: {'Да' if Config.ADMIN_TOKEN and 'default' not in Config.ADMIN_TOKEN else 'НЕТ!'}")
+logger.info(f"TELEGRAM_BOT_TOKEN установлен: {'Да' if Config.TELEGRAM_BOT_TOKEN else 'НЕТ!'}")
+logger.info(f"TELEGRAM_CHANNEL: {Config.TELEGRAM_CHANNEL}")
+
+if not Config.ADMIN_TOKEN or 'default' in Config.ADMIN_TOKEN:
+    logger.critical("❌ CRITICAL: ADMIN_TOKEN не установлен или используется значение по умолчанию!")
+    [Весь ваш текущий код...]
+...
+[Классы ScientificContentGenerator, MondayContentGenerator, etc...]
+...
+[Создание экземпляров генераторов]
+
+# ========== FLASK APP ========== (ДОБАВИТЬ ЭТО В САМЫЙ КОНЕЦ)
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return jsonify({
+        "status": "Recipe Bot API", 
+        "version": "1.0",
+        "endpoints": ["/api/status", "/api/logs"]
+    })
+
+@app.route('/api/status')
+@security_manager.require_auth
+def api_status():
+    """Статус системы"""
+    return jsonify(service_monitor.get_status())
+
+@app.route('/api/logs')  
+@security_manager.require_auth
+def api_logs():
+    """Получение логов"""
+    try:
+        with open('bot.log', 'r', encoding='utf-8') as f:
+            logs = f.read().split('\n')[-100:]  # последние 100 строк
+        return jsonify({"logs": logs})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/health')
+def health_check():
+    """Публичный эндпоинт для проверки здоровья"""
+    return jsonify({"status": "healthy", "timestamp": datetime.now().isoformat()})
+
+if __name__ == "__main__":
+    logger.info("🚀 Запуск Flask приложения...")
+    if initialize_system():
+        port = int(os.environ.get('PORT', 10000))
+        app.run(host='0.0.0.0', port=port, debug=False)
 
 
 
