@@ -363,7 +363,8 @@ class AdvancedRotationSystem:
             ('generate_saturday_science', 'family_science', 'science'),
             ('generate_sunday_science', 'planning_science', 'science'),
             
-            # Завтраки (49 методов)
+            # 🧠 ПОНЕДЕЛЬНИК - НЕЙРОПИТАНИЕ (28 методов)
+            # Завтраки (7 рецептов)
             ('generate_brain_boost_breakfast', 'neuro_breakfast', 'breakfast'),
             ('generate_focus_oatmeal', 'neuro_breakfast', 'breakfast'),
             ('generate_memory_smoothie', 'neuro_breakfast', 'breakfast'),
@@ -371,6 +372,36 @@ class AdvancedRotationSystem:
             ('generate_brain_pancakes', 'neuro_breakfast', 'breakfast'),
             ('generate_cognitive_yogurt', 'neuro_breakfast', 'breakfast'),
             ('generate_neuro_muesli', 'neuro_breakfast', 'breakfast'),
+            
+            # Обеды (7 рецептов)
+            ('generate_brain_salmon_bowl', 'neuro_lunch', 'lunch'),
+            ('generate_cognitive_chicken', 'neuro_lunch', 'lunch'),
+            ('generate_neuro_salad', 'neuro_lunch', 'lunch'),
+            ('generate_focus_soup', 'neuro_lunch', 'lunch'),
+            ('generate_mind_bowl', 'neuro_lunch', 'lunch'),
+            ('generate_brain_wrap', 'neuro_lunch', 'lunch'),
+            ('generate_neuro_stir_fry', 'neuro_lunch', 'lunch'),
+            
+            # Ужины (7 рецептов)
+            ('generate_memory_fish', 'neuro_dinner', 'dinner'),
+            ('generate_brain_omelette', 'neuro_dinner', 'dinner'),
+            ('generate_neuro_stew', 'neuro_dinner', 'dinner'),
+            ('generate_cognitive_bake', 'neuro_dinner', 'dinner'),
+            ('generate_focus_skillet', 'neuro_dinner', 'dinner'),
+            ('generate_mind_curry', 'neuro_dinner', 'dinner'),
+            ('generate_neuro_grill', 'neuro_dinner', 'dinner'),
+            
+            # Советы (7 рецептов)
+            ('generate_brain_nutrition_advice', 'neuro_advice', 'advice'),
+            ('generate_focus_foods_advice', 'neuro_advice', 'advice'),
+            ('generate_memory_boost_advice', 'neuro_advice', 'advice'),
+            ('generate_neuro_protection_advice', 'neuro_advice', 'advice'),
+            ('generate_cognitive_enhancement_advice', 'neuro_advice', 'advice'),
+            ('generate_brain_fatigue_advice', 'neuro_advice', 'advice'),
+            ('generate_neuro_plasticity_advice', 'neuro_advice', 'advice'),
+            
+            # 💪 ВТОРНИК - БЕЛКОВЫЙ ДЕНЬ (28 методов)
+            # Завтраки (7 рецептов)
             ('generate_muscle_breakfast', 'protein_breakfast', 'breakfast'),
             ('generate_energy_protein_shake', 'protein_breakfast', 'breakfast'),
             ('generate_satiety_omelette', 'protein_breakfast', 'breakfast'),
@@ -378,6 +409,36 @@ class AdvancedRotationSystem:
             ('generate_amino_toast', 'protein_breakfast', 'breakfast'),
             ('generate_anabolic_porridge', 'protein_breakfast', 'breakfast'),
             ('generate_repair_smoothie', 'protein_breakfast', 'breakfast'),
+            
+            # Обеды (7 рецептов)
+            ('generate_amino_acids_bowl', 'protein_lunch', 'lunch'),
+            ('generate_anabolic_lunch', 'protein_lunch', 'lunch'),
+            ('generate_repair_salad', 'protein_lunch', 'lunch'),
+            ('generate_muscle_wrap', 'protein_lunch', 'lunch'),
+            ('generate_power_soup', 'protein_lunch', 'lunch'),
+            ('generate_protein_plate', 'protein_lunch', 'lunch'),
+            ('generate_amino_burger', 'protein_lunch', 'lunch'),
+            
+            # Ужины (7 рецептов)
+            ('generate_night_protein', 'protein_dinner', 'dinner'),
+            ('generate_recovery_dinner', 'protein_dinner', 'dinner'),
+            ('generate_lean_protein_meal', 'protein_dinner', 'dinner'),
+            ('generate_muscle_repair_bowl', 'protein_dinner', 'dinner'),
+            ('generate_protein_stew', 'protein_dinner', 'dinner'),
+            ('generate_amino_grill', 'protein_dinner', 'dinner'),
+            ('generate_recovery_skillet', 'protein_dinner', 'dinner'),
+            
+            # Советы (7 рецептов)
+            ('generate_protein_science_advice', 'protein_advice', 'advice'),
+            ('generate_muscle_health_advice', 'protein_advice', 'advice'),
+            ('generate_amino_guide_advice', 'protein_advice', 'advice'),
+            ('generate_recovery_nutrition_advice', 'protein_advice', 'advice'),
+            ('generate_protein_timing_advice', 'protein_advice', 'advice'),
+            ('generate_muscle_growth_advice', 'protein_advice', 'advice'),
+            ('generate_amino_balance_advice', 'protein_advice', 'advice'),
+            
+            # 🥬 СРЕДА - ОВОЩНОЙ ДЕНЬ (28 методов)
+            # Завтраки (7 рецептов)
             ('generate_green_smoothie_bowl', 'veggie_breakfast', 'breakfast'),
             ('generate_vegetable_omelette', 'veggie_breakfast', 'breakfast'),
             ('generate_detox_breakfast', 'veggie_breakfast', 'breakfast'),
@@ -385,13 +446,73 @@ class AdvancedRotationSystem:
             ('generate_cleansing_bowl', 'veggie_breakfast', 'breakfast'),
             ('generate_fiber_toast', 'veggie_breakfast', 'breakfast'),
             ('generate_antioxidant_smoothie', 'veggie_breakfast', 'breakfast'),
+            
+            # Обеды (7 рецептов)
+            ('generate_rainbow_salad', 'veggie_lunch', 'lunch'),
+            ('generate_veggie_stew', 'veggie_lunch', 'lunch'),
+            ('generate_cleansing_soup', 'veggie_lunch', 'lunch'),
+            ('generate_veggie_wrap', 'veggie_lunch', 'lunch'),
+            ('generate_veggie_burger', 'veggie_lunch', 'lunch'),
+            ('generate_veggie_pasta', 'veggie_lunch', 'lunch'),
+            ('generate_veggie_stir_fry', 'veggie_lunch', 'lunch'),
+            
+            # Ужины (7 рецептов)
+            ('generate_roasted_vegetables', 'veggie_dinner', 'dinner'),
+            ('generate_plant_based_dinner', 'veggie_dinner', 'dinner'),
+            ('generate_fiber_rich_meal', 'veggie_dinner', 'dinner'),
+            ('generate_detox_bowl', 'veggie_dinner', 'dinner'),
+            ('generate_veggie_curry', 'veggie_dinner', 'dinner'),
+            ('generate_green_stew', 'veggie_dinner', 'dinner'),
+            ('generate_veggie_skillet', 'veggie_dinner', 'dinner'),
+            
+            # Советы (7 рецептов)
+            ('generate_fiber_benefits_advice', 'veggie_advice', 'advice'),
+            ('generate_antioxidant_guide_advice', 'veggie_advice', 'advice'),
+            ('generate_detox_science_advice', 'veggie_advice', 'advice'),
+            ('generate_gut_health_advice', 'veggie_advice', 'advice'),
+            ('generate_plant_nutrition_advice', 'veggie_advice', 'advice'),
+            ('generate_veggie_variety_advice', 'veggie_advice', 'advice'),
+            ('generate_detox_plan_advice', 'veggie_advice', 'advice'),
+            
+            # 🍠 ЧЕТВЕРГ - УГЛЕВОДНЫЙ ДЕНЬ (28 методов)
+            # Завтраки (7 рецептов)
             ('generate_energy_porridge', 'carbs_breakfast', 'breakfast'),
             ('generate_complex_carbs_toast', 'carbs_breakfast', 'breakfast'),
             ('generate_sustained_energy_meal', 'carbs_breakfast', 'breakfast'),
             ('generate_glycogen_breakfast', 'carbs_breakfast', 'breakfast'),
-            ('generate_energy_bowl', 'carbs_breakfast', 'breakfast'),
+            ('generate_energy_bowl_breakfast', 'carbs_breakfast', 'breakfast'),
             ('generate_carbs_pancakes', 'carbs_breakfast', 'breakfast'),
             ('generate_fuel_smoothie', 'carbs_breakfast', 'breakfast'),
+            
+            # Обеды (7 рецептов)
+            ('generate_glycogen_replenishment', 'carbs_lunch', 'lunch'),
+            ('generate_energy_bowl_lunch', 'carbs_lunch', 'lunch'),
+            ('generate_carbs_balance_meal', 'carbs_lunch', 'lunch'),
+            ('generate_pasta_power', 'carbs_lunch', 'lunch'),
+            ('generate_quinoa_power_bowl', 'carbs_lunch', 'lunch'),
+            ('generate_rice_nourishment', 'carbs_lunch', 'lunch'),
+            ('generate_lentil_energy', 'carbs_lunch', 'lunch'),
+            
+            # Ужины (7 рецептов)
+            ('generate_slow_carbs_dinner', 'carbs_dinner', 'dinner'),
+            ('generate_energy_reserve_meal', 'carbs_dinner', 'dinner'),
+            ('generate_evening_carbs', 'carbs_dinner', 'dinner'),
+            ('generate_carbs_comfort_bowl', 'carbs_dinner', 'dinner'),
+            ('generate_energy_stew', 'carbs_dinner', 'dinner'),
+            ('generate_carbs_skillet', 'carbs_dinner', 'dinner'),
+            ('generate_glycogen_dinner', 'carbs_dinner', 'dinner'),
+            
+            # Советы (7 рецептов)
+            ('generate_carbs_science_advice', 'carbs_advice', 'advice'),
+            ('generate_energy_management_advice', 'carbs_advice', 'advice'),
+            ('generate_glycemic_control_advice', 'carbs_advice', 'advice'),
+            ('generate_carbs_timing_advice', 'carbs_advice', 'advice'),
+            ('generate_energy_optimization_advice', 'carbs_advice', 'advice'),
+            ('generate_carbs_quality_advice', 'carbs_advice', 'advice'),
+            ('generate_glycogen_management_advice', 'carbs_advice', 'advice'),
+            
+            # 🎉 ПЯТНИЦА - БАЛАНС И УДОВОЛЬСТВИЕ (35 методов)
+            # Завтраки (7 рецептов)
             ('generate_fun_breakfast', 'energy_breakfast', 'breakfast'),
             ('generate_balanced_meal', 'energy_breakfast', 'breakfast'),
             ('generate_weekend_mood_meal', 'energy_breakfast', 'breakfast'),
@@ -399,12 +520,91 @@ class AdvancedRotationSystem:
             ('generate_celebration_toast', 'energy_breakfast', 'breakfast'),
             ('generate_social_smoothie', 'energy_breakfast', 'breakfast'),
             ('generate_indulgence_bowl', 'energy_breakfast', 'breakfast'),
+            
+            # Обеды (7 рецептов)
+            ('generate_mediterranean_feast', 'mediterranean_lunch', 'lunch'),
+            ('generate_social_lunch', 'mediterranean_lunch', 'lunch'),
+            ('generate_celebration_meal', 'mediterranean_lunch', 'lunch'),
+            ('generate_friday_pasta', 'mediterranean_lunch', 'lunch'),
+            ('generate_celebration_bowl', 'mediterranean_lunch', 'lunch'),
+            ('generate_social_platter', 'mediterranean_lunch', 'lunch'),
+            ('generate_friday_feast', 'mediterranean_lunch', 'lunch'),
+            
+            # Десерты (7 рецептов)
+            ('generate_healthy_indulgence', 'friday_dessert', 'dessert'),
+            ('generate_guilt_free_treat', 'friday_dessert', 'dessert'),
+            ('generate_weekend_dessert', 'friday_dessert', 'dessert'),
+            ('generate_fun_dessert', 'friday_dessert', 'dessert'),
+            ('generate_celebration_sweet', 'friday_dessert', 'dessert'),
+            ('generate_balanced_treat', 'friday_dessert', 'dessert'),
+            ('generate_friday_delight', 'friday_dessert', 'dessert'),
+            
+            # Советы (7 рецептов)
+            ('generate_hydration_science', 'water_advice', 'advice'),
+            ('generate_electrolyte_balance', 'water_advice', 'advice'),
+            ('generate_detox_hydration', 'water_advice', 'advice'),
+            ('generate_water_quality_advice', 'water_advice', 'advice'),
+            ('generate_hydration_timing_advice', 'water_advice', 'advice'),
+            ('generate_electrolyte_guide_advice', 'water_advice', 'advice'),
+            ('generate_hydration_benefits_advice', 'water_advice', 'advice'),
+            
+            # Ужины (7 рецептов)
+            ('generate_social_dinner', 'light_dinner', 'dinner'),
+            ('generate_evening_balance', 'light_dinner', 'dinner'),
+            ('generate_weekend_starter', 'light_dinner', 'dinner'),
+            ('generate_friday_night_meal', 'light_dinner', 'dinner'),
+            ('generate_balanced_dinner', 'light_dinner', 'dinner'),
+            ('generate_social_evening', 'light_dinner', 'dinner'),
+            ('generate_weekend_relax', 'light_dinner', 'dinner'),
+            
+            # 👨‍🍳 СУББОТА - СЕМЕЙНАЯ КУХНЯ (35 методов)
+            # Завтраки (7 рецептов)
             ('generate_family_brunch', 'saturday_breakfast', 'breakfast'),
             ('generate_weekend_pancakes', 'saturday_breakfast', 'breakfast'),
             ('generate_shared_breakfast', 'saturday_breakfast', 'breakfast'),
             ('generate_saturday_omelette', 'saturday_breakfast', 'breakfast'),
             ('generate_family_waffles', 'saturday_breakfast', 'breakfast'),
             ('generate_team_smoothie', 'saturday_breakfast', 'breakfast'),
+            ('generate_brunch_feast_sat', 'saturday_breakfast', 'breakfast'),
+            
+            # Готовка (7 рецептов)
+            ('generate_cooking_workshop', 'saturday_cooking', 'cooking'),
+            ('generate_kids_friendly', 'saturday_cooking', 'cooking'),
+            ('generate_team_cooking', 'saturday_cooking', 'cooking'),
+            ('generate_family_baking', 'saturday_cooking', 'cooking'),
+            ('generate_weekend_bbq', 'saturday_cooking', 'cooking'),
+            ('generate_cooking_fun', 'saturday_cooking', 'cooking'),
+            ('generate_family_kitchen', 'saturday_cooking', 'cooking'),
+            
+            # Десерты (7 рецептов)
+            ('generate_family_dessert', 'saturday_dessert', 'dessert'),
+            ('generate_weekend_treat', 'saturday_dessert', 'dessert'),
+            ('generate_shared_sweets', 'saturday_dessert', 'dessert'),
+            ('generate_saturday_special', 'saturday_dessert', 'dessert'),
+            ('generate_family_sweet', 'saturday_dessert', 'dessert'),
+            ('generate_weekend_delight', 'saturday_dessert', 'dessert'),
+            ('generate_shared_indulgence', 'saturday_dessert', 'dessert'),
+            
+            # Ужины (7 рецептов)
+            ('generate_family_lasagna', 'family_dinner', 'dinner'),
+            ('generate_saturday_pizza', 'family_dinner', 'dinner'),
+            ('generate_shared_platter', 'family_dinner', 'dinner'),
+            ('generate_family_feast', 'family_dinner', 'dinner'),
+            ('generate_saturday_special_dinner', 'family_dinner', 'dinner'),
+            ('generate_family_tradition', 'family_dinner', 'dinner'),
+            ('generate_shared_evening', 'family_dinner', 'dinner'),
+            
+            # Советы (7 рецептов)
+            ('generate_family_nutrition_advice', 'family_advice', 'advice'),
+            ('generate_cooking_together_advice', 'family_advice', 'advice'),
+            ('generate_weekend_planning_advice', 'family_advice', 'advice'),
+            ('generate_family_bonding_advice', 'family_advice', 'advice'),
+            ('generate_shared_meals_advice', 'family_advice', 'advice'),
+            ('generate_family_health_advice', 'family_advice', 'advice'),
+            ('generate_weekend_nutrition_advice', 'family_advice', 'advice'),
+            
+            # 📝 ВОСКРЕСЕНЬЕ - ПЛАНИРОВАНИЕ (35 методов)
+            # Завтраки (7 рецептов)
             ('generate_brunch_feast', 'sunday_breakfast', 'breakfast'),
             ('generate_lazy_breakfast', 'sunday_breakfast', 'breakfast'),
             ('generate_meal_prep_breakfast', 'sunday_breakfast', 'breakfast'),
@@ -413,11 +613,41 @@ class AdvancedRotationSystem:
             ('generate_efficient_smoothie', 'sunday_breakfast', 'breakfast'),
             ('generate_planning_omelette', 'sunday_breakfast', 'breakfast'),
             
-            # Обеды (49 методов) - будут добавлены в следующих частях
-            ('generate_brain_salmon_bowl', 'neuro_lunch', 'lunch'),
-            ('generate_cognitive_chicken', 'neuro_lunch', 'lunch'),
-            ('generate_neuro_salad', 'neuro_lunch', 'lunch'),
-            # ... остальные методы обедов будут добавлены
+            # Обеды (7 рецептов)
+            ('generate_weekly_prep_lunch', 'sunday_lunch', 'lunch'),
+            ('generate_batch_cooking_lunch', 'sunday_lunch', 'lunch'),
+            ('generate_efficient_lunch', 'sunday_lunch', 'lunch'),
+            ('generate_meal_prep_lunch', 'sunday_lunch', 'lunch'),
+            ('generate_planning_bowl', 'sunday_lunch', 'lunch'),
+            ('generate_efficient_meal', 'sunday_lunch', 'lunch'),
+            ('generate_prep_friendly_lunch', 'sunday_lunch', 'lunch'),
+            
+            # Десерты (7 рецептов)
+            ('generate_weekly_treat', 'sunday_dessert', 'dessert'),
+            ('generate_prep_friendly_dessert', 'sunday_dessert', 'dessert'),
+            ('generate_healthy_indulgence_sun', 'sunday_dessert', 'dessert'),
+            ('generate_planning_sweet', 'sunday_dessert', 'dessert'),
+            ('generate_efficient_dessert', 'sunday_dessert', 'dessert'),
+            ('generate_weekly_delight', 'sunday_dessert', 'dessert'),
+            ('generate_prep_treat', 'sunday_dessert', 'dessert'),
+            
+            # Ужины (7 рецептов)
+            ('generate_weekly_prep_chicken', 'meal_prep_dinner', 'dinner'),
+            ('generate_batch_cooking', 'meal_prep_dinner', 'dinner'),
+            ('generate_container_meal', 'meal_prep_dinner', 'dinner'),
+            ('generate_meal_prep_dinner', 'meal_prep_dinner', 'dinner'),
+            ('generate_weekly_plan_dinner', 'meal_prep_dinner', 'dinner'),
+            ('generate_efficient_dinner', 'meal_prep_dinner', 'dinner'),
+            ('generate_prep_friendly_dinner', 'meal_prep_dinner', 'dinner'),
+            
+            # Советы (7 рецептов)
+            ('generate_meal_prep_guide_advice', 'planning_advice', 'advice'),
+            ('generate_weekly_planning_advice', 'planning_advice', 'advice'),
+            ('generate_efficient_cooking_advice', 'planning_advice', 'advice'),
+            ('generate_meal_planning_advice', 'planning_advice', 'advice'),
+            ('generate_time_management_advice', 'planning_advice', 'advice'),
+            ('generate_kitchen_organization_advice', 'planning_advice', 'advice'),
+            ('generate_weekly_prep_advice', 'planning_advice', 'advice'),
         ]
         
         with self.db.get_connection() as conn:
@@ -6313,3 +6543,4 @@ if __name__ == '__main__':
     except Exception as e:
         logger.critical(f"❌ КРИТИЧЕСКАЯ ОШИБКА ПРИ ЗАПУСКЕ: {e}")
         raise
+
