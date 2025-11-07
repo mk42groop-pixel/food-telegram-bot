@@ -6666,6 +6666,66 @@ def send_test_post():
     except Exception as e:
         return jsonify({"status": "error", "message": f"❌ Ошибка: {str(e)}"})
 # ========== ЗАПУСК ПРИЛОЖЕНИЯ ==========
+# ========== ВРЕМЕННЫЕ ПУБЛИЧНЫЕ ЭНДПОИНТЫ ДЛЯ ЗАПУСКА ==========
+
+@app.route('/api/status')
+def api_status():
+    """Статус системы (временно без аутентификации)"""
+    return jsonify(service_monitor.get_status())
+
+@app.route('/api/send-welcome-post')
+def send_welcome_post():
+    """Отправка приветственного поста в канал"""
+    try:
+        content = """🍳 ДОБРО ПОЖАЛОВАТЬ В КУЛИНАРНЫЙ БОТ!
+
+🎉 Ваш умный кулинарный бот запущен!
+
+📅 Расписание постов:
+• 🍳 Завтрак: 09:00
+• 🍲 Обед: 12:00  
+• 🍽️ Ужин: 18:00
+• 🍰 Десерт: 20:00
+• 💡 Советы: 08:30
+
+⚡ Научно-обоснованные рецепты
+🔄 Умная ротация контента
+🎯 Персональные рекомендации
+
+Следите за обновлениями! 🚀
+
+#кулинарныйбот #здоровоепитание #рецепты"""
+        
+        success = telegram_manager.send_message(
+            content, 
+            content_type="welcome", 
+            method_name="welcome_post"
+        )
+        
+        if success:
+            return jsonify({
+                "status": "success", 
+                "message": "✅ Приветственный пост отправлен в канал!",
+                "next_post": "Следующий пост по расписанию в 09:00"
+            })
+        else:
+            return jsonify({"status": "error", "message": "❌ Ошибка отправки поста"})
+            
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"❌ Ошибка: {str(e)}"})
+
+@app.route('/api/check-schedule')
+def check_schedule():
+    """Проверка расписания"""
+    current_time = TimeManager.get_kemerovo_time()
+    current_type = TimeManager.get_current_content_type()
+    
+    return jsonify({
+        "current_time_kemerovo": current_time.strftime('%H:%M'),
+        "current_content_type": current_type,
+        "is_weekend": TimeManager.is_weekend(),
+        "next_posts": "Следующие посты по расписанию автоматически"
+    })
 if __name__ == "__main__":
     # 🔧 ПРОВЕРКА КОНФИГУРАЦИИ
     logger.info("🔧 ПРОВЕРКА КОНФИГУРАЦИИ СИСТЕМЫ:")
@@ -6680,5 +6740,6 @@ if __name__ == "__main__":
     if initialize_system():
         port = int(os.environ.get('PORT', 10000))
         app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
