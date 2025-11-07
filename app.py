@@ -1072,8 +1072,9 @@ def test_telegram_connection():
 # Автоматическое тестирование при импорте
 if __name__ != "__main__":
     test_telegram_connection()
-    class ScientificContentGenerator:
-        
+
+# Класс должен быть на уровне модуля (без лишних отступов)
+class ScientificContentGenerator:
     """Генератор научно-обоснованного контента о питании"""
     
     def __init__(self):
@@ -6579,4 +6580,5 @@ if __name__ == '__main__':
     except Exception as e:
         logger.critical(f"❌ КРИТИЧЕСКАЯ ОШИБКА ПРИ ЗАПУСКЕ: {e}")
         raise
+
 
