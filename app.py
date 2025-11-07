@@ -6599,15 +6599,14 @@ if not Config.ADMIN_TOKEN or 'default' in Config.ADMIN_TOKEN:
     logger.critical("❌ CRITICAL: ADMIN_TOKEN не установлен или используется значение по умолчанию!")
  
 
-# ========== FLASK APP ========== 
-app = Flask(__name__)
+# ========== FLASK ROUTES ==========
 
 @app.route('/')
 def home():
     return jsonify({
         "status": "Recipe Bot API", 
         "version": "1.0",
-        "endpoints": ["/api/status", "/api/logs"]
+        "endpoints": ["/api/status", "/api/logs", "/api/debug/config"]
     })
 
 @app.route('/api/status')
@@ -6632,8 +6631,25 @@ def health_check():
     """Публичный эндпоинт для проверки здоровья"""
     return jsonify({"status": "healthy", "timestamp": datetime.now().isoformat()})
 
+# 🔧 ДОБАВИТЬ ЭТИ ДВА НОВЫХ ЭНДПОИНТА:
+@app.route('/api/debug/config')
+def debug_config():
+    """Публичный эндпоинт для отладки конфигурации"""
+    return jsonify({
+        "admin_token_set": bool(Config.ADMIN_TOKEN and 'default' not in Config.ADMIN_TOKEN),
+        "telegram_configured": bool(Config.TELEGRAM_BOT_TOKEN and Config.TELEGRAM_CHANNEL),
+        "service": "active"
+    })
+
+@app.route('/api/test-auth')
+@security_manager.require_auth
+def test_auth():
+    """Тестовый защищенный эндпоинт"""
+    return jsonify({"message": "✅ Аутентификация успешна!", "status": "authorized"})
+
+# ========== ЗАПУСК ПРИЛОЖЕНИЯ ==========
 if __name__ == "__main__":
-    # 🔧 ПРОВЕРКА КОНФИГУРАЦИИ - ДОБАВИТЬ ЭТО
+    # 🔧 ПРОВЕРКА КОНФИГУРАЦИИ
     logger.info("🔧 ПРОВЕРКА КОНФИГУРАЦИИ СИСТЕМЫ:")
     logger.info(f"ADMIN_TOKEN установлен: {'ДА' if Config.ADMIN_TOKEN and 'default' not in Config.ADMIN_TOKEN else 'НЕТ!'}")
     logger.info(f"TELEGRAM_BOT_TOKEN: {'ДА' if Config.TELEGRAM_BOT_TOKEN else 'НЕТ'}")
@@ -6646,8 +6662,3 @@ if __name__ == "__main__":
     if initialize_system():
         port = int(os.environ.get('PORT', 10000))
         app.run(host='0.0.0.0', port=port, debug=False)
-
-
-
-
-
