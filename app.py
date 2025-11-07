@@ -1073,6 +1073,7 @@ def test_telegram_connection():
 if __name__ != "__main__":
     test_telegram_connection()
     class ScientificContentGenerator:
+        
     """Генератор научно-обоснованного контента о питании"""
     
     def __init__(self):
@@ -6578,3 +6579,4 @@ if __name__ == '__main__':
     except Exception as e:
         logger.critical(f"❌ КРИТИЧЕСКАЯ ОШИБКА ПРИ ЗАПУСКЕ: {e}")
         raise
+
