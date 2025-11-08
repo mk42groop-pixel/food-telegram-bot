@@ -860,89 +860,6 @@ class VisualContentManager:
             include_science_approach=True, day_of_week='tuesday'
         )
 
-    # Дополнительные методы рецептов можно добавить аналогично...
-
-# ========== ТЕЛЕГРАМ МЕНЕДЖЕР ==========
-
-class TelegramManager:
-    def __init__(self):
-        self.token = Config.TELEGRAM_BOT_TOKEN
-        self.channel = Config.TELEGRAM_CHANNEL
-        self.base_url = f"https://api.telegram.org/bot{self.token}"
-        self.sent_hashes = set()
-        self.last_sent_times = {}
-        self._member_count = 39
-
-    def get_member_count(self):
-        return self._member_count
-
-    def send_with_fallback(self, text, event_name, max_retries=3):
-        for attempt in range(max_retries):
-            try:
-                success = self.send_message(text)
-                if success:
-                    service_monitor.record_sent_message()
-                    return True
-                else:
-                    logger.warning(f"⚠️ Попытка {attempt + 1} не удалась для {event_name}")
-                    time.sleep(10)
-            except Exception as e:
-                logger.error(f"❌ Ошибка при попытке {attempt + 1}: {e}")
-                time.sleep(10)
-
-        logger.error(f"❌ Все {max_retries} попыток отправки провалились: {event_name}")
-        service_monitor.record_missed_message(event_name)
-        return False
-
-    def send_message(self, text, parse_mode='HTML'):
-        try:
-            current_time = datetime.now()
-            time_key = current_time.strftime('%Y-%m-%d %H:%M')
-
-            if time_key in self.last_sent_times:
-                time_diff = (current_time - self.last_sent_times[time_key]).total_seconds()
-                if time_diff < 600:
-                    logger.warning(f"⚠️ Попытка дублирования в течение 10 минут: {time_key}")
-                    return False
-
-            if not self.token or self.token == 'your-telegram-bot-token':
-                logger.error("❌ Токен бота не настроен!")
-                return False
-
-            content_hash = hashlib.md5(text.encode()).hexdigest()
-            if content_hash in self.sent_hashes:
-                logger.warning("⚠️ Попытка отправить дубликат контента")
-                return False
-
-            url = f"{self.base_url}/sendMessage"
-            payload = {
-                'chat_id': self.channel,
-                'text': text,
-                'parse_mode': parse_mode,
-                'disable_web_page_preview': False
-            }
-
-            logger.info(f"🔗 Отправка сообщения в Telegram...")
-            response = requests.post(url, json=payload, timeout=30)
-
-            if response.status_code == 200:
-                result = response.json()
-                if result.get('ok'):
-                    self.sent_hashes.add(content_hash)
-                    self.last_sent_times[time_key] = current_time
-                    logger.info("✅ Сообщение успешно отправлено в канал")
-                    return True
-                else:
-                    logger.error(f"❌ Ошибка Telegram API: {result.get('description')}")
-            else:
-                logger.error(f"❌ HTTP ошибка: {response.status_code}")
-
-            return False
-
-        except Exception as e:
-            logger.error(f"❌ Ошибка при отправке: {str(e)}")
-            return False
-
 # ========== ГЕНЕРАТОР КОНТЕНТА ==========
 
 class ContentGenerator:
@@ -1154,6 +1071,286 @@ class ContentGenerator:
             recipe_type,
             benefits
         )
+
+# ========== ТЕЛЕГРАМ МЕНЕДЖЕР ==========
+
+class TelegramManager:
+    def __init__(self):
+        self.token = Config.TELEGRAM_BOT_TOKEN
+        self.channel = Config.TELEGRAM_CHANNEL
+        self.base_url = f"https://api.telegram.org/bot{self.token}"
+        self.sent_hashes = set()
+        self.last_sent_times = {}
+        self._member_count = 39
+
+    def get_member_count(self):
+        return self._member_count
+
+    def send_with_fallback(self, text, event_name, max_retries=3):
+        for attempt in range(max_retries):
+            try:
+                success = self.send_message(text)
+                if success:
+                    service_monitor.record_sent_message()
+                    return True
+                else:
+                    logger.warning(f"⚠️ Попытка {attempt + 1} не удалась для {event_name}")
+                    time.sleep(10)
+            except Exception as e:
+                logger.error(f"❌ Ошибка при попытке {attempt + 1}: {e}")
+                time.sleep(10)
+
+        logger.error(f"❌ Все {max_retries} попыток отправки провалились: {event_name}")
+        service_monitor.record_missed_message(event_name)
+        return False
+
+    def send_message(self, text, parse_mode='HTML'):
+        try:
+            current_time = datetime.now()
+            time_key = current_time.strftime('%Y-%m-%d %H:%M')
+
+            if time_key in self.last_sent_times:
+                time_diff = (current_time - self.last_sent_times[time_key]).total_seconds()
+                if time_diff < 600:
+                    logger.warning(f"⚠️ Попытка дублирования в течение 10 минут: {time_key}")
+                    return False
+
+            if not self.token or self.token == 'your-telegram-bot-token':
+                logger.error("❌ Токен бота не настроен!")
+                return False
+
+            content_hash = hashlib.md5(text.encode()).hexdigest()
+            if content_hash in self.sent_hashes:
+                logger.warning("⚠️ Попытка отправить дубликат контента")
+                return False
+
+            url = f"{self.base_url}/sendMessage"
+            payload = {
+                'chat_id': self.channel,
+                'text': text,
+                'parse_mode': parse_mode,
+                'disable_web_page_preview': False
+            }
+
+            logger.info(f"🔗 Отправка сообщения в Telegram...")
+            response = requests.post(url, json=payload, timeout=30)
+
+            if response.status_code == 200:
+                result = response.json()
+                if result.get('ok'):
+                    self.sent_hashes.add(content_hash)
+                    self.last_sent_times[time_key] = current_time
+                    logger.info("✅ Сообщение успешно отправлено в канал")
+                    return True
+                else:
+                    logger.error(f"❌ Ошибка Telegram API: {result.get('description')}")
+            else:
+                logger.error(f"❌ HTTP ошибка: {response.status_code}")
+
+            return False
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка при отправке: {str(e)}")
+            return False
+
+# ========== ПЛАНИРОВЩИК КОНТЕНТА ==========
+
+class ContentScheduler:
+    def __init__(self):
+        # ПОЛНОЕ РАСПИСАНИЕ
+        self.kemerovo_schedule = {
+            # ПОНЕДЕЛЬНИК (0)
+            0: {
+                "08:30": {"name": "🧠 Научное сообщение: Питание для мозга", "type": "science", "method": "generate_monday_science"},
+                "09:00": {"name": "🧠 Нейрозавтрак: Омлет с лососем", "type": "neuro_breakfast", "method": "generate_neuro_breakfast"},
+                "13:00": {"name": "🍲 Обед для концентрации", "type": "focus_lunch", "method": "generate_focus_lunch"},
+                "19:00": {"name": "🥗 Ужин для мозга", "type": "brain_dinner", "method": "generate_brain_dinner"},
+                "20:00": {"name": "🧠 Совет: Нейропитание", "type": "neuro_advice", "method": "generate_neuro_advice"}
+            },
+            # ВТОРНИК (1)
+            1: {
+                "08:30": {"name": "💪 Научное сообщение: Сила белков", "type": "science", "method": "generate_tuesday_science"},
+                "09:00": {"name": "💪 Белковый завтрак: Творожная запеканка", "type": "protein_breakfast", "method": "generate_protein_breakfast"},
+                "13:00": {"name": "🍗 Белковый обед: Индейка с киноа", "type": "protein_lunch", "method": "generate_protein_lunch"},
+                "19:00": {"name": "🐟 Ужин: Лосось с овощами", "type": "protein_dinner", "method": "generate_protein_dinner"},
+                "20:00": {"name": "💪 Совет: Оптимизация белков", "type": "protein_advice", "method": "generate_protein_advice"}
+            },
+            # СРЕДА (2)
+            2: {
+                "08:30": {"name": "🥬 Научное сообщение: Сила овощей", "type": "science", "method": "generate_wednesday_science"},
+                "09:00": {"name": "🥬 Овощной завтрак: Смузи-боул", "type": "veggie_breakfast", "method": "generate_veggie_breakfast"},
+                "13:00": {"name": "🥦 Обед: Овощное рагу", "type": "veggie_lunch", "method": "generate_veggie_lunch"},
+                "19:00": {"name": "🥑 Ужин: Салат с авокадо", "type": "veggie_dinner", "method": "generate_veggie_dinner"},
+                "20:00": {"name": "🥬 Совет: Детокс питание", "type": "veggie_advice", "method": "generate_veggie_advice"}
+            },
+            # ЧЕТВЕРГ (3)
+            3: {
+                "08:30": {"name": "🍠 Научное сообщение: Энергия углеводов", "type": "science", "method": "generate_thursday_science"},
+                "09:00": {"name": "🍠 Углеводный завтрак: Овсяная каша", "type": "carbs_breakfast", "method": "generate_carbs_breakfast"},
+                "13:00": {"name": "🍚 Обед: Гречка с овощами", "type": "carbs_lunch", "method": "generate_carbs_lunch"},
+                "19:00": {"name": "🥔 Ужин: Запеченный батат", "type": "carbs_dinner", "method": "generate_carbs_dinner"},
+                "20:00": {"name": "🍠 Совет: Сложные углеводы", "type": "carbs_advice", "method": "generate_carbs_advice"}
+            },
+            # ПЯТНИЦА (4)
+            4: {
+                "08:30": {"name": "🎉 Научное сообщение: Баланс питания", "type": "science", "method": "generate_friday_science"},
+                "09:00": {"name": "🥞 Сбалансированный завтрак", "type": "balance_breakfast", "method": "generate_balance_breakfast"},
+                "13:00": {"name": "🍝 Обед: Паста с соусом", "type": "balance_lunch", "method": "generate_balance_lunch"},
+                "19:00": {"name": "🍽️ Ужин: Рыба с картофелем", "type": "balance_dinner", "method": "generate_balance_dinner"},
+                "20:00": {"name": "🎉 Совет: Принцип 80/20", "type": "balance_advice", "method": "generate_balance_advice"}
+            },
+            # СУББОТА (5)
+            5: {
+                "08:30": {"name": "👨‍🍳 Научное сообщение: Семейное питание", "type": "science", "method": "generate_saturday_science"},
+                "10:00": {"name": "🍳 Семейный завтрак: Сырники", "type": "family_breakfast", "method": "generate_family_breakfast"},
+                "13:00": {"name": "👨‍🍳 Семейный обед: Сырный суп", "type": "family_lunch", "method": "generate_family_lunch"},
+                "16:00": {"name": "🎂 Семейный десерт", "type": "saturday_dessert", "method": "generate_saturday_dessert"},
+                "19:00": {"name": "🍽️ Семейный ужин", "type": "family_dinner", "method": "generate_family_dinner"},
+                "20:00": {"name": "👨‍👩‍👧‍👦 Совет: Питание для семьи", "type": "family_advice", "method": "generate_family_advice"}
+            },
+            # ВОСКРЕСЕНЬЕ (6)
+            6: {
+                "08:30": {"name": "📝 Научное сообщение: Планирование питания", "type": "science", "method": "generate_sunday_science"},
+                "10:00": {"name": "☀️ Воскресный бранч: Омлет", "type": "sunday_breakfast", "method": "generate_sunday_breakfast"},
+                "13:00": {"name": "🛒 Обед + план на неделю", "type": "sunday_lunch", "method": "generate_sunday_lunch"},
+                "16:00": {"name": "🍰 Воскресный десерт", "type": "sunday_dessert", "method": "generate_sunday_dessert"},
+                "19:00": {"name": "📋 Ужин для подготовки", "type": "week_prep_dinner", "method": "generate_week_prep_dinner"},
+                "20:00": {"name": "📝 Совет: Meal prep стратегии", "type": "planning_advice", "method": "generate_planning_advice"}
+            }
+        }
+
+        self.server_schedule = self._convert_schedule_to_server()
+        self.is_running = False
+        self.telegram = TelegramManager()
+        self.generator = ContentGenerator()
+
+    def _convert_schedule_to_server(self):
+        server_schedule = {}
+        for day, day_schedule in self.kemerovo_schedule.items():
+            server_schedule[day] = {}
+            for kemerovo_time, event in day_schedule.items():
+                server_time = TimeManager.kemerovo_to_server(kemerovo_time)
+                server_schedule[day][server_time] = event
+        return server_schedule
+
+    def start_scheduler(self):
+        if self.is_running:
+            return
+
+        logger.info("🚀 Запуск планировщика контента...")
+
+        if not self.validate_generator_methods():
+            logger.error("❌ Критические ошибки валидации! Планировщик не запущен.")
+            return False
+
+        schedule.clear()
+
+        for day, day_schedule in self.server_schedule.items():
+            for server_time, event in day_schedule.items():
+                self._schedule_event(day, server_time, event)
+
+        self.is_running = True
+        self._run_scheduler()
+
+        logger.info("✅ Планировщик запущен")
+        return True
+
+    def validate_generator_methods(self):
+        missing_methods = []
+        for day_schedule in self.kemerovo_schedule.values():
+            for event in day_schedule.values():
+                method_name = event['method']
+                if not hasattr(self.generator, method_name):
+                    missing_methods.append(method_name)
+
+        if missing_methods:
+            logger.error(f"❌ Отсутствующие методы: {missing_methods}")
+            return False
+
+        logger.info("✅ Все методы генерации валидированы")
+        return True
+
+    def _schedule_event(self, day, server_time, event):
+        def job():
+            try:
+                current_times = TimeManager.get_current_times()
+                logger.info(f"🕒 Выполнение: {event['name']}")
+
+                method_name = event['method']
+                if hasattr(self.generator, method_name):
+                    method = getattr(self.generator, method_name)
+                    content = method()
+
+                    if content:
+                        content_with_time = f"{content}\n\n⏰ Опубликовано: {current_times['kemerovo_time']}"
+
+                        success = self.telegram.send_with_fallback(
+                            content_with_time, 
+                            event['name'],
+                            max_retries=3
+                        )
+
+                        if success:
+                            logger.info(f"✅ Успешная публикация: {event['name']}")
+                        else:
+                            logger.error(f"❌ Ошибка публикации: {event['name']}")
+                    else:
+                        logger.error(f"❌ Не удалось сгенерировать контент: {event['name']}")
+                        service_monitor.record_missed_message(event['name'])
+                else:
+                    logger.error(f"❌ Метод не найден: {method_name}")
+                    service_monitor.record_missed_message(event['name'])
+
+            except Exception as e:
+                logger.error(f"❌ Ошибка в задании {event['name']}: {str(e)}")
+                service_monitor.record_missed_message(event['name'])
+
+        job_func = getattr(schedule.every(), self._get_day_name(day))
+        job_func.at(server_time).do(job)
+
+        logger.info(f"📌 Запланировано: {self._get_day_name(day).capitalize()} {server_time} - {event['name']}")
+
+    def _get_day_name(self, day_num):
+        days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+        return days[day_num]
+
+    def _run_scheduler(self):
+        def run():
+            while self.is_running:
+                try:
+                    schedule.run_pending()
+                    time.sleep(60)
+                except Exception as e:
+                    logger.error(f"❌ Ошибка в цикле планировщика: {e}")
+                    time.sleep(60)
+
+        scheduler_thread = Thread(target=run, daemon=True)
+        scheduler_thread.start()
+        logger.info("✅ Планировщик запущен в отдельном потоке")
+
+    def get_next_event(self):
+        try:
+            current_times = TimeManager.get_current_times()
+            current_kemerovo_time = current_times['kemerovo_time'][:5]
+
+            current_weekday = TimeManager.get_kemerovo_weekday()
+            today_schedule = self.kemerovo_schedule.get(current_weekday, {})
+
+            for time_str, event in sorted(today_schedule.items()):
+                if time_str > current_kemerovo_time:
+                    return time_str, event
+
+            tomorrow = (current_weekday + 1) % 7
+            tomorrow_schedule = self.kemerovo_schedule.get(tomorrow, {})
+            if tomorrow_schedule:
+                first_time = min(tomorrow_schedule.keys())
+                return first_time, tomorrow_schedule[first_time]
+
+            return "08:30", {"name": "Следующий пост", "type": "general"}
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка получения следующего события: {e}")
+            return "08:30", {"name": "Следующий пост", "type": "general"}
 
 # ========== FLASK МАРШРУТЫ ==========
 
@@ -1388,4 +1585,3 @@ if __name__ == '__main__':
     print("📱 Дашборд: доступен")
 
     app.run(host='0.0.0.0', port=port, debug=False)
-
