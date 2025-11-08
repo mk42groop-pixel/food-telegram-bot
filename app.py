@@ -950,49 +950,7 @@ class ContentGenerator:
         self.visual_manager = VisualContentManager()
         self.gpt_generator = YandexGPTGenerator()
 
-    def _generate_with_gpt(self, recipe_type, theme, benefits):
-        try:
-            recipe_content = self.gpt_generator.generate_recipe(recipe_type, theme)
-            return self.visual_manager.generate_attractive_post(
-                theme.upper(),
-                recipe_content,
-                recipe_type,
-                benefits
-            )
-        except Exception as e:
-            logger.error(f"❌ Ошибка генерации контента: {e}")
-            return self._get_fallback_content(recipe_type, theme, benefits)
-
-    def _get_fallback_content(self, recipe_type, theme, benefits):
-        fallback_content = f"""
-📊 <b>ПИЩЕВАЯ ЦЕННОСТЬ НА ПОРЦИЮ:</b>
-• 🔥 Калории: 300-400 ккал
-• 🍗 Белки: 20-30 г
-• 🥑 Жиры: 15-25 г
-• 🌾 Углеводы: 20-30 г
-
-🛒 <b>ИНГРЕДИЕНТЫ НА 4 ПОРЦИИ:</b>
-• 🥕 Свежие овощи и зелень
-• 🍗 Качественные белки
-• 🌾 Полезные углеводы
-• 🫒 Полезные жиры
-
-👨‍🍳 <b>ПРОЦЕСС ПРИГОТОВЛЕНИЯ:</b>
-1. 🥣 Подготовить все ингредиенты
-2. 🍳 Следовать классическому рецепту
-3. 🔥 Готовить с любовью для семьи
-4. 🍽️ Подавать горячим
-
-🍴 <b>Приятного аппетита!</b>"""
-
-        return self.visual_manager.generate_attractive_post(
-            theme.upper(),
-            fallback_content,
-            recipe_type,
-            benefits
-        )
-
-    # МЕТОДЫ ГЕНЕРАЦИИ
+    # НАУЧНЫЕ СООБЩЕНИЯ
     def generate_monday_science(self):
         return self.visual_manager.generate_monday_science()
 
@@ -1014,12 +972,34 @@ class ContentGenerator:
     def generate_sunday_science(self):
         return self.visual_manager.generate_sunday_science()
 
+    # ЗАВТРАКИ
     def generate_neuro_breakfast(self):
         return self.visual_manager.generate_neuro_breakfast()
 
     def generate_protein_breakfast(self):
         return self.visual_manager.generate_protein_breakfast()
 
+    def generate_veggie_breakfast(self):
+        return self._generate_with_gpt('breakfast', 'Овощной завтрак', 
+                                      '🥬 Богат клетчаткой и витаминами\n🌿 Очищает организм\n💚 Легкий и полезный')
+
+    def generate_carbs_breakfast(self):
+        return self._generate_with_gpt('breakfast', 'Углеводный завтрак', 
+                                      '⚡ Источник энергии\n🍞 Сложные углеводы\n💪 Поддерживает активность')
+
+    def generate_balance_breakfast(self):
+        return self._generate_with_gpt('breakfast', 'Сбалансированный завтрак', 
+                                      '⚡ Энергия и питательность\n💪 Белки для сытости\n🥬 Витамины для здоровья')
+
+    def generate_family_breakfast(self):
+        return self._generate_with_gpt('breakfast', 'Семейный завтрак', 
+                                      '👨‍👩‍👧‍👦 Объединяет семью за столом\n😊 Вкусно и полезно для всех\n💫 Начинает день с радости')
+
+    def generate_sunday_breakfast(self):
+        return self._generate_with_gpt('breakfast', 'Воскресный бранч', 
+                                      '🎉 Праздничное настроение\n👨‍👩‍👧‍👦 Идеально для семейного дня\n🍽️ Особенный вкус')
+
+    # ОБЕДЫ
     def generate_focus_lunch(self):
         return self._generate_with_gpt('lunch', 'Обед для концентрации', 
                                       '🧠 Поддерживает умственную активность\n💡 Улучшает память\n⚡ Заряжает энергией')
@@ -1028,6 +1008,27 @@ class ContentGenerator:
         return self._generate_with_gpt('lunch', 'Белковый обед', 
                                       '💪 Восстанавливает мышцы\n🍗 Надолго насыщает\n🌟 Укрепляет кости')
 
+    def generate_veggie_lunch(self):
+        return self._generate_with_gpt('lunch', 'Овощной обед', 
+                                      '🥬 Богат витаминами и минералами\n🌿 Очищает организм\n💚 Легкий и полезный')
+
+    def generate_carbs_lunch(self):
+        return self._generate_with_gpt('lunch', 'Углеводный обед', 
+                                      '⚡ Восполняет энергию\n🍚 Сложные углеводы\n💪 Поддерживает активность')
+
+    def generate_balance_lunch(self):
+        return self._generate_with_gpt('lunch', 'Сбалансированный обед', 
+                                      '🍽️ Идеальное сочетание нутриентов\n💪 Поддержка энергии\n🌟 Оптимальное насыщение')
+
+    def generate_family_lunch(self):
+        return self._generate_with_gpt('lunch', 'Семейный обед', 
+                                      '👨‍👩‍👧‍👦 Объединяет за обеденным столом\n😊 Вкусно и полезно для всех\n💫 Создает семейные традиции')
+
+    def generate_sunday_lunch(self):
+        return self._generate_with_gpt('lunch', 'Воскресный обед', 
+                                      '🎉 Праздничная атмосфера\n👨‍👩‍👧‍👦 Семейное время\n🍽️ Особенный вкус')
+
+    # УЖИНЫ
     def generate_brain_dinner(self):
         return self._generate_with_gpt('dinner', 'Ужин для мозга', 
                                       '🧠 Подготовка ко сну\n💡 Улучшает качество сна\n🌙 Легкий и полезный')
@@ -1036,6 +1037,40 @@ class ContentGenerator:
         return self._generate_with_gpt('dinner', 'Белковый ужин', 
                                       '💪 Восстанавливает за ночь\n🍗 Надолго насыщает\n🌟 Укрепляет организм')
 
+    def generate_veggie_dinner(self):
+        return self._generate_with_gpt('dinner', 'Овощной ужин', 
+                                      '🥬 Легкий для пищеварения\n🌿 Богат клетчаткой\n💚 Способствует детоксу')
+
+    def generate_carbs_dinner(self):
+        return self._generate_with_gpt('dinner', 'Углеводный ужин', 
+                                      '⚡ Восстанавливает энергию\n🍚 Сложные углеводы\n💪 Подготавливает к следующему дню')
+
+    def generate_balance_dinner(self):
+        return self._generate_with_gpt('dinner', 'Сбалансированный ужин', 
+                                      '🌙 Легкий и питательный\n💪 Восстановление организма\n🌟 Подготовка ко сну')
+
+    def generate_family_dinner(self):
+        return self._generate_with_gpt('dinner', 'Семейный ужин', 
+                                      '👨‍👩‍👧‍👦 Завершает день вместе\n😊 Вкусно и полезно\n💫 Создает теплую атмосферу')
+
+    def generate_week_prep_dinner(self):
+        return self._generate_with_gpt('dinner', 'Ужин для подготовки к неделе', 
+                                      '📋 Закладывает основу на неделю\n💪 Питательный и сбалансированный\n🌟 Настраивает на продуктивность')
+
+    # ДЕСЕРТЫ
+    def generate_friday_dessert(self):
+        return self._generate_with_gpt('dessert', 'Пятничный десерт', 
+                                      '🎉 Награда за неделю\n😊 Вкусный и полезный\n👨‍👩‍👧‍👦 Семейное удовольствие')
+
+    def generate_saturday_dessert(self):
+        return self._generate_with_gpt('dessert', 'Субботний десерт', 
+                                      '🎂 Сладкое наслаждение\n😊 Полезные ингредиенты\n👨‍👩‍👧‍👦 Для семейного вечера')
+
+    def generate_sunday_dessert(self):
+        return self._generate_with_gpt('dessert', 'Воскресный десерт', 
+                                      '🍰 Завершение выходных\n😊 Вкусные воспоминания\n👨‍👩‍👧‍👦 Семейная традиция')
+
+    # СОВЕТЫ
     def generate_neuro_advice(self):
         return self._generate_with_gpt('advice', 'Совет: Питание для мозга', 
                                       '🧠 Улучшает когнитивные функции\n💡 Повышает продуктивность\n🌟 Заботится о ментальном здоровье')
@@ -1044,206 +1079,81 @@ class ContentGenerator:
         return self._generate_with_gpt('advice', 'Совет: Значение белков', 
                                       '💪 Строительный материал организма\n🍗 Важен для роста и развития\n🌟 Поддерживает иммунитет')
 
-    # Дополнительные методы можно добавить по аналогии...
+    def generate_veggie_advice(self):
+        return self._generate_with_gpt('advice', 'Совет: Сила овощей', 
+                                      '🥬 Источник витаминов и минералов\n🌿 Очищает организм\n💚 Профилактика заболеваний')
 
-# ========== ПЛАНИРОВЩИК КОНТЕНТА ==========
+    def generate_carbs_advice(self):
+        return self._generate_with_gpt('advice', 'Совет: Энергия углеводов', 
+                                      '⚡ Основной источник энергии\n🍞 Важны для активности\n💪 Поддерживают метаболизм')
 
-class ContentScheduler:
-    def __init__(self):
-        # ПОЛНОЕ РАСПИСАНИЕ
-        self.kemerovo_schedule = {
-            # ПОНЕДЕЛЬНИК (0)
-            0: {
-                "08:30": {"name": "🧠 Научное сообщение: Питание для мозга", "type": "science", "method": "generate_monday_science"},
-                "09:00": {"name": "🧠 Нейрозавтрак: Омлет с лососем", "type": "neuro_breakfast", "method": "generate_neuro_breakfast"},
-                "13:00": {"name": "🍲 Обед для концентрации", "type": "focus_lunch", "method": "generate_focus_lunch"},
-                "19:00": {"name": "🥗 Ужин для мозга", "type": "brain_dinner", "method": "generate_brain_dinner"},
-                "20:00": {"name": "🧠 Совет: Нейропитание", "type": "neuro_advice", "method": "generate_neuro_advice"}
-            },
-            # ВТОРНИК (1)
-            1: {
-                "08:30": {"name": "💪 Научное сообщение: Сила белков", "type": "science", "method": "generate_tuesday_science"},
-                "09:00": {"name": "💪 Белковый завтрак: Творожная запеканка", "type": "protein_breakfast", "method": "generate_protein_breakfast"},
-                "13:00": {"name": "🍗 Белковый обед: Индейка с киноа", "type": "protein_lunch", "method": "generate_protein_lunch"},
-                "19:00": {"name": "🐟 Ужин: Лосось с овощами", "type": "protein_dinner", "method": "generate_protein_dinner"},
-                "20:00": {"name": "💪 Совет: Оптимизация белков", "type": "protein_advice", "method": "generate_protein_advice"}
-            },
-            # СРЕДА (2)
-            2: {
-                "08:30": {"name": "🥬 Научное сообщение: Сила овощей", "type": "science", "method": "generate_wednesday_science"},
-                "09:00": {"name": "🥬 Овощной завтрак: Смузи-боул", "type": "veggie_breakfast", "method": "generate_veggie_breakfast"},
-                "13:00": {"name": "🥦 Обед: Овощное рагу", "type": "veggie_lunch", "method": "generate_veggie_lunch"},
-                "19:00": {"name": "🥑 Ужин: Салат с авокадо", "type": "veggie_dinner", "method": "generate_veggie_dinner"},
-                "20:00": {"name": "🥬 Совет: Детокс питание", "type": "veggie_advice", "method": "generate_veggie_advice"}
-            },
-            # ЧЕТВЕРГ (3)
-            3: {
-                "08:30": {"name": "🍠 Научное сообщение: Энергия углеводов", "type": "science", "method": "generate_thursday_science"},
-                "09:00": {"name": "🍠 Углеводный завтрак: Овсяная каша", "type": "carbs_breakfast", "method": "generate_carbs_breakfast"},
-                "13:00": {"name": "🍚 Обед: Гречка с овощами", "type": "carbs_lunch", "method": "generate_carbs_lunch"},
-                "19:00": {"name": "🥔 Ужин: Запеченный батат", "type": "carbs_dinner", "method": "generate_carbs_dinner"},
-                "20:00": {"name": "🍠 Совет: Сложные углеводы", "type": "carbs_advice", "method": "generate_carbs_advice"}
-            },
-            # ПЯТНИЦА (4)
-            4: {
-                "08:30": {"name": "🎉 Научное сообщение: Баланс питания", "type": "science", "method": "generate_friday_science"},
-                "09:00": {"name": "🥞 Сбалансированный завтрак", "type": "balance_breakfast", "method": "generate_balance_breakfast"},
-                "13:00": {"name": "🍝 Обед: Паста с соусом", "type": "balance_lunch", "method": "generate_balance_lunch"},
-                "19:00": {"name": "🍽️ Ужин: Рыба с картофелем", "type": "balance_dinner", "method": "generate_balance_dinner"},
-                "20:00": {"name": "🎉 Совет: Принцип 80/20", "type": "balance_advice", "method": "generate_balance_advice"}
-            },
-            # СУББОТА (5)
-            5: {
-                "08:30": {"name": "👨‍🍳 Научное сообщение: Семейное питание", "type": "science", "method": "generate_saturday_science"},
-                "10:00": {"name": "🍳 Семейный завтрак: Сырники", "type": "family_breakfast", "method": "generate_family_breakfast"},
-                "13:00": {"name": "👨‍🍳 Семейный обед: Сырный суп", "type": "family_lunch", "method": "generate_family_lunch"},
-                "16:00": {"name": "🎂 Семейный десерт", "type": "saturday_dessert", "method": "generate_saturday_dessert"},
-                "19:00": {"name": "🍽️ Семейный ужин", "type": "family_dinner", "method": "generate_family_dinner"},
-                "20:00": {"name": "👨‍👩‍👧‍👦 Совет: Питание для семьи", "type": "family_advice", "method": "generate_family_advice"}
-            },
-            # ВОСКРЕСЕНЬЕ (6)
-            6: {
-                "08:30": {"name": "📝 Научное сообщение: Планирование питания", "type": "science", "method": "generate_sunday_science"},
-                "10:00": {"name": "☀️ Воскресный бранч: Омлет", "type": "sunday_breakfast", "method": "generate_sunday_breakfast"},
-                "13:00": {"name": "🛒 Обед + план на неделю", "type": "sunday_lunch", "method": "generate_sunday_lunch"},
-                "16:00": {"name": "🍰 Воскресный десерт", "type": "sunday_dessert", "method": "generate_sunday_dessert"},
-                "19:00": {"name": "📋 Ужин для подготовки", "type": "week_prep_dinner", "method": "generate_week_prep_dinner"},
-                "20:00": {"name": "📝 Совет: Meal prep стратегии", "type": "planning_advice", "method": "generate_planning_advice"}
-            }
-        }
+    def generate_balance_advice(self):
+        return self._generate_with_gpt('advice', 'Совет: Баланс питания', 
+                                      '⚖️ Оптимальное сочетание нутриентов\n💪 Поддержка всех систем\n🌟 Долгосрочное здоровье')
 
-        self.server_schedule = self._convert_schedule_to_server()
-        self.is_running = False
-        self.telegram = TelegramManager()
-        self.generator = ContentGenerator()
+    def generate_family_advice(self):
+        return self._generate_with_gpt('advice', 'Совет: Семейное питание', 
+                                      '👨‍👩‍👧‍👦 Укрепляет семейные связи\n😊 Формирует здоровые привычки\n💫 Создает теплую атмосферу')
 
-    def _convert_schedule_to_server(self):
-        server_schedule = {}
-        for day, day_schedule in self.kemerovo_schedule.items():
-            server_schedule[day] = {}
-            for kemerovo_time, event in day_schedule.items():
-                server_time = TimeManager.kemerovo_to_server(kemerovo_time)
-                server_schedule[day][server_time] = event
-        return server_schedule
+    def generate_planning_advice(self):
+        return self._generate_with_gpt('advice', 'Совет: Планирование питания', 
+                                      '📋 Экономит время и деньги\n💪 Обеспечивает сбалансированность\n🌟 Помогает достичь целей')
 
-    def start_scheduler(self):
-        if self.is_running:
-            return
+    def generate_water_advice(self):
+        return self._generate_with_gpt('advice', 'Совет: Водный баланс', 
+                                      '💧 Основа жизни и здоровья\n🌊 Улучшает метаболизм\n🌟 Очищает организм')
 
-        logger.info("🚀 Запуск планировщика контента...")
-
-        if not self.validate_generator_methods():
-            logger.error("❌ Критические ошибки валидации! Планировщик не запущен.")
-            return False
-
-        schedule.clear()
-
-        for day, day_schedule in self.server_schedule.items():
-            for server_time, event in day_schedule.items():
-                self._schedule_event(day, server_time, event)
-
-        self.is_running = True
-        self._run_scheduler()
-
-        logger.info("✅ Планировщик запущен")
-        return True
-
-    def validate_generator_methods(self):
-        missing_methods = []
-        for day_schedule in self.kemerovo_schedule.values():
-            for event in day_schedule.values():
-                method_name = event['method']
-                if not hasattr(self.generator, method_name):
-                    missing_methods.append(method_name)
-
-        if missing_methods:
-            logger.error(f"❌ Отсутствующие методы: {missing_methods}")
-            return False
-
-        logger.info("✅ Все методы генерации валидированы")
-        return True
-
-    def _schedule_event(self, day, server_time, event):
-        def job():
-            try:
-                current_times = TimeManager.get_current_times()
-                logger.info(f"🕒 Выполнение: {event['name']}")
-
-                method_name = event['method']
-                if hasattr(self.generator, method_name):
-                    method = getattr(self.generator, method_name)
-                    content = method()
-
-                    if content:
-                        content_with_time = f"{content}\n\n⏰ Опубликовано: {current_times['kemerovo_time']}"
-
-                        success = self.telegram.send_with_fallback(
-                            content_with_time, 
-                            event['name'],
-                            max_retries=3
-                        )
-
-                        if success:
-                            logger.info(f"✅ Успешная публикация: {event['name']}")
-                        else:
-                            logger.error(f"❌ Ошибка публикации: {event['name']}")
-                    else:
-                        logger.error(f"❌ Не удалось сгенерировать контент: {event['name']}")
-                        service_monitor.record_missed_message(event['name'])
-                else:
-                    logger.error(f"❌ Метод не найден: {method_name}")
-                    service_monitor.record_missed_message(event['name'])
-
-            except Exception as e:
-                logger.error(f"❌ Ошибка в задании {event['name']}: {str(e)}")
-                service_monitor.record_missed_message(event['name'])
-
-        job_func = getattr(schedule.every(), self._get_day_name(day))
-        job_func.at(server_time).do(job)
-
-        logger.info(f"📌 Запланировано: {self._get_day_name(day).capitalize()} {server_time} - {event['name']}")
-
-    def _get_day_name(self, day_num):
-        days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
-        return days[day_num]
-
-    def _run_scheduler(self):
-        def run():
-            while self.is_running:
-                try:
-                    schedule.run_pending()
-                    time.sleep(60)
-                except Exception as e:
-                    logger.error(f"❌ Ошибка в цикле планировщика: {e}")
-                    time.sleep(60)
-
-        scheduler_thread = Thread(target=run, daemon=True)
-        scheduler_thread.start()
-        logger.info("✅ Планировщик запущен в отдельном потоке")
-
-    def get_next_event(self):
+    # ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
+    def _generate_with_gpt(self, recipe_type, theme, benefits):
+        """Генерация контента через Yandex GPT"""
         try:
-            current_times = TimeManager.get_current_times()
-            current_kemerovo_time = current_times['kemerovo_time'][:5]
+            # Генерируем рецепт через GPT
+            recipe_content = self.gpt_generator.generate_recipe(recipe_type, theme)
 
-            current_weekday = TimeManager.get_kemerovo_weekday()
-            today_schedule = self.kemerovo_schedule.get(current_weekday, {})
+            # Создаем привлекательный пост
+            post = self.visual_manager.generate_attractive_post(
+                theme.upper(),
+                recipe_content,
+                recipe_type,
+                benefits
+            )
 
-            for time_str, event in sorted(today_schedule.items()):
-                if time_str > current_kemerovo_time:
-                    return time_str, event
-
-            tomorrow = (current_weekday + 1) % 7
-            tomorrow_schedule = self.kemerovo_schedule.get(tomorrow, {})
-            if tomorrow_schedule:
-                first_time = min(tomorrow_schedule.keys())
-                return first_time, tomorrow_schedule[first_time]
-
-            return "08:30", {"name": "Следующий пост", "type": "general"}
+            return post
 
         except Exception as e:
-            logger.error(f"❌ Ошибка получения следующего события: {e}")
-            return "08:30", {"name": "Следующий пост", "type": "general"}
+            logger.error(f"❌ Ошибка генерации контента: {e}")
+            return self._get_fallback_content(recipe_type, theme, benefits)
+
+    def _get_fallback_content(self, recipe_type, theme, benefits):
+        """Резервный контент если GPT не работает"""
+        fallback_content = f"""
+📊 <b>ПИЩЕВАЯ ЦЕННОСТЬ НА ПОРЦИЮ:</b>
+• 🔥 Калории: 300-400 ккал
+• 🍗 Белки: 20-30 г
+• 🥑 Жиры: 15-25 г
+• 🌾 Углеводы: 20-30 г
+
+🛒 <b>ИНГРЕДИЕНТЫ НА 4 ПОРЦИИ:</b>
+• 🥕 Свежие овощи и зелень
+• 🍗 Качественные белки  
+• 🌾 Полезные углеводы
+• 🫒 Полезные жиры
+• 🌶️ Специи и травы
+
+👨‍🍳 <b>ПРОЦЕСС ПРИГОТОВЛЕНИЯ:</b>
+1. 🥣 Подготовить все ингредиенты
+2. 🍳 Следовать классическому рецепту
+3. 🔥 Готовить на среднем огне
+4. 🍽️ Подавать горячим для семьи
+
+🍴 <b>Приятного аппетита!</b>"""
+
+        return self.visual_manager.generate_attractive_post(
+            theme.upper(),
+            fallback_content,
+            recipe_type,
+            benefits
+        )
 
 # ========== FLASK МАРШРУТЫ ==========
 
@@ -1478,3 +1388,4 @@ if __name__ == '__main__':
     print("📱 Дашборд: доступен")
 
     app.run(host='0.0.0.0', port=port, debug=False)
+
