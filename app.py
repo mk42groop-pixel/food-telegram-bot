@@ -13,8 +13,6 @@ import pytz
 import random
 from dotenv import load_dotenv
 from functools import wraps
-import sqlite3
-from contextlib import contextmanager
 import signal
 import sys
 import atexit
@@ -30,6 +28,91 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+
+# ========== RENDER-COMPATIBLE CACHE SYSTEM ==========
+
+class RenderCompatibleCache:
+    def __init__(self, ttl_days=7):
+        self.cache = {}
+        self.cache_timestamps = {}
+        self.cache_ttl = ttl_days * 24 * 3600
+        self.cache_lock = Lock()
+        self._storage_type = "memory"
+        
+        logger.info(f"💾 Кэш инициализирован в оперативной памяти (TTL: {ttl_days} дней)")
+    
+    def get(self, key):
+        """Получаем значение из кэша с проверкой TTL"""
+        with self.cache_lock:
+            if key in self.cache:
+                create_time = self.cache_timestamps.get(key, 0)
+                current_time = time.time()
+                
+                if current_time - create_time < self.cache_ttl:
+                    logger.debug(f"✅ Кэш попадание: {key}")
+                    return self.cache[key]
+                else:
+                    # Удаляем просроченную запись
+                    del self.cache[key]
+                    del self.cache_timestamps[key]
+                    logger.debug(f"🧹 Удален просроченный кэш: {key}")
+        return None
+    
+    def set(self, key, value):
+        """Сохраняем значение в кэш"""
+        with self.cache_lock:
+            self.cache[key] = value
+            self.cache_timestamps[key] = time.time()
+            logger.debug(f"💾 Сохранен в кэш: {key}")
+    
+    def cleanup_expired(self):
+        """Очистка просроченных записей"""
+        current_time = time.time()
+        expired_keys = []
+        
+        with self.cache_lock:
+            for key, timestamp in self.cache_timestamps.items():
+                if current_time - timestamp > self.cache_ttl:
+                    expired_keys.append(key)
+            
+            for key in expired_keys:
+                del self.cache[key]
+                del self.cache_timestamps[key]
+        
+        if expired_keys:
+            logger.info(f"🧹 Очищено просроченных записей: {len(expired_keys)}")
+        return len(expired_keys)
+    
+    def clear_all(self):
+        """Полная очистка кэша"""
+        with self.cache_lock:
+            count = len(self.cache)
+            self.cache.clear()
+            self.cache_timestamps.clear()
+            logger.info(f"🧹 Полная очистка кэша: удалено {count} записей")
+            return count
+    
+    def get_stats(self):
+        """Статистика кэша"""
+        with self.cache_lock:
+            total_size = len(self.cache)
+            current_time = time.time()
+            
+            # Считаем скоро истекающие записи (менее 24 часов)
+            expiring_soon = 0
+            for timestamp in self.cache_timestamps.values():
+                if current_time - timestamp > (self.cache_ttl - 86400):
+                    expiring_soon += 1
+            
+            # Примерный расчет использования памяти
+            memory_usage = sum(len(str(v)) for v in self.cache.values()) / 1024 / 1024
+            
+            return {
+                "total_entries": total_size,
+                "expiring_soon": expiring_soon,
+                "storage_type": self._storage_type,
+                "memory_usage_mb": round(memory_usage, 2)
+            }
 
 # ========== УСИЛЕННАЯ СИСТЕМА KEEP-ALIVE ==========
 
@@ -183,22 +266,118 @@ class Config:
     SERVER_TZ = pytz.timezone('UTC')
     KEMEROVO_TZ = pytz.timezone('Asia/Novokuznetsk')
 
-# ========== YANDEX GPT ИНТЕГРАЦИЯ ==========
+# ========== YANDEX GPT ИНТЕГРАЦИЯ С RENDER-COMPATIBLE CACHE ==========
 
 class YandexGPTGenerator:
     def __init__(self):
         self.api_key = Config.YANDEX_GPT_API_KEY
         self.folder_id = Config.YANDEX_FOLDER_ID
         self.base_url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
+        
+        # 🎯 RENDER-COMPATIBLE CACHE
+        self.cache_manager = RenderCompatibleCache(ttl_days=7)
+        
+        # Статистика использования кэша
+        self.cache_hits = 0
+        self.cache_misses = 0
+        
+        # Запускаем периодическую очистку
+        self._start_cache_cleanup()
+
+    def _start_cache_cleanup(self):
+        """Запускаем фоновую очистку кэша"""
+        def cleanup_worker():
+            while True:
+                time.sleep(3600)  # Каждый час
+                try:
+                    cleaned = self.cache_manager.cleanup_expired()
+                    if cleaned > 0:
+                        logger.info(f"🔄 Фоновая очистка: удалено {cleaned} записей")
+                except Exception as e:
+                    logger.error(f"❌ Ошибка фоновой очистки: {e}")
+        
+        cleanup_thread = Thread(target=cleanup_worker, daemon=True)
+        cleanup_thread.start()
+        logger.info("🔄 Фоновая очистка кэша запущена")
 
     def generate_recipe(self, recipe_type, theme):
-        """Генерация рецепта через Yandex GPT"""
+        """Генерация рецепта через Yandex GPT с кэшированием"""
+        # Создаем уникальный ключ кэша
+        cache_key = self._create_cache_key(recipe_type, theme)
+        
+        # Проверяем кэш
+        cached_result = self.cache_manager.get(cache_key)
+        if cached_result:
+            self.cache_hits += 1
+            logger.info(f"✅ Используем кэшированный рецепт: {theme}")
+            return cached_result
+        
+        self.cache_misses += 1
+        logger.info(f"🔄 Генерируем новый рецепт: {theme}")
+        
         try:
             if not self.api_key or self.api_key == 'your-yandex-gpt-api-key':
-                return self._get_template_recipe(recipe_type, theme)
+                result = self._get_template_recipe(recipe_type, theme)
+            else:
+                # Генерация через Yandex GPT API
+                result = self._generate_via_gpt(recipe_type, theme)
+            
+            # Сохраняем в кэш
+            self.cache_manager.set(cache_key, result)
+            
+            # Логируем статистику каждые 10 запросов
+            if (self.cache_hits + self.cache_misses) % 10 == 0:
+                self._log_cache_stats()
+                
+            return result
 
+        except Exception as e:
+            logger.error(f"❌ Ошибка генерации рецепта: {e}")
+            return self._get_template_recipe(recipe_type, theme)
+
+    def _create_cache_key(self, recipe_type, theme):
+        """Создает уникальный ключ кэша"""
+        normalized_theme = theme.lower().strip()
+        return f"{recipe_type}_{normalized_theme}_{hash(normalized_theme)}"
+
+    def _log_cache_stats(self):
+        """Логирует статистику использования кэша"""
+        total = self.cache_hits + self.cache_misses
+        if total > 0:
+            hit_rate = (self.cache_hits / total) * 100
+            cache_stats = self.cache_manager.get_stats()
+            logger.info(f"📊 Статистика кэша: {self.cache_hits}/{total} попаданий ({hit_rate:.1f}%), записей: {cache_stats['total_entries']}")
+
+    def get_cache_info(self):
+        """Возвращает информацию о состоянии кэша"""
+        cache_stats = self.cache_manager.get_stats()
+        total_requests = self.cache_hits + self.cache_misses
+        
+        return {
+            **cache_stats,
+            "cache_hits": self.cache_hits,
+            "cache_misses": self.cache_misses,
+            "hit_rate": round((self.cache_hits / total_requests) * 100, 1) if total_requests > 0 else 0,
+            "total_requests": total_requests
+        }
+
+    def clear_cache(self):
+        """Очищает весь кэш"""
+        try:
+            cleared_count = self.cache_manager.clear_all()
+            # Сбрасываем статистику
+            self.cache_hits = 0
+            self.cache_misses = 0
+            return cleared_count
+        except Exception as e:
+            logger.error(f"❌ Ошибка очистки кэша: {e}")
+            return 0
+
+    def _generate_via_gpt(self, recipe_type, theme):
+        """Генерация через Yandex GPT API"""
+        try:
             prompt = self._build_prompt(recipe_type, theme)
-
+            
             headers = {
                 "Authorization": f"Api-Key {self.api_key}",
                 "Content-Type": "application/json"
@@ -233,9 +412,9 @@ class YandexGPTGenerator:
             else:
                 logger.error(f"❌ Ошибка Yandex GPT: {response.status_code}")
                 return self._get_template_recipe(recipe_type, theme)
-
+                
         except Exception as e:
-            logger.error(f"❌ Ошибка генерации рецепта: {e}")
+            logger.error(f"❌ Ошибка GPT генерации: {e}")
             return self._get_template_recipe(recipe_type, theme)
 
     def _build_prompt(self, recipe_type, theme):
@@ -567,212 +746,6 @@ class VisualContentManager:
 
         return post
 
-    # НОВЫЙ МЕТОД ДЛЯ ТРЕНИРОВКИ СНОУБОРДИСТОВ
-    def generate_snowboard_training(self):
-        """Научно обоснованная функциональная тренировка для сноубордистов"""
-        title = "🏂 ФУНКЦИОНАЛЬНАЯ ПОДГОТОВКА ДЛЯ СНОУБОРДИСТОВ"
-        
-        emotional_trigger = "Готовь тело к склонам! ❄️ Научный подход к зимнему спорту начинается здесь..."
-        
-        content = f"""
-{emotional_trigger}
-
-🎯 <b>ЦЕЛЕВАЯ ГРУППА МЫШЦ И НАУЧНОЕ ОБОСНОВАНИЕ:</b>
-
-• <b>Квадрицепсы и ягодицы (стабилизация)</b> - критичны для контроля доски и амортизации неровностей
-• <b>Косые мышцы живота (повороты)</b> - обеспечивают ротацию корпуса при карвинге
-• <b>Мышцы кора (баланс)</b> - предотвращают падения и улучшают контроль
-• <b>Плечевой пояс (толчки)</b> - важны для подъемов и отталкиваний
-
-⚡ <b>НАУЧНАЯ ОСНОВА ПРОГРАММЫ:</b>
-Программа разработана на основе биомеханического анализа движений сноубордиста:
-- Эксцентрические нагрузки для подготовки мышц к ударным воздействиям
-- Проприоцептивная тренировка для улучшения баланса
-- Ротационная стабильность для безопасных поворотов
-- Взрывная сила для контроля в сложных условиях
-
-🏋️‍♂️ <b>ТРЕНИРОВКА (45 МИНУТ):</b>
-
-<b>РАЗМИНКА (10 минут):</b>
-<tg-spoiler>• 🏃‍♂️ <b>Бег на месте с высоким подниманием бедра</b> - 2 мин
-  (активация ЦНС и разогрев мышц бедра)
-  
-• 🔄 <b>Вращения в тазобедренных суставах</b> - 2 мин
-  (мобилизация ТБС для глубоких приседаний)
-  
-• 🤸‍♂️ <b>Динамическая растяжка ног</b> - 3 мин
-  (выпады с ротацией, махи ногами)
-  
-• 💨 <b>Дыхательные упражнения</b> - 3 мин
-  (подготовка к высотным нагрузкам)</tg-spoiler>
-
-<b>ОСНОВНАЯ ЧАСТЬ (25 минут):</b>
-<tg-spoiler>• 🏋️‍♂️ <b>БОКОВЫЕ ВЫПАДЫ</b> - 3×15 (на каждую сторону)
-  <i>Укрепление приводящих/отводящих мышц для контроля канта</i>
-  
-• 💪 <b>ПЛАНКА С ПОВОРОТАМИ</b> - 3×20 (10 на сторону)
-  <i>Ротационная стабильность корпуса для карвинга</i>
-  
-• 🦵 <b>ПРИСЕДАНИЯ НА ОДНОЙ НОГЕ</b> - 3×10 (на каждую ногу)
-  <i>Развитие баланса и стабильности для спусков</i>
-  
-• 🚣‍♂️ <b>ТЯГА РЕЗИНОВОГО ЭСПАНДЕРА</b> - 3×15
-  <i>Укрепление мышц спины для подъемов и толчков</i>
-  
-• 🏃‍♂️ <b>ПРЫЖКИ НА БОКС</b> - 3×12
-  <i>Взрывная сила для преодоления препятствий</i></tg-spoiler>
-
-<b>ЗАВЕРШАЮЩАЯ ЧАСТЬ (10 минут):</b>
-<tg-spoiler>• 🧘‍♂️ <b>Статическая растяжка</b> - 5 мин
-  (восстановление эластичности мышц)
-  
-• 💧 <b>Восстановление водного баланса</b>
-  (критично для высотных нагрузок)
-  
-• 📊 <b>Анализ техники выполнения</b>
-  (профилактика травматизма)</tg-spoiler>
-
-🌟 <b>РЕКОМЕНДАЦИИ ПО ПИТАНИЮ ДЛЯ СНОУБОРДИСТОВ:</b>
-
-• <b>За 1.5 часа до катания:</b>
-  🍌 Банан с арахисовой пастой + 🥛 протеиновый коктейль
-  (быстрые углеводы + белок для энергии)
-
-• <b>На склоне (перекус):</b>
-  🌯 Протеиновые роллы с индейкой и овощами
-  🥜 Энергетические батончики домашнего приготовления
-
-• <b>Гидратация:</b>
-  💧 Изотоник своими руками: вода + мед + лимон + щепотка соли
-  (восполнение электролитов)
-
-• <b>После катания (30-60 минут):</b>
-  🍗 Белково-углеводное окно: курица + рис + овощи
-  🥛 Казеиновый протеин перед сном
-
-📈 <b>ПРОГРЕССИЯ ТРЕНИРОВОК:</b>
-
-• <b>Неделя 1-2:</b> 2 тренировки в неделю, освоение техники
-• <b>Неделя 3-4:</b> 3 тренировки, добавление веса/сопротивления  
-• <b>Неделя 5-6:</b> увеличение объема (подходы/повторения)
-• <b>Неделя 7-8:</b> сложные вариации (BOSU, балансировочные диски)
-
-🎯 <b>ЧЕК-ЛИСТ БЕЗОПАСНОСТИ:</b>
-
-✅ Контроль дыхания во время упражнений
-✅ Правильная техника перед увеличением нагрузки
-✅ Достаточное время восстановления между подходами
-✅ Гидратация до, во время и после тренировки
-✅ Постепенная прогрессия сложности
-
-<b>Результат через 8 недель:</b>
-• Улучшение баланса на 40-60%
-• Увеличение выносливости на 30-50% 
-• Снижение риска травм на 25-35%
-• Повышение уверенности на склоне"""
-        
-        benefits = """• 🏂 Улучшение баланса и контроля на доске
-• 💪 Увеличение мышечной выносливости на 30-50%
-• 🛡️ Снижение риска травм на 25-35%
-• ⚡ Повышение взрывной силы для прыжков
-• 🔄 Улучшение ротационной стабильности
-• ❄️ Подготовка к высотным нагрузкам
-• 🍃 Оптимизация дыхательной функции"""
-        
-        return self.generate_attractive_post(
-            title, content, "snowboard_training", benefits,
-            include_science_approach=True, day_of_week='saturday'
-        )
-
-    def generate_family_workout(self):
-        """Семейная тренировка отца и сына"""
-        title = "👨‍👦 СОВМЕСТНАЯ ТРЕНИРОВКА ОТЦА И ПОДРОСТКА"
-        
-        content = """
-💫 <b>СИЛОВАЯ ПРОГРАММА ДЛЯ РАЗНЫХ ПОКОЛЕНИЙ</b>
-
-🎯 <b>ЦЕЛЬ:</b> Укрепление мышечного корсета, развитие выносливости и укрепление семейных связей
-
-<b>РАЗМИНКА (10 минут):</b>
-• 🤸‍♂️ Совместная растяжка - 3 мин
-• 🏃‍♂️ Легкий бег на месте - 2 мин
-• 🔄 Вращения суставов - 3 мин
-• 💨 Глубокое дыхание - 2 мин
-
-<b>ОСНОВНАЯ ЧАСТЬ (30 минут):</b>
-• 🏋️‍♂️ <b>Приседания:</b> отец - с гантелями 12кг, сын - с гантелями 6кг
-• 💪 <b>Отжимания:</b> отец - классические, сын - с колен
-• 🚣‍♂️ <b>Тяга верхнего блока:</b> оба - по своим весам
-• 🦵 <b>Выпады:</b> с собственным весом + прогрессия
-• 🧘‍♂️ <b>Планка:</b> соревнование на время
-
-<b>ЗАВЕРШАЮЩАЯ ЧАСТЬ (10 минут):</b>
-• 🤝 Совместная растяжка
-• 💧 Восстановление водного баланса
-• 📊 Обсуждение прогресса
-
-⚡ <b>РЕКОМЕНДАЦИИ ПО БЕЗОПАСНОСТИ:</b>
-• 📏 Контролируем технику друг у друга
-• ⏱️ Не соревнуемся, а поддерживаем
-• 💧 Общие перерывы на воду
-• 🎯 Фокус на форме, а не на весе"""
-        
-        benefits = """• 👨‍👦 Укрепление семейных связей
-• 💪 Физическое развитие для обоих
-• 🧠 Обучение правильной технике
-• 🏆 Создание здоровой конкуренции
-• ❤️ Улучшение сердечно-сосудистой системы
-• 🦴 Укрепление костной ткани"""
-        
-        return self.generate_attractive_post(
-            title, content, "family_workout", benefits,
-            include_science_approach=True, day_of_week='saturday'
-        )
-
-    def generate_active_snacks(self):
-        """Полезные перекусы для активного отдыха"""
-        title = "🎒 ПЕРЕКУСЫ ДЛЯ АКТИВНОГО ОТДЫХА"
-        
-        content = """
-🏂 <b>ДЛЯ СНОУБОРДА/ЛЫЖ:</b>
-• 🌯 <b>Протеиновые роллы:</b> лаваш + индейка + овощи
-• 🥜 <b>Энергетические шарики:</b> овсянка + орехи + мед
-• 🥪 <b>Сэндвичи с индейкой:</b> цельнозерновой хлеб + авокадо
-
-🚴‍♂️ <b>ДЛЯ ВЕЛОПРОГУЛОК:</b>
-• 🍌 <b>Бананы с арахисовой пастой:</b> быстрые углеводы + белок
-• 🥛 <b>Протеиновые батончики:</b> домашние с орехами и сухофруктами
-• 🥤 <b>Изотоники своими руками:</b> вода + мед + лимон + соль
-
-🥾 <b>ДЛЯ ПОХОДОВ:</b>
-• 🥔 <b>Энергетические батончики:</b> овсянка + сухофрукты + орехи
-• 🧀 <b>Сырные палочки:</b> твердый сыр + орехи
-• 🍎 <b>Яблочные чипсы:</b> сушеные яблоки с корицей
-
-📦 <b>ПРАВИЛА УПАКОВКИ:</b>
-• 🔥 Сохраняем температуру (термосумки)
-• 💧 Защищаем от влаги (zip-пакеты)
-• ⏱️ Рассчитываем на 3-4 часа активности
-• 🎒 Удобная фасовка порциями
-
-⚡ <b>ЭНЕРГЕТИЧЕСКАЯ ЦЕННОСТЬ:</b>
-• Калории: 200-300 ккал на порцию
-• Белки: 10-15 г
-• Углеводы: 25-35 г
-• Жиры: 8-12 г"""
-        
-        benefits = """• ⚡ Быстрое восстановление энергии
-• 💪 Поддержка мышечной массы
-• 🧠 Улучшение концентрации
-• 🏃‍♂️ Повышение выносливости
-• 💧 Оптимальная гидратация
-• 🍽️ Сбалансированный состав"""
-        
-        return self.generate_attractive_post(
-            title, content, "active_snacks", benefits,
-            include_science_approach=True, day_of_week='sunday'
-        )
-
 # ========== ГЕНЕРАТОР КОНТЕНТА ==========
 
 class ContentGenerator:
@@ -984,7 +957,7 @@ class ContentGenerator:
                                       'sunday')
 
     def _generate_with_gpt(self, recipe_type, theme, benefits, day_of_week=None):
-        """Генерация контента через Yandex GPT"""
+        """Генерация контента через Yandex GPT с кэшированием"""
         try:
             recipe_content = self.gpt_generator.generate_recipe(recipe_type, theme)
             post = self.visual_manager.generate_attractive_post(
@@ -1365,9 +1338,12 @@ def smart_dashboard():
         member_count = telegram_manager.get_member_count()
         next_time, next_event = content_scheduler.get_next_event()
 
-        total_posts = 42  # Обновлено с учетом новой тренировки
+        total_posts = 42
         posts_sent = monitor_status['sent_messages']
         posts_remaining = total_posts - posts_sent
+
+        # Получаем статистику кэша
+        cache_info = gpt_generator.get_cache_info()
 
         weekly_stats = {
             'posts_sent': posts_sent,
@@ -1402,6 +1378,8 @@ def smart_dashboard():
                 .btn-secondary:hover {{ background: #5a6268; }}
                 .btn-success {{ background: #28a745; color: white; }}
                 .btn-success:hover {{ background: #218838; }}
+                .btn-warning {{ background: #ffc107; color: black; }}
+                .btn-warning:hover {{ background: #e0a800; }}
                 .progress {{ background: #e9ecef; border-radius: 10px; height: 20px; margin: 10px 0; }}
                 .progress-bar {{ background: #28a745; height: 100%; border-radius: 10px; text-align: center; color: white; font-size: 12px; line-height: 20px; }}
                 .modal {{ display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }}
@@ -1412,6 +1390,7 @@ def smart_dashboard():
                 .form-label {{ display: block; margin-bottom: 5px; font-weight: bold; }}
                 .form-textarea {{ width: 100%; height: 200px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; resize: vertical; }}
                 .preview-area {{ background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0; white-space: pre-wrap; font-family: Arial; }}
+                .cache-stats {{ background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 15px 0; }}
             </style>
         </head>
         <body>
@@ -1445,6 +1424,29 @@ def smart_dashboard():
                     </div>
                 </div>
 
+                <div class="cache-stats">
+                    <h3>💾 Статистика кэширования (Render-compatible)</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number">{cache_info['total_entries']}</div>
+                            <div class="stat-label">📦 Записей в кэше</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">{cache_info['cache_hits']}</div>
+                            <div class="stat-label">🎯 Попадания в кэш</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">{cache_info['cache_misses']}</div>
+                            <div class="stat-label">🔄 Промахи кэша</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">{cache_info['hit_rate']}%</div>
+                            <div class="stat-label">⚡ Эффективность кэша</div>
+                        </div>
+                    </div>
+                    <p><small>💡 Кэш работает в оперативной памяти (Render-compatible). TTL: 7 дней</small></p>
+                </div>
+
                 <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 15px 0;">
                     <h3>🎯 Прогресс недели</h3>
                     <div class="progress">
@@ -1472,6 +1474,7 @@ def smart_dashboard():
                         <button class="btn btn-success" onclick="sendSnowboardTraining()">🏂 Тренировка сноубордистов</button>
                         <button class="btn" onclick="sendFamilyWorkout()">💪 Семейная тренировка</button>
                         <button class="btn" onclick="sendActiveSnacks()">🎒 Активные перекусы</button>
+                        <button class="btn btn-warning" onclick="clearCache()">🧹 Очистить кэш</button>
                         <button class="btn btn-secondary" onclick="openManualPost()">✏️ Ручной пост</button>
                         <button class="btn" onclick="updateMemberCount()">🔄 Обновить статистику</button>
 
@@ -1543,6 +1546,19 @@ def smart_dashboard():
                     if (confirm('Отправить пост про перекусы для активного отдыха?')) {{
                         fetch('/send-active-snacks').then(r => r.json()).then(data => {{
                             alert(data.status === 'success' ? '✅ Перекусы отправлены!' : '❌ Ошибка отправки');
+                        }});
+                    }}
+                }}
+
+                function clearCache() {{
+                    if (confirm('Очистить весь кэш GPT? Это вызовет повторную генерацию всех рецептов.')) {{
+                        fetch('/clear-cache').then(r => r.json()).then(data => {{
+                            if (data.status === 'success') {{
+                                alert('✅ Кэш очищен! Удалено ' + data.cleared_count + ' записей');
+                                location.reload();
+                            }} else {{
+                                alert('❌ Ошибка очистки кэша');
+                            }}
                         }});
                     }}
                 }}
@@ -1682,6 +1698,26 @@ def update_member_count():
     count = telegram_manager.get_member_count()
     return jsonify({"status": "success", "member_count": count})
 
+@app.route('/clear-cache')
+def clear_cache():
+    """Очистка кэша GPT"""
+    try:
+        cleared_count = gpt_generator.clear_cache()
+        logger.info(f"🧹 Кэш очищен вручную: удалено {cleared_count} записей")
+        return jsonify({"status": "success", "cleared_count": cleared_count})
+    except Exception as e:
+        logger.error(f"❌ Ошибка очистки кэша: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/cache-info')
+def cache_info():
+    """Информация о состоянии кэша"""
+    try:
+        cache_info = gpt_generator.get_cache_info()
+        return jsonify({"status": "success", "cache_info": cache_info})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
 @app.route('/send-manual-post', methods=['POST'])
 def send_manual_post():
     try:
@@ -1707,6 +1743,7 @@ def send_manual_post():
 
 security_manager = SecurityManager()
 telegram_manager = TelegramManager()
+gpt_generator = YandexGPTGenerator()  # Создаем сначала генератор для правильной инициализации кэша
 content_generator = ContentGenerator()
 content_scheduler = ContentScheduler()
 
@@ -1730,6 +1767,7 @@ try:
         logger.info("🚀 СИСТЕМА ЗАПУЩЕНА")
         logger.info("🤖 Научные подходы: АКТИВНЫ")
         logger.info("🛡️ Защита от сна: АКТИВНА")
+        logger.info("💾 Render-Compatible Cache: АКТИВЕН (7 дней TTL)")
         logger.info("🏂 Тренировки для сноубордистов: ДОБАВЛЕНЫ")
         logger.info("💪 Семейные тренировки: ДОБАВЛЕНЫ")
         logger.info("🎒 Активные перекусы: ДОБАВЛЕНЫ")
@@ -1740,6 +1778,10 @@ try:
         member_count = telegram_manager.get_member_count()
         logger.info(f"👥 Реальное количество подписчиков: {member_count}")
 
+        # Получаем информацию о кэше
+        cache_info = gpt_generator.get_cache_info()
+        logger.info(f"💾 Инициализирован кэш: {cache_info['total_entries']} записей")
+
         # Тестовое сообщение о запуске
         current_times = TimeManager.get_current_times()
         telegram_manager.send_with_fallback(f"""
@@ -1749,6 +1791,7 @@ try:
 • 📊 42 поста в неделю
 • 🧠 Научные подходы для каждого дня
 • 🤖 Генерация контента через Yandex GPT
+• 💾 Умное кэширование (Render-compatible)
 • 🛡️ Усиленный keep-alive
 • 📱 Умный дашборд
 • 🏂 Тренировки для сноубордистов
@@ -1759,6 +1802,7 @@ try:
 ⏰ Время Кемерово: {current_times['kemerovo_time']}
 📅 День: {current_times['kemerovo_weekday_name']}
 👥 Подписчиков: {member_count}
+💾 Кэш: {cache_info['total_entries']} записей
 
 💫 <b>Каждый пост теперь с научным обоснованием и интерактивными элементами!</b>
 
@@ -1778,6 +1822,7 @@ if __name__ == '__main__':
     print("🎯 Контент-план: 42 поста в неделю")
     print("🧠 Особенности: научные подходы для каждого дня")
     print("🤖 Генерация: Yandex GPT + шаблоны")
+    print("💾 Кэширование: Render-Compatible Cache (7 дней TTL)")
     print("🛡️ Защита от сна: активна")
     print("📱 Дашборд: доступен")
     print("💫 Эмоциональные триггеры: в каждом посте")
