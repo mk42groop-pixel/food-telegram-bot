@@ -2883,6 +2883,24 @@ def dashboard():
                 .warning {{ background: #f39c12; padding: 15px; border-radius: 8px; margin: 15px 0; color: white; }}
                 .success {{ background: #27ae60; padding: 15px; border-radius: 8px; margin: 15px 0; color: white; }}
                 .info {{ background: #3498db; padding: 15px; border-radius: 8px; margin: 15px 0; color: white; }}
+                .modal {{ display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }}
+                .modal-content {{ background-color: white; margin: 5% auto; padding: 20px; border-radius: 10px; width: 90%; max-width: 800px; max-height: 90vh; overflow-y: auto; }}
+                .modal-header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }}
+                .close {{ font-size: 28px; cursor: pointer; }}
+                .textarea {{ width: 100%; height: 300px; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-family: monospace; resize: vertical; }}
+                .char-counter {{ text-align: right; margin-top: 5px; font-size: 12px; color: #666; }}
+                .warning-text {{ color: #e74c3c; }}
+                .preview-area {{ border: 1px solid #ddd; border-radius: 5px; padding: 15px; margin-top: 15px; max-height: 300px; overflow-y: auto; background: #f9f9f9; }}
+                .html-tags {{ background: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; font-size: 12px; }}
+                .tags-list {{ display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }}
+                .tag {{ background: #e74c3c; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; }}
+                .modal-buttons {{ display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }}
+                .loading {{ display: none; text-align: center; padding: 20px; }}
+                .spinner {{ border: 3px solid #f3f3f3; border-top: 3px solid #e74c3c; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto; }}
+                @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
+                .status-message {{ padding: 10px; margin: 10px 0; border-radius: 5px; display: none; }}
+                .status-success {{ background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }}
+                .status-error {{ background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }}
             </style>
         </head>
         <body>
@@ -2951,6 +2969,11 @@ def dashboard():
                         <button class="btn" onclick="sendHotDish()">🔥 Тест горячего</button>
                         <button class="btn btn-secondary" onclick="forceKeepAlive()">🔄 Keep-alive</button>
                         
+                        <div style="margin-top: 20px;">
+                            <button class="btn btn-success" onclick="openManualPostModal()">✏️ Ручной пост</button>
+                            <p style="font-size: 12px; color: #666; margin-top: 5px;">Создайте и отправьте собственный пост в канал</p>
+                        </div>
+                        
                         <div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-radius: 8px;">
                             <h4>🎯 Следующий пост</h4>
                             <p><strong>{next_time}</strong> - {next_event['name']}</p>
@@ -2968,7 +2991,269 @@ def dashboard():
                 </div>
             </div>
             
+            <!-- Модальное окно для ручного поста -->
+            <div id="manualPostModal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>✏️ Создание ручного поста</h2>
+                        <span class="close" onclick="closeManualPostModal()">&times;</span>
+                    </div>
+                    
+                    <div class="html-tags">
+                        <strong>📋 Поддерживаемые HTML теги:</strong>
+                        <div class="tags-list">
+                            <span class="tag">&lt;b&gt;</span>
+                            <span class="tag">&lt;i&gt;</span>
+                            <span class="tag">&lt;u&gt;</span>
+                            <span class="tag">&lt;s&gt;</span>
+                            <span class="tag">&lt;a&gt;</span>
+                            <span class="tag">&lt;code&gt;</span>
+                            <span class="tag">&lt;pre&gt;</span>
+                        </div>
+                        <p style="margin-top: 5px; color: #666;">⚠️ Максимальная длина: 4096 символов</p>
+                    </div>
+                    
+                    <textarea id="postContent" class="textarea" placeholder="Введите текст поста с HTML разметкой..."></textarea>
+                    <div class="char-counter">
+                        Символов: <span id="charCount">0</span>/4096
+                        <span id="charWarning" class="warning-text" style="display: none;"> ⚠️ Близко к лимиту!</span>
+                    </div>
+                    
+                    <div style="margin-top: 15px;">
+                        <button class="btn" onclick="previewPost()">👁️ Предпросмотр</button>
+                        <button class="btn btn-secondary" onclick="insertTag('b')">B</button>
+                        <button class="btn btn-secondary" onclick="insertTag('i')">I</button>
+                        <button class="btn btn-secondary" onclick="insertTag('u')">U</button>
+                        <button class="btn btn-secondary" onclick="insertTag('a')">🔗 Ссылка</button>
+                    </div>
+                    
+                    <div id="previewArea" class="preview-area" style="display: none;">
+                        <h4>Предпросмотр:</h4>
+                        <div id="postPreview"></div>
+                        <div id="previewInfo" style="margin-top: 10px; font-size: 12px; color: #666;"></div>
+                    </div>
+                    
+                    <div id="previewStatus" class="status-message"></div>
+                    
+                    <div class="loading" id="previewLoading">
+                        <div class="spinner"></div>
+                        <p>Проверка контента...</p>
+                    </div>
+                    
+                    <div class="modal-buttons">
+                        <button class="btn btn-secondary" onclick="closeManualPostModal()">Отмена</button>
+                        <button class="btn btn-success" onclick="sendManualPost()" id="sendPostBtn">📤 Отправить пост</button>
+                    </div>
+                    
+                    <div id="sendStatus" class="status-message"></div>
+                    
+                    <div class="loading" id="sendLoading" style="display: none;">
+                        <div class="spinner"></div>
+                        <p>Отправка поста...</p>
+                    </div>
+                </div>
+            </div>
+            
             <script>
+                // Модальное окно для ручного поста
+                function openManualPostModal() {{
+                    document.getElementById('manualPostModal').style.display = 'block';
+                    document.getElementById('postContent').focus();
+                    updateCharCount();
+                }}
+                
+                function closeManualPostModal() {{
+                    document.getElementById('manualPostModal').style.display = 'none';
+                    document.getElementById('postContent').value = '';
+                    document.getElementById('previewArea').style.display = 'none';
+                    document.getElementById('previewStatus').style.display = 'none';
+                    document.getElementById('sendStatus').style.display = 'none';
+                }}
+                
+                // Подсчет символов
+                function updateCharCount() {{
+                    const textarea = document.getElementById('postContent');
+                    const charCount = document.getElementById('charCount');
+                    const charWarning = document.getElementById('charWarning');
+                    const sendBtn = document.getElementById('sendPostBtn');
+                    
+                    const count = textarea.value.length;
+                    charCount.textContent = count;
+                    
+                    if (count > 3800) {{
+                        charWarning.style.display = 'inline';
+                        charCount.className = 'warning-text';
+                        sendBtn.disabled = true;
+                        sendBtn.title = 'Слишком много символов (макс 4096)';
+                    }} else if (count > 3500) {{
+                        charWarning.style.display = 'inline';
+                        charCount.className = '';
+                        sendBtn.disabled = false;
+                        sendBtn.title = '';
+                    }} else {{
+                        charWarning.style.display = 'none';
+                        charCount.className = '';
+                        sendBtn.disabled = false;
+                        sendBtn.title = '';
+                    }}
+                }}
+                
+                document.getElementById('postContent').addEventListener('input', updateCharCount);
+                
+                // Вставка HTML тегов
+                function insertTag(tag) {{
+                    const textarea = document.getElementById('postContent');
+                    const start = textarea.selectionStart;
+                    const end = textarea.selectionEnd;
+                    const selectedText = textarea.value.substring(start, end);
+                    
+                    let newText = '';
+                    let cursorPos = start;
+                    
+                    switch(tag) {{
+                        case 'b':
+                            newText = '<b>' + selectedText + '</b>';
+                            cursorPos = start + 3;
+                            break;
+                        case 'i':
+                            newText = '<i>' + selectedText + '</i>';
+                            cursorPos = start + 3;
+                            break;
+                        case 'u':
+                            newText = '<u>' + selectedText + '</u>';
+                            cursorPos = start + 3;
+                            break;
+                        case 'a':
+                            newText = '<a href="https://example.com">' + (selectedText || 'текст ссылки') + '</a>';
+                            cursorPos = start + 9;
+                            break;
+                    }}
+                    
+                    textarea.value = textarea.value.substring(0, start) + newText + textarea.value.substring(end);
+                    textarea.focus();
+                    textarea.setSelectionRange(cursorPos, cursorPos + (selectedText ? selectedText.length : 0));
+                    updateCharCount();
+                }}
+                
+                // Предпросмотр поста
+                function previewPost() {{
+                    const content = document.getElementById('postContent').value.trim();
+                    if (!content) {{
+                        alert('Введите текст поста');
+                        return;
+                    }}
+                    
+                    const previewArea = document.getElementById('previewArea');
+                    const preview = document.getElementById('postPreview');
+                    const previewInfo = document.getElementById('previewInfo');
+                    const previewStatus = document.getElementById('previewStatus');
+                    const loading = document.getElementById('previewLoading');
+                    
+                    previewArea.style.display = 'block';
+                    previewStatus.style.display = 'none';
+                    loading.style.display = 'block';
+                    
+                    fetch('/preview-post', {{
+                        method: 'POST',
+                        headers: {{
+                            'Content-Type': 'application/json',
+                        }},
+                        body: JSON.stringify({{ content: content }})
+                    }})
+                    .then(response => response.json())
+                    .then(data => {{
+                        loading.style.display = 'none';
+                        
+                        if (data.status === 'success') {{
+                            preview.innerHTML = data.preview;
+                            previewInfo.innerHTML = `
+                                Длина: ${data.length} символов<br>
+                                Валидный HTML: ${data.is_valid ? '✅' : '⚠️'}<br>
+                                ${data.warnings ? 'Предупреждения: ' + data.warnings : ''}
+                            `;
+                            previewStatus.className = 'status-message status-success';
+                            previewStatus.textContent = '✅ Предпросмотр успешно сгенерирован';
+                        }} else {{
+                            preview.innerHTML = '<div style="color: #e74c3c;">Ошибка предпросмотра</div>';
+                            previewInfo.innerHTML = `Ошибка: ${data.message}`;
+                            previewStatus.className = 'status-message status-error';
+                            previewStatus.textContent = '❌ ' + data.message;
+                        }}
+                        previewStatus.style.display = 'block';
+                    }})
+                    .catch(error => {{
+                        loading.style.display = 'none';
+                        preview.innerHTML = '<div style="color: #e74c3c;">Ошибка загрузки</div>';
+                        previewInfo.innerHTML = `Ошибка сети: ${error}`;
+                        previewStatus.className = 'status-message status-error';
+                        previewStatus.textContent = '❌ Ошибка сети';
+                        previewStatus.style.display = 'block';
+                    }});
+                }}
+                
+                // Отправка ручного поста
+                function sendManualPost() {{
+                    const content = document.getElementById('postContent').value.trim();
+                    if (!content) {{
+                        alert('Введите текст поста');
+                        return;
+                    }}
+                    
+                    if (content.length > 4096) {{
+                        alert('Пост слишком длинный! Максимум 4096 символов.');
+                        return;
+                    }}
+                    
+                    if (!confirm('Отправить пост в канал? Это действие нельзя отменить.')) {{
+                        return;
+                    }}
+                    
+                    const sendStatus = document.getElementById('sendStatus');
+                    const loading = document.getElementById('sendLoading');
+                    const sendBtn = document.getElementById('sendPostBtn');
+                    
+                    sendStatus.style.display = 'none';
+                    loading.style.display = 'block';
+                    sendBtn.disabled = true;
+                    
+                    fetch('/send-manual-post', {{
+                        method: 'POST',
+                        headers: {{
+                            'Content-Type': 'application/json',
+                        }},
+                        body: JSON.stringify({{ content: content }})
+                    }})
+                    .then(response => response.json())
+                    .then(data => {{
+                        loading.style.display = 'none';
+                        sendBtn.disabled = false;
+                        
+                        if (data.status === 'success') {{
+                            sendStatus.className = 'status-message status-success';
+                            sendStatus.textContent = '✅ Пост успешно отправлен в канал!';
+                            sendStatus.style.display = 'block';
+                            
+                            // Автоматически закрываем через 3 секунды
+                            setTimeout(() => {{
+                                closeManualPostModal();
+                                location.reload();
+                            }}, 3000);
+                        }} else {{
+                            sendStatus.className = 'status-message status-error';
+                            sendStatus.textContent = '❌ ' + (data.message || 'Ошибка отправки');
+                            sendStatus.style.display = 'block';
+                        }}
+                    }})
+                    .catch(error => {{
+                        loading.style.display = 'none';
+                        sendBtn.disabled = false;
+                        sendStatus.className = 'status-message status-error';
+                        sendStatus.textContent = '❌ Ошибка сети: ' + error;
+                        sendStatus.style.display = 'block';
+                    }});
+                }}
+                
+                // Остальные функции
                 function testSend() {{
                     fetch('/test-send').then(r => r.json()).then(data => {{
                         alert(data.status === 'success' ? '✅ Тест успешен!' : '❌ Ошибка');
@@ -3005,8 +3290,21 @@ def dashboard():
                     }});
                 }}
                 
+                // Закрытие модального окна при клике вне его
+                window.onclick = function(event) {{
+                    const modal = document.getElementById('manualPostModal');
+                    if (event.target === modal) {{
+                        closeManualPostModal();
+                    }}
+                }}
+                
                 // Автообновление каждые 30 секунд
                 setInterval(() => location.reload(), 30000);
+                
+                // Инициализация
+                document.addEventListener('DOMContentLoaded', function() {{
+                    updateCharCount();
+                }});
             </script>
         </body>
         </html>
@@ -3098,6 +3396,124 @@ def force_keep_alive():
     """Принудительный keep-alive"""
     schedule.run_pending()
     return jsonify({"status": "keep-alive executed"})
+
+@app.route('/preview-post', methods=['POST'])
+def preview_post():
+    """Предпросмотр и валидация поста"""
+    try:
+        data = request.get_json()
+        content = data.get('content', '').strip()
+        
+        if not content:
+            return jsonify({
+                "status": "error",
+                "message": "Текст поста не может быть пустым"
+            })
+        
+        # Проверка длины
+        length = len(content)
+        if length > 4096:
+            return jsonify({
+                "status": "error",
+                "message": f"Пост слишком длинный: {length} символов (максимум 4096)"
+            })
+        
+        # Базовая валидация HTML тегов
+        def validate_html_tags(text):
+            """Проверяет парность HTML тегов"""
+            warnings = []
+            
+            # Проверяем открывающие и закрывающие теги
+            tags = re.findall(r'</?([a-z][a-z0-9]*)>', text)
+            tag_stack = []
+            
+            for tag in tags:
+                if not tag.startswith('/'):
+                    tag_stack.append(tag)
+                else:
+                    closing_tag = tag[1:]
+                    if not tag_stack or tag_stack[-1] != closing_tag:
+                        warnings.append(f"Непарный тег: {closing_tag}")
+                    else:
+                        tag_stack.pop()
+            
+            if tag_stack:
+                warnings.append(f"Не закрыты теги: {', '.join(tag_stack)}")
+            
+            # Проверка на запрещенные теги
+            allowed_tags = ['b', 'i', 'u', 's', 'a', 'code', 'pre', 'strong', 'em']
+            for tag in tags:
+                if not tag.startswith('/') and tag not in allowed_tags:
+                    warnings.append(f"Запрещенный тег: {tag}")
+            
+            return warnings
+        
+        warnings = validate_html_tags(content)
+        
+        # Создаем предпросмотр (экранируем HTML для безопасного отображения)
+        preview = content
+        
+        return jsonify({
+            "status": "success",
+            "preview": preview,
+            "length": length,
+            "is_valid": len(warnings) == 0,
+            "warnings": "; ".join(warnings) if warnings else None
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка предпросмотра поста: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"Ошибка предпросмотра: {str(e)}"
+        })
+
+@app.route('/send-manual-post', methods=['POST'])
+def send_manual_post():
+    """Отправка ручного поста"""
+    try:
+        data = request.get_json()
+        content = data.get('content', '').strip()
+        
+        if not content:
+            return jsonify({
+                "status": "error",
+                "message": "Текст поста не может быть пустым"
+            })
+        
+        # Проверка длины
+        if len(content) > 4096:
+            return jsonify({
+                "status": "error",
+                "message": f"Пост слишком длинный: {len(content)} символов (максимум 4096)"
+            })
+        
+        # Добавляем информацию о времени
+        current_times = TimeManager.get_current_times()
+        final_content = f"{content}\n\n⏰ Опубликовано: {current_times['kemerovo_time']}"
+        
+        # Отправка в Telegram
+        success = telegram_manager.send_message(final_content)
+        
+        if success:
+            logger.info("✅ Ручной пост успешно отправлен")
+            return jsonify({
+                "status": "success",
+                "message": "Пост успешно отправлен в канал"
+            })
+        else:
+            logger.error("❌ Ошибка отправки ручного поста")
+            return jsonify({
+                "status": "error",
+                "message": "Ошибка отправки в Telegram"
+            })
+            
+    except Exception as e:
+        logger.error(f"❌ Ошибка отправки ручного поста: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"Ошибка отправки: {str(e)}"
+        })
 
 # ========== ИНИЦИАЛИЗАЦИЯ И ЗАПУСК ==========
 
