@@ -3516,14 +3516,43 @@ def send_manual_post():
             "status": "error",
             "message": f"Ошибка отправки: {str(e)}"
         })
-
 # ========== ИНИЦИАЛИЗАЦИЯ И ЗАПУСК ==========
 
 # Инициализация менеджеров
 telegram_manager = TelegramManager()
 new_year_scheduler = NewYearScheduler()
 
-# ЗАПУСК СИСТЕМЫ БЕЗ ОБРАБОТЧИКОВ СИГНАЛОВ, КОТОРЫЕ ВЫЗЫВАЮТ СИСТЕМНЫЙ ВЫХОД
+# ========== KEEP-ALIVE СИСТЕМА ==========
+
+def run_keep_alive():
+    """Запускает периодические keep-alive запросы"""
+    def keep_alive_job():
+        try:
+            current_time = datetime.now().strftime('%H:%M:%S')
+            logger.info(f"🔄 Keep-alive выполнен в {current_time}")
+            # Запускаем все запланированные задачи
+            schedule.run_pending()
+        except Exception as e:
+            logger.error(f"❌ Ошибка в keep-alive: {e}")
+    
+    # Запускаем keep-alive каждые 5 минут
+    schedule.every(5).minutes.do(keep_alive_job)
+    
+    # Запускаем в отдельном потоке
+    def run_scheduler():
+        while True:
+            try:
+                schedule.run_pending()
+                time.sleep(60)  # Проверяем каждую минуту
+            except Exception as e:
+                logger.error(f"❌ Ошибка в планировщике keep-alive: {e}")
+                time.sleep(60)
+    
+    keep_alive_thread = Thread(target=run_scheduler, daemon=True)
+    keep_alive_thread.start()
+    logger.info("✅ Keep-alive система запущена")
+
+# ЗАПУСК СИСТЕМЫ
 try:
     # Запускаем планировщик
     success = new_year_scheduler.start_scheduler()
@@ -3597,6 +3626,9 @@ try:
         
 except Exception as e:
     logger.error(f"❌ Ошибка запуска новогодней системы: {e}")
+
+# Запускаем keep-alive систему
+run_keep_alive()
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
