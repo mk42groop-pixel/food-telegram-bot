@@ -274,7 +274,7 @@ class NewYearSaladManager:
 2. Грейпфрут очистить, разобрать на дольки
 3. Креветки отварить, очистить
 4. Выложить листья латук
-5. Сверху авокадо, грейпфрут и креветки""",
+5. Сверку авокадо, грейпфрут и креветки""",
                 'benefits': """
 • 🥑 Лютеин защищает глаза от экранов
 • 🍊 Нарингенин ускоряет метаболизм
@@ -329,7 +329,7 @@ class NewYearSaladManager:
 1. Свеклу нарезать высокими брусками
 2. Апельсин нарезать толстыми кольцами
 3. На тарелку выложить рукколу
-4. Сверху "свечи" из свеклы
+4. Сверку "свечи" из свеклы
 5. Вокруг апельсиновые кольца""",
                 'benefits': """
 • 🍠 Нитраты улучшают кровообращение
@@ -442,7 +442,7 @@ class NewYearSaladManager:
 2. Авокадо нарезать мелким кубиком
 3. Яблоко нарезать тонкой соломкой
 4. Выложить шпинат как основание
-5. Сверху брокколи в форме треугольника""",
+5. Сверку брокколи в форме треугольника""",
                 'benefits': """
 • 🥦 Индол-3-карбинол балансирует гормоны
 • 🥑 Лютеин защищает зрение
@@ -469,7 +469,7 @@ class NewYearSaladManager:
 1. Дайкон нарезать очень тонкими кружками
 2. Редис нарезать тонкими полукольцами
 3. Собрать "башни": нанизать кружки дайкона
-4. Выложить рукколу
+4. Выложить руккола
 5. Установить "башни" из дайкона""",
                 'benefits': """
 • 🥒 Изотиоцианаты защищают от рака
@@ -525,8 +525,8 @@ class NewYearSaladManager:
 1. Говядину обжарить как стейк, нарезать лентами
 2. Помидоры разрезать пополам
 3. Пармезан натереть стружкой
-4. Выложить рукколу
-5. Сверху выложить говядину""",
+4. Выложить руккола
+5. Сверку выложить говядину""",
                 'benefits': """
 • 🥩 Железо: 35% дневной нормы
 • 🧀 Кальций для костей
@@ -916,7 +916,7 @@ class NewYearHotDishManager:
 5. Залить вином, тушить 1.5 часа""",
                 'benefits': """
 • 🐇 Низкий холестерин - диетическое мясо
-• 🥕 Бета-каротин для зрения
+• 🥕 Бета/каротин для зрения
 • 🧅 Кверцетин против аллергии
 • 🍷 Танины для сосудов""",
                 'serving_tips': """
@@ -1372,27 +1372,27 @@ class NewYearBreakfastManager:
                 'emoji': "🌟✨",
                 'theme': "Рождественская звезда",
                 'description': "Яичница в форме звезды с овощами",
-                'ingredients': '''
+                'ingredients': """
 • 🥚 Яйца - 3 шт
 • 🫑 Красный перец - 1 шт
 • 🥬 Шпинат - 100г
 • 🧀 Сыр - 50г
-• 🌿 Петрушка - 2 ст.л.''',
-                'preparation': '''
+• 🌿 Петрушка - 2 ст.л.""",
+                'preparation': """
 1. Перец нарезать звездочками
 2. Выложить на сковороду
 3. Влить яйца внутрь звезд
 4. Добавить шпинат
-5. Посыпать сыром и петрушкой''',
-                'benefits': '''
+5. Посыпать сыром и петрушкой""",
+                'benefits': """
 • 🥚 Белок высокой биодоступности
 • 🫑 Витамин С - иммунитет
 • 🥬 Железо против анемии
-• 🧀 Кальций для костей''',
-                'serving_tips': '''
+• 🧀 Кальций для костей""",
+                'serving_tips': """
 • Подавать звездочками вверх
 • Украсить "сиянием" из соуса
-• С тостами из цельнозернового хлеба''',
+• С тостами из цельнозернового хлеба""",
                 'energy': "⚡ 300 ккал | 💪 22г белка | 🥬 4г железа"
             },
             6: {
@@ -2856,459 +2856,461 @@ def dashboard():
         new_year_end = date(2025, 12, 31)
         is_new_year_period = new_year_start <= today <= new_year_end
         
-        html = f"""
-        <!DOCTYPE html>
-        <html lang="ru">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>🎄 Новогодний планировщик @ppsupershef</title>
-            <style>
-                body {{ font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }}
-                .container {{ max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
-                .header {{ background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }}
-                .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }}
-                .stat-card {{ background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid #e74c3c; }}
-                .stat-number {{ font-size: 24px; font-weight: bold; color: #333; }}
-                .stat-label {{ font-size: 14px; color: #666; margin-top: 5px; }}
-                .schedule-item {{ display: flex; align-items: center; padding: 12px; margin: 8px 0; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #27ae60; }}
-                .schedule-time {{ font-weight: bold; color: #333; min-width: 60px; }}
-                .schedule-text {{ flex: 1; margin-left: 15px; }}
-                .btn {{ background: #e74c3c; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; margin: 5px; }}
-                .btn:hover {{ background: #c0392b; }}
-                .btn-secondary {{ background: #95a5a6; }}
-                .btn-secondary:hover {{ background: #7f8c8d; }}
-                .btn-success {{ background: #27ae60; }}
-                .btn-success:hover {{ background: #219653; }}
-                .warning {{ background: #f39c12; padding: 15px; border-radius: 8px; margin: 15px 0; color: white; }}
-                .success {{ background: #27ae60; padding: 15px; border-radius: 8px; margin: 15px 0; color: white; }}
-                .info {{ background: #3498db; padding: 15px; border-radius: 8px; margin: 15px 0; color: white; }}
-                .modal {{ display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }}
-                .modal-content {{ background-color: white; margin: 5% auto; padding: 20px; border-radius: 10px; width: 90%; max-width: 800px; max-height: 90vh; overflow-y: auto; }}
-                .modal-header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }}
-                .close {{ font-size: 28px; cursor: pointer; }}
-                .textarea {{ width: 100%; height: 300px; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-family: monospace; resize: vertical; }}
-                .char-counter {{ text-align: right; margin-top: 5px; font-size: 12px; color: #666; }}
-                .warning-text {{ color: #e74c3c; }}
-                .preview-area {{ border: 1px solid #ddd; border-radius: 5px; padding: 15px; margin-top: 15px; max-height: 300px; overflow-y: auto; background: #f9f9f9; }}
-                .html-tags {{ background: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; font-size: 12px; }}
-                .tags-list {{ display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }}
-                .tag {{ background: #e74c3c; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; }}
-                .modal-buttons {{ display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }}
-                .loading {{ display: none; text-align: center; padding: 20px; }}
-                .spinner {{ border: 3px solid #f3f3f3; border-top: 3px solid #e74c3c; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto; }}
-                @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
-                .status-message {{ padding: 10px; margin: 10px 0; border-radius: 5px; display: none; }}
-                .status-success {{ background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }}
-                .status-error {{ background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>🎄 Новогодний планировщик @ppsupershef</h1>
-                    <p>Период: 14-31 декабря 2025 | 4 поста в день | Тема: Красная Огненная Лошадь 2026</p>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
-                        <div>{"🟢 НОВОГОДНИЙ ПЕРИОД АКТИВЕН" if is_new_year_period else "🔴 НЕ НОВОГОДНИЙ ПЕРИОД"}</div>
-                        <div>⏰ Кемерово: {current_times['kemerovo_time']}</div>
-                        <div>📅 {current_times['kemerovo_weekday_name']}, {current_times['kemerovo_date']}</div>
-                    </div>
+        # Создаем HTML с исправленными f-строками
+        html = f'''
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎄 Новогодний планировщик @ppsupershef</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }}
+        .container {{ max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+        .header {{ background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }}
+        .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }}
+        .stat-card {{ background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid #e74c3c; }}
+        .stat-number {{ font-size: 24px; font-weight: bold; color: #333; }}
+        .stat-label {{ font-size: 14px; color: #666; margin-top: 5px; }}
+        .schedule-item {{ display: flex; align-items: center; padding: 12px; margin: 8px 0; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #27ae60; }}
+        .schedule-time {{ font-weight: bold; color: #333; min-width: 60px; }}
+        .schedule-text {{ flex: 1; margin-left: 15px; }}
+        .btn {{ background: #e74c3c; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; margin: 5px; }}
+        .btn:hover {{ background: #c0392b; }}
+        .btn-secondary {{ background: #95a5a6; }}
+        .btn-secondary:hover {{ background: #7f8c8d; }}
+        .btn-success {{ background: #27ae60; }}
+        .btn-success:hover {{ background: #219653; }}
+        .warning {{ background: #f39c12; padding: 15px; border-radius: 8px; margin: 15px 0; color: white; }}
+        .success {{ background: #27ae60; padding: 15px; border-radius: 8px; margin: 15px 0; color: white; }}
+        .info {{ background: #3498db; padding: 15px; border-radius: 8px; margin: 15px 0; color: white; }}
+        .modal {{ display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }}
+        .modal-content {{ background-color: white; margin: 5% auto; padding: 20px; border-radius: 10px; width: 90%; max-width: 800px; max-height: 90vh; overflow-y: auto; }}
+        .modal-header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }}
+        .close {{ font-size: 28px; cursor: pointer; }}
+        .textarea {{ width: 100%; height: 300px; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-family: monospace; resize: vertical; }}
+        .char-counter {{ text-align: right; margin-top: 5px; font-size: 12px; color: #666; }}
+        .warning-text {{ color: #e74c3c; }}
+        .preview-area {{ border: 1px solid #ddd; border-radius: 5px; padding: 15px; margin-top: 15px; max-height: 300px; overflow-y: auto; background: #f9f9f9; }}
+        .html-tags {{ background: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; font-size: 12px; }}
+        .tags-list {{ display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }}
+        .tag {{ background: #e74c3c; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; }}
+        .modal-buttons {{ display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }}
+        .loading {{ display: none; text-align: center; padding: 20px; }}
+        .spinner {{ border: 3px solid #f3f3f3; border-top: 3px solid #e74c3c; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto; }}
+        @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
+        .status-message {{ padding: 10px; margin: 10px 0; border-radius: 5px; display: none; }}
+        .status-success {{ background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }}
+        .status-error {{ background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎄 Новогодний планировщик @ppsupershef</h1>
+            <p>Период: 14-31 декабря 2025 | 4 поста в день | Тема: Красная Огненная Лошадь 2026</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                <div>{"🟢 НОВОГОДНИЙ ПЕРИОД АКТИВЕН" if is_new_year_period else "🔴 НЕ НОВОГОДНИЙ ПЕРИОД"}</div>
+                <div>⏰ Кемерово: {current_times['kemerovo_time']}</div>
+                <div>📅 {current_times['kemerovo_weekday_name']}, {current_times['kemerovo_date']}</div>
+            </div>
+        </div>
+        
+        {"<div class='success'>✅ СЕЙЧАС НОВОГОДНИЙ ПЕРИОД (14-31 декабря 2025)</div>" if is_new_year_period else "<div class='warning'>⚠️ СЕЙЧАС НЕ НОВОГОДНИЙ ПЕРИОД. Система работает в тестовом режиме.</div>"}
+        
+        <div class="info">
+            <h3>🐎 СИМВОЛ 2026 ГОДА: КРАСНАЯ ОГНЕННАЯ ЛОШАДЬ</h3>
+            <p>Все рецепты содержат красные/огненные ингредиенты, символизирующие силу, скорость и энергию</p>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">{days_left}</div>
+                <div class="stat-label">🎄 Дней до Нового 2026 года</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">4</div>
+                <div class="stat-label">📊 Постов в день</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">18</div>
+                <div class="stat-label">🧠 Научных советов</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">18</div>
+                <div class="stat-label">🍳 Завтраков</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">18</div>
+                <div class="stat-label">🥗 Салатов</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">18</div>
+                <div class="stat-label">🔥 Горячих блюд</div>
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+            <div>
+                <h3>⏰ Расписание сегодня</h3>
+                {"".join([f'''
+                <div class="schedule-item">
+                    <div class="schedule-time">{time}</div>
+                    <div class="schedule-text">{event["name"]}</div>
                 </div>
-                
-                {"<div class='success'>✅ СЕЙЧАС НОВОГОДНИЙ ПЕРИОД (14-31 декабря 2025)</div>" if is_new_year_period else "<div class='warning'>⚠️ СЕЙЧАС НЕ НОВОГОДНИЙ ПЕРИОД. Система работает в тестовом режиме.</div>"}
-                
-                <div class="info">
-                    <h3>🐎 СИМВОЛ 2026 ГОДА: КРАСНАЯ ОГНЕННАЯ ЛОШАДЬ</h3>
-                    <p>Все рецепты содержат красные/огненные ингредиенты, символизирующие силу, скорость и энергию</p>
-                </div>
-                
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-number">{days_left}</div>
-                        <div class="stat-label">🎄 Дней до Нового 2026 года</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">4</div>
-                        <div class="stat-label">📊 Постов в день</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">18</div>
-                        <div class="stat-label">🧠 Научных советов</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">18</div>
-                        <div class="stat-label">🍳 Завтраков</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">18</div>
-                        <div class="stat-label">🥗 Салатов</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">18</div>
-                        <div class="stat-label">🔥 Горячих блюд</div>
-                    </div>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
-                    <div>
-                        <h3>⏰ Расписание сегодня</h3>
-                        {"".join([f'''
-                        <div class="schedule-item">
-                            <div class="schedule-time">{time}</div>
-                            <div class="schedule-text">{event["name"]}</div>
-                        </div>
-                        ''' for time, event in sorted(today_schedule.items())])}
-                    </div>
-                    
-                    <div>
-                        <h3>🔧 Управление</h3>
-                        <button class="btn" onclick="testSend()">🧪 Тест отправки</button>
-                        <button class="btn" onclick="sendScience()">🧠 Тест научного совета</button>
-                        <button class="btn" onclick="sendBreakfast()">🍳 Тест завтрака</button>
-                        <button class="btn" onclick="sendSalad()">🥗 Тест салата</button>
-                        <button class="btn" onclick="sendHotDish()">🔥 Тест горячего</button>
-                        <button class="btn btn-secondary" onclick="forceKeepAlive()">🔄 Keep-alive</button>
-                        
-                        <div style="margin-top: 20px;">
-                            <button class="btn btn-success" onclick="openManualPostModal()">✏️ Ручной пост</button>
-                            <p style="font-size: 12px; color: #666; margin-top: 5px;">Создайте и отправьте собственный пост в канал</p>
-                        </div>
-                        
-                        <div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-radius: 8px;">
-                            <h4>🎯 Следующий пост</h4>
-                            <p><strong>{next_time}</strong> - {next_event['name']}</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin-top: 20px;">
-                    <h3>📝 О системе</h3>
-                    <p><strong>Период работы:</strong> 14-31 декабря 2025</p>
-                    <p><strong>Расписание (Кемерово):</strong> 08:30, 09:00, 13:00, 19:00</p>
-                    <p><strong>Контент:</strong> 72 готовых рецепта (18 каждого типа)</p>
-                    <p><strong>Тематика:</strong> Красная Огненная Лошадь - символ 2026 года</p>
-                    <p><strong>С 1 января 2026:</strong> Возврат к обычному расписанию (42 поста в неделю)</p>
-                </div>
+                ''' for time, event in sorted(today_schedule.items())])}
             </div>
             
-            <!-- Модальное окно для ручного поста -->
-            <div id="manualPostModal" class="modal">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h2>✏️ Создание ручного поста</h2>
-                        <span class="close" onclick="closeManualPostModal()">&times;</span>
-                    </div>
-                    
-                    <div class="html-tags">
-                        <strong>📋 Поддерживаемые HTML теги:</strong>
-                        <div class="tags-list">
-                            <span class="tag">&lt;b&gt;</span>
-                            <span class="tag">&lt;i&gt;</span>
-                            <span class="tag">&lt;u&gt;</span>
-                            <span class="tag">&lt;s&gt;</span>
-                            <span class="tag">&lt;a&gt;</span>
-                            <span class="tag">&lt;code&gt;</span>
-                            <span class="tag">&lt;pre&gt;</span>
-                        </div>
-                        <p style="margin-top: 5px; color: #666;">⚠️ Максимальная длина: 4096 символов</p>
-                    </div>
-                    
-                    <textarea id="postContent" class="textarea" placeholder="Введите текст поста с HTML разметкой..."></textarea>
-                    <div class="char-counter">
-                        Символов: <span id="charCount">0</span>/4096
-                        <span id="charWarning" class="warning-text" style="display: none;"> ⚠️ Близко к лимиту!</span>
-                    </div>
-                    
-                    <div style="margin-top: 15px;">
-                        <button class="btn" onclick="previewPost()">👁️ Предпросмотр</button>
-                        <button class="btn btn-secondary" onclick="insertTag('b')">B</button>
-                        <button class="btn btn-secondary" onclick="insertTag('i')">I</button>
-                        <button class="btn btn-secondary" onclick="insertTag('u')">U</button>
-                        <button class="btn btn-secondary" onclick="insertTag('a')">🔗 Ссылка</button>
-                    </div>
-                    
-                    <div id="previewArea" class="preview-area" style="display: none;">
-                        <h4>Предпросмотр:</h4>
-                        <div id="postPreview"></div>
-                        <div id="previewInfo" style="margin-top: 10px; font-size: 12px; color: #666;"></div>
-                    </div>
-                    
-                    <div id="previewStatus" class="status-message"></div>
-                    
-                    <div class="loading" id="previewLoading">
-                        <div class="spinner"></div>
-                        <p>Проверка контента...</p>
-                    </div>
-                    
-                    <div class="modal-buttons">
-                        <button class="btn btn-secondary" onclick="closeManualPostModal()">Отмена</button>
-                        <button class="btn btn-success" onclick="sendManualPost()" id="sendPostBtn">📤 Отправить пост</button>
-                    </div>
-                    
-                    <div id="sendStatus" class="status-message"></div>
-                    
-                    <div class="loading" id="sendLoading" style="display: none;">
-                        <div class="spinner"></div>
-                        <p>Отправка поста...</p>
-                    </div>
+            <div>
+                <h3>🔧 Управление</h3>
+                <button class="btn" onclick="testSend()">🧪 Тест отправки</button>
+                <button class="btn" onclick="sendScience()">🧠 Тест научного совета</button>
+                <button class="btn" onclick="sendBreakfast()">🍳 Тест завтрака</button>
+                <button class="btn" onclick="sendSalad()">🥗 Тест салата</button>
+                <button class="btn" onclick="sendHotDish()">🔥 Тест горячего</button>
+                <button class="btn btn-secondary" onclick="forceKeepAlive()">🔄 Keep-alive</button>
+                
+                <div style="margin-top: 20px;">
+                    <button class="btn btn-success" onclick="openManualPostModal()">✏️ Ручной пост</button>
+                    <p style="font-size: 12px; color: #666; margin-top: 5px;">Создайте и отправьте собственный пост в канал</p>
+                </div>
+                
+                <div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-radius: 8px;">
+                    <h4>🎯 Следующий пост</h4>
+                    <p><strong>{next_time}</strong> - {next_event['name']}</p>
                 </div>
             </div>
+        </div>
+        
+        <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin-top: 20px;">
+            <h3>📝 О системе</h3>
+            <p><strong>Период работы:</strong> 14-31 декабря 2025</p>
+            <p><strong>Расписание (Кемерово):</strong> 08:30, 09:00, 13:00, 19:00</p>
+            <p><strong>Контент:</strong> 72 готовых рецепта (18 каждого типа)</p>
+            <p><strong>Тематика:</strong> Красная Огненная Лошадь - символ 2026 года</p>
+            <p><strong>С 1 января 2026:</strong> Возврат к обычному расписанию (42 поста в неделю)</p>
+        </div>
+    </div>
+    
+    <!-- Модальное окно для ручного поста -->
+    <div id="manualPostModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>✏️ Создание ручного поста</h2>
+                <span class="close" onclick="closeManualPostModal()">&times;</span>
+            </div>
             
-            <script>
-                // Модальное окно для ручного поста
-                function openManualPostModal() {{
-                    document.getElementById('manualPostModal').style.display = 'block';
-                    document.getElementById('postContent').focus();
-                    updateCharCount();
+            <div class="html-tags">
+                <strong>📋 Поддерживаемые HTML теги:</strong>
+                <div class="tags-list">
+                    <span class="tag">&lt;b&gt;</span>
+                    <span class="tag">&lt;i&gt;</span>
+                    <span class="tag">&lt;u&gt;</span>
+                    <span class="tag">&lt;s&gt;</span>
+                    <span class="tag">&lt;a&gt;</span>
+                    <span class="tag">&lt;code&gt;</span>
+                    <span class="tag">&lt;pre&gt;</span>
+                </div>
+                <p style="margin-top: 5px; color: #666;">⚠️ Максимальная длина: 4096 символов</p>
+            </div>
+            
+            <textarea id="postContent" class="textarea" placeholder="Введите текст поста с HTML разметкой..."></textarea>
+            <div class="char-counter">
+                Символов: <span id="charCount">0</span>/4096
+                <span id="charWarning" class="warning-text" style="display: none;"> ⚠️ Близко к лимиту!</span>
+            </div>
+            
+            <div style="margin-top: 15px;">
+                <button class="btn" onclick="previewPost()">👁️ Предпросмотр</button>
+                <button class="btn btn-secondary" onclick="insertTag('b')">B</button>
+                <button class="btn btn-secondary" onclick="insertTag('i')">I</button>
+                <button class="btn btn-secondary" onclick="insertTag('u')">U</button>
+                <button class="btn btn-secondary" onclick="insertTag('a')">🔗 Ссылка</button>
+            </div>
+            
+            <div id="previewArea" class="preview-area" style="display: none;">
+                <h4>Предпросмотр:</h4>
+                <div id="postPreview"></div>
+                <div id="previewInfo" style="margin-top: 10px; font-size: 12px; color: #666;"></div>
+            </div>
+            
+            <div id="previewStatus" class="status-message"></div>
+            
+            <div class="loading" id="previewLoading">
+                <div class="spinner"></div>
+                <p>Проверка контента...</p>
+            </div>
+            
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeManualPostModal()">Отмена</button>
+                <button class="btn btn-success" onclick="sendManualPost()" id="sendPostBtn">📤 Отправить пост</button>
+            </div>
+            
+            <div id="sendStatus" class="status-message"></div>
+            
+            <div class="loading" id="sendLoading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Отправка поста...</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Модальное окно для ручного поста
+        function openManualPostModal() {{
+            document.getElementById('manualPostModal').style.display = 'block';
+            document.getElementById('postContent').focus();
+            updateCharCount();
+        }}
+        
+        function closeManualPostModal() {{
+            document.getElementById('manualPostModal').style.display = 'none';
+            document.getElementById('postContent').value = '';
+            document.getElementById('previewArea').style.display = 'none';
+            document.getElementById('previewStatus').style.display = 'none';
+            document.getElementById('sendStatus').style.display = 'none';
+        }}
+        
+        // Подсчет символов
+        function updateCharCount() {{
+            const textarea = document.getElementById('postContent');
+            const charCount = document.getElementById('charCount');
+            const charWarning = document.getElementById('charWarning');
+            const sendBtn = document.getElementById('sendPostBtn');
+            
+            const count = textarea.value.length;
+            charCount.textContent = count;
+            
+            if (count > 3800) {{
+                charWarning.style.display = 'inline';
+                charCount.className = 'warning-text';
+                sendBtn.disabled = true;
+                sendBtn.title = 'Слишком много символов (макс 4096)';
+            }} else if (count > 3500) {{
+                charWarning.style.display = 'inline';
+                charCount.className = '';
+                sendBtn.disabled = false;
+                sendBtn.title = '';
+            }} else {{
+                charWarning.style.display = 'none';
+                charCount.className = '';
+                sendBtn.disabled = false;
+                sendBtn.title = '';
+            }}
+        }}
+        
+        document.getElementById('postContent').addEventListener('input', updateCharCount);
+        
+        // Вставка HTML тегов
+        function insertTag(tag) {{
+            const textarea = document.getElementById('postContent');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const selectedText = textarea.value.substring(start, end);
+            
+            let newText = '';
+            let cursorPos = start;
+            
+            switch(tag) {{
+                case 'b':
+                    newText = '<b>' + selectedText + '</b>';
+                    cursorPos = start + 3;
+                    break;
+                case 'i':
+                    newText = '<i>' + selectedText + '</i>';
+                    cursorPos = start + 3;
+                    break;
+                case 'u':
+                    newText = '<u>' + selectedText + '</u>';
+                    cursorPos = start + 3;
+                    break;
+                case 'a':
+                    newText = '<a href="https://example.com">' + (selectedText || 'текст ссылки') + '</a>';
+                    cursorPos = start + 9;
+                    break;
+            }}
+            
+            textarea.value = textarea.value.substring(0, start) + newText + textarea.value.substring(end);
+            textarea.focus();
+            textarea.setSelectionRange(cursorPos, cursorPos + (selectedText ? selectedText.length : 0));
+            updateCharCount();
+        }}
+        
+        // Предпросмотр поста
+        function previewPost() {{
+            const content = document.getElementById('postContent').value.trim();
+            if (!content) {{
+                alert('Введите текст поста');
+                return;
+            }}
+            
+            const previewArea = document.getElementById('previewArea');
+            const preview = document.getElementById('postPreview');
+            const previewInfo = document.getElementById('previewInfo');
+            const previewStatus = document.getElementById('previewStatus');
+            const loading = document.getElementById('previewLoading');
+            
+            previewArea.style.display = 'block';
+            previewStatus.style.display = 'none';
+            loading.style.display = 'block';
+            
+            fetch('/preview-post', {{
+                method: 'POST',
+                headers: {{
+                    'Content-Type': 'application/json',
+                }},
+                body: JSON.stringify({{ content: content }})
+            }})
+            .then(response => response.json())
+            .then(data => {{
+                loading.style.display = 'none';
+                
+                if (data.status === 'success') {{
+                    preview.innerHTML = data.preview;
+                    // ВНИМАНИЕ: Это JavaScript, не Python!
+                    previewInfo.innerHTML = `
+                        Длина: ${{data.length}} символов<br>
+                        Валидный HTML: ${{data.is_valid ? '✅' : '⚠️'}}<br>
+                        ${{data.warnings ? 'Предупреждения: ' + data.warnings : ''}}
+                    `;
+                    previewStatus.className = 'status-message status-success';
+                    previewStatus.textContent = '✅ Предпросмотр успешно сгенерирован';
+                }} else {{
+                    preview.innerHTML = '<div style="color: #e74c3c;">Ошибка предпросмотра</div>';
+                    previewInfo.innerHTML = `Ошибка: ${{data.message}}`;
+                    previewStatus.className = 'status-message status-error';
+                    previewStatus.textContent = '❌ ' + data.message;
                 }}
+                previewStatus.style.display = 'block';
+            }})
+            .catch(error => {{
+                loading.style.display = 'none';
+                preview.innerHTML = '<div style="color: #e74c3c;">Ошибка загрузки</div>';
+                previewInfo.innerHTML = `Ошибка сети: ${{error}}`;
+                previewStatus.className = 'status-message status-error';
+                previewStatus.textContent = '❌ Ошибка сети';
+                previewStatus.style.display = 'block';
+            }});
+        }}
+        
+        // Отправка ручного поста
+        function sendManualPost() {{
+            const content = document.getElementById('postContent').value.trim();
+            if (!content) {{
+                alert('Введите текст поста');
+                return;
+            }}
+            
+            if (content.length > 4096) {{
+                alert('Пост слишком длинный! Максимум 4096 символов.');
+                return;
+            }}
+            
+            if (!confirm('Отправить пост в канал? Это действие нельзя отменить.')) {{
+                return;
+            }}
+            
+            const sendStatus = document.getElementById('sendStatus');
+            const loading = document.getElementById('sendLoading');
+            const sendBtn = document.getElementById('sendPostBtn');
+            
+            sendStatus.style.display = 'none';
+            loading.style.display = 'block';
+            sendBtn.disabled = true;
+            
+            fetch('/send-manual-post', {{
+                method: 'POST',
+                headers: {{
+                    'Content-Type': 'application/json',
+                }},
+                body: JSON.stringify({{ content: content }})
+            }})
+            .then(response => response.json())
+            .then(data => {{
+                loading.style.display = 'none';
+                sendBtn.disabled = false;
                 
-                function closeManualPostModal() {{
-                    document.getElementById('manualPostModal').style.display = 'none';
-                    document.getElementById('postContent').value = '';
-                    document.getElementById('previewArea').style.display = 'none';
-                    document.getElementById('previewStatus').style.display = 'none';
-                    document.getElementById('sendStatus').style.display = 'none';
-                }}
-                
-                // Подсчет символов
-                function updateCharCount() {{
-                    const textarea = document.getElementById('postContent');
-                    const charCount = document.getElementById('charCount');
-                    const charWarning = document.getElementById('charWarning');
-                    const sendBtn = document.getElementById('sendPostBtn');
+                if (data.status === 'success') {{
+                    sendStatus.className = 'status-message status-success';
+                    sendStatus.textContent = '✅ Пост успешно отправлен в канал!';
+                    sendStatus.style.display = 'block';
                     
-                    const count = textarea.value.length;
-                    charCount.textContent = count;
-                    
-                    if (count > 3800) {{
-                        charWarning.style.display = 'inline';
-                        charCount.className = 'warning-text';
-                        sendBtn.disabled = true;
-                        sendBtn.title = 'Слишком много символов (макс 4096)';
-                    }} else if (count > 3500) {{
-                        charWarning.style.display = 'inline';
-                        charCount.className = '';
-                        sendBtn.disabled = false;
-                        sendBtn.title = '';
-                    }} else {{
-                        charWarning.style.display = 'none';
-                        charCount.className = '';
-                        sendBtn.disabled = false;
-                        sendBtn.title = '';
-                    }}
-                }}
-                
-                document.getElementById('postContent').addEventListener('input', updateCharCount);
-                
-                // Вставка HTML тегов
-                function insertTag(tag) {{
-                    const textarea = document.getElementById('postContent');
-                    const start = textarea.selectionStart;
-                    const end = textarea.selectionEnd;
-                    const selectedText = textarea.value.substring(start, end);
-                    
-                    let newText = '';
-                    let cursorPos = start;
-                    
-                    switch(tag) {{
-                        case 'b':
-                            newText = '<b>' + selectedText + '</b>';
-                            cursorPos = start + 3;
-                            break;
-                        case 'i':
-                            newText = '<i>' + selectedText + '</i>';
-                            cursorPos = start + 3;
-                            break;
-                        case 'u':
-                            newText = '<u>' + selectedText + '</u>';
-                            cursorPos = start + 3;
-                            break;
-                        case 'a':
-                            newText = '<a href="https://example.com">' + (selectedText || 'текст ссылки') + '</a>';
-                            cursorPos = start + 9;
-                            break;
-                    }}
-                    
-                    textarea.value = textarea.value.substring(0, start) + newText + textarea.value.substring(end);
-                    textarea.focus();
-                    textarea.setSelectionRange(cursorPos, cursorPos + (selectedText ? selectedText.length : 0));
-                    updateCharCount();
-                }}
-                
-                // Предпросмотр поста
-                function previewPost() {{
-                    const content = document.getElementById('postContent').value.trim();
-                    if (!content) {{
-                        alert('Введите текст поста');
-                        return;
-                    }}
-                    
-                    const previewArea = document.getElementById('previewArea');
-                    const preview = document.getElementById('postPreview');
-                    const previewInfo = document.getElementById('previewInfo');
-                    const previewStatus = document.getElementById('previewStatus');
-                    const loading = document.getElementById('previewLoading');
-                    
-                    previewArea.style.display = 'block';
-                    previewStatus.style.display = 'none';
-                    loading.style.display = 'block';
-                    
-                    fetch('/preview-post', {{
-                        method: 'POST',
-                        headers: {{
-                            'Content-Type': 'application/json',
-                        }},
-                        body: JSON.stringify({{ content: content }})
-                    }})
-                    .then(response => response.json())
-                    .then(data => {{
-                        loading.style.display = 'none';
-                        
-                        if (data.status === 'success') {{
-                            preview.innerHTML = data.preview;
-                            previewInfo.innerHTML = `
-                                Длина: ${data.length} символов<br>
-                                Валидный HTML: ${data.is_valid ? '✅' : '⚠️'}<br>
-                                ${data.warnings ? 'Предупреждения: ' + data.warnings : ''}
-                            `;
-                            previewStatus.className = 'status-message status-success';
-                            previewStatus.textContent = '✅ Предпросмотр успешно сгенерирован';
-                        }} else {{
-                            preview.innerHTML = '<div style="color: #e74c3c;">Ошибка предпросмотра</div>';
-                            previewInfo.innerHTML = `Ошибка: ${data.message}`;
-                            previewStatus.className = 'status-message status-error';
-                            previewStatus.textContent = '❌ ' + data.message;
-                        }}
-                        previewStatus.style.display = 'block';
-                    }})
-                    .catch(error => {{
-                        loading.style.display = 'none';
-                        preview.innerHTML = '<div style="color: #e74c3c;">Ошибка загрузки</div>';
-                        previewInfo.innerHTML = `Ошибка сети: ${error}`;
-                        previewStatus.className = 'status-message status-error';
-                        previewStatus.textContent = '❌ Ошибка сети';
-                        previewStatus.style.display = 'block';
-                    }});
-                }}
-                
-                // Отправка ручного поста
-                function sendManualPost() {{
-                    const content = document.getElementById('postContent').value.trim();
-                    if (!content) {{
-                        alert('Введите текст поста');
-                        return;
-                    }}
-                    
-                    if (content.length > 4096) {{
-                        alert('Пост слишком длинный! Максимум 4096 символов.');
-                        return;
-                    }}
-                    
-                    if (!confirm('Отправить пост в канал? Это действие нельзя отменить.')) {{
-                        return;
-                    }}
-                    
-                    const sendStatus = document.getElementById('sendStatus');
-                    const loading = document.getElementById('sendLoading');
-                    const sendBtn = document.getElementById('sendPostBtn');
-                    
-                    sendStatus.style.display = 'none';
-                    loading.style.display = 'block';
-                    sendBtn.disabled = true;
-                    
-                    fetch('/send-manual-post', {{
-                        method: 'POST',
-                        headers: {{
-                            'Content-Type': 'application/json',
-                        }},
-                        body: JSON.stringify({{ content: content }})
-                    }})
-                    .then(response => response.json())
-                    .then(data => {{
-                        loading.style.display = 'none';
-                        sendBtn.disabled = false;
-                        
-                        if (data.status === 'success') {{
-                            sendStatus.className = 'status-message status-success';
-                            sendStatus.textContent = '✅ Пост успешно отправлен в канал!';
-                            sendStatus.style.display = 'block';
-                            
-                            // Автоматически закрываем через 3 секунды
-                            setTimeout(() => {{
-                                closeManualPostModal();
-                                location.reload();
-                            }}, 3000);
-                        }} else {{
-                            sendStatus.className = 'status-message status-error';
-                            sendStatus.textContent = '❌ ' + (data.message || 'Ошибка отправки');
-                            sendStatus.style.display = 'block';
-                        }}
-                    }})
-                    .catch(error => {{
-                        loading.style.display = 'none';
-                        sendBtn.disabled = false;
-                        sendStatus.className = 'status-message status-error';
-                        sendStatus.textContent = '❌ Ошибка сети: ' + error;
-                        sendStatus.style.display = 'block';
-                    }});
-                }}
-                
-                // Остальные функции
-                function testSend() {{
-                    fetch('/test-send').then(r => r.json()).then(data => {{
-                        alert(data.status === 'success' ? '✅ Тест успешен!' : '❌ Ошибка');
-                    }});
-                }}
-                
-                function sendScience() {{
-                    fetch('/send-science').then(r => r.json()).then(data => {{
-                        alert(data.status === 'success' ? '✅ Научный совет отправлен!' : '❌ Ошибка');
-                    }});
-                }}
-                
-                function sendBreakfast() {{
-                    fetch('/send-breakfast').then(r => r.json()).then(data => {{
-                        alert(data.status === 'success' ? '✅ Завтрак отправлен!' : '❌ Ошибка');
-                    }});
-                }}
-                
-                function sendSalad() {{
-                    fetch('/send-salad').then(r => r.json()).then(data => {{
-                        alert(data.status === 'success' ? '✅ Салат отправлен!' : '❌ Ошибка');
-                    }});
-                }}
-                
-                function sendHotDish() {{
-                    fetch('/send-hot-dish').then(r => r.json()).then(data => {{
-                        alert(data.status === 'success' ? '✅ Горячее блюдо отправлено!' : '❌ Ошибка');
-                    }});
-                }}
-                
-                function forceKeepAlive() {{
-                    fetch('/force-keep-alive').then(r => r.json()).then(data => {{
-                        alert('Keep-alive выполнен');
-                    }});
-                }}
-                
-                // Закрытие модального окна при клике вне его
-                window.onclick = function(event) {{
-                    const modal = document.getElementById('manualPostModal');
-                    if (event.target === modal) {{
+                    // Автоматически закрываем через 3 секунды
+                    setTimeout(() => {{
                         closeManualPostModal();
-                    }}
+                        location.reload();
+                    }}, 3000);
+                }} else {{
+                    sendStatus.className = 'status-message status-error';
+                    sendStatus.textContent = '❌ ' + (data.message || 'Ошибка отправки');
+                    sendStatus.style.display = 'block';
                 }}
-                
-                // Автообновление каждые 30 секунд
-                setInterval(() => location.reload(), 30000);
-                
-                // Инициализация
-                document.addEventListener('DOMContentLoaded', function() {{
-                    updateCharCount();
-                }});
-            </script>
-        </body>
-        </html>
-        """
+            }})
+            .catch(error => {{
+                loading.style.display = 'none';
+                sendBtn.disabled = false;
+                sendStatus.className = 'status-message status-error';
+                sendStatus.textContent = '❌ Ошибка сети: ' + error;
+                sendStatus.style.display = 'block';
+            }});
+        }}
+        
+        // Остальные функции
+        function testSend() {{
+            fetch('/test-send').then(r => r.json()).then(data => {{
+                alert(data.status === 'success' ? '✅ Тест успешен!' : '❌ Ошибка');
+            }});
+        }}
+        
+        function sendScience() {{
+            fetch('/send-science').then(r => r.json()).then(data => {{
+                alert(data.status === 'success' ? '✅ Научный совет отправлен!' : '❌ Ошибка');
+            }});
+        }}
+        
+        function sendBreakfast() {{
+            fetch('/send-breakfast').then(r => r.json()).then(data => {{
+                alert(data.status === 'success' ? '✅ Завтрак отправлен!' : '❌ Ошибка');
+            }});
+        }}
+        
+        function sendSalad() {{
+            fetch('/send-salad').then(r => r.json()).then(data => {{
+                alert(data.status === 'success' ? '✅ Салат отправлен!' : '❌ Ошибка');
+            }});
+        }}
+        
+        function sendHotDish() {{
+            fetch('/send-hot-dish').then(r => r.json()).then(data => {{
+                alert(data.status === 'success' ? '✅ Горячее блюдо отправлено!' : '❌ Ошибка');
+            }});
+        }}
+        
+        function forceKeepAlive() {{
+            fetch('/force-keep-alive').then(r => r.json()).then(data => {{
+                alert('Keep-alive выполнен');
+            }});
+        }}
+        
+        // Закрытие модального окна при клике вне его
+        window.onclick = function(event) {{
+            const modal = document.getElementById('manualPostModal');
+            if (event.target === modal) {{
+                closeManualPostModal();
+            }}
+        }}
+        
+        // Автообновление каждые 30 секунд
+        setInterval(() => location.reload(), 30000);
+        
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {{
+            updateCharCount();
+        }});
+    </script>
+</body>
+</html>
+'''
         return html
         
     except Exception as e:
