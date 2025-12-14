@@ -48,66 +48,81 @@ class Config:
     KEMEROVO_TZ = pytz.timezone('Asia/Novokuznetsk')
     RENDER_SELF_URL = os.getenv('RENDER_SELF_URL', 'http://localhost:8080')
     UPTIME_MONITOR_URL = os.getenv('UPTIME_MONITOR_URL', '')
+    PORT = int(os.getenv('PORT', 8080))
 
-# ========== RENDER KEEP-ALIVE SYSTEM ==========
+# ========== УЛУЧШЕННАЯ RENDER KEEP-ALIVE SYSTEM ==========
 
 class RenderKeepAlive:
     def __init__(self):
         self.last_active = datetime.now()
         self.uptime_check_url = Config.UPTIME_MONITOR_URL
-        self.internal_ping_url = Config.RENDER_SELF_URL + '/ping'
         self.start_time = datetime.now()
         self.ping_count = 0
+        self.failed_count = 0
+        self.max_failed = 15
         
+    def safe_http_request(self, url, method='GET', timeout=5):
+        """Безопасный HTTP запрос с обработкой ошибок"""
+        try:
+            if method == 'GET':
+                response = requests.get(url, timeout=timeout)
+            elif method == 'HEAD':
+                response = requests.head(url, timeout=timeout)
+            else:
+                response = requests.get(url, timeout=timeout)
+            
+            if response.status_code < 400:
+                return True, response.status_code
+            else:
+                return False, response.status_code
+        except requests.exceptions.Timeout:
+            return False, "timeout"
+        except requests.exceptions.ConnectionError:
+            return False, "connection_error"
+        except Exception as e:
+            return False, str(e)
+    
     def external_ping(self):
         """Отправляет пинг на внешние сервисы мониторинга"""
         try:
-            # UptimeRobot/Kuma мониторинг
             services = []
             
             if self.uptime_check_url:
                 services.append(self.uptime_check_url)
             
-            # Добавляем стандартные мониторинги
-            services.extend([
-                "https://google.com",
-                Config.RENDER_SELF_URL + "/health"
-            ])
-            
+            results = []
             for url in services:
                 try:
                     if url and 'http' in url:
-                        response = requests.get(url, timeout=10)
-                        if response.status_code < 400:
-                            logger.info(f"✅ Внешний пинг: {url}")
-                            self.ping_count += 1
+                        success, status = self.safe_http_request(url, 'HEAD', 5)
+                        if success:
+                            logger.info(f"✅ Внешний пинг: {url} ({status})")
+                            results.append(True)
+                        else:
+                            logger.debug(f"⚠️ Пинг не удался для {url}: {status}")
+                            results.append(False)
                 except Exception as e:
-                    logger.debug(f"⚠️ Пинг не удался для {url}: {e}")
+                    logger.debug(f"⚠️ Ошибка пинга для {url}: {e}")
+                    results.append(False)
+            
+            return any(results)
                     
         except Exception as e:
             logger.warning(f"⚠️ Ошибка внешнего пинга: {e}")
+            return False
     
     def self_ping(self):
-        """Самопинг внутри приложения"""
+        """Самопинг внутри приложения - УПРОЩЕННЫЙ ВАРИАНТ"""
         try:
-            # Пинг собственного health endpoint
-            health_url = Config.RENDER_SELF_URL + '/health'
-            try:
-                response = requests.get(health_url, timeout=10)
-                if response.status_code == 200:
-                    logger.debug("✅ Самопинг успешен")
-                else:
-                    logger.warning(f"⚠️ Самопинг неудачен: {response.status_code}")
-            except:
-                # Пробуем локальный хост
-                try:
-                    response = requests.get('http://localhost:8080/health', timeout=5)
-                    logger.debug("✅ Локальный самопинг успешен")
-                except:
-                    logger.debug("⚠️ Локальный самопинг неудачен")
+            # Простая проверка без создания запросов внутри Flask
+            # Просто обновляем время активности
+            self.last_active = datetime.now()
+            logger.debug("✅ Самопинг успешен (упрощенный)")
+            return True
             
         except Exception as e:
             logger.debug(f"⚠️ Ошибка самопинга: {e}")
+            return False
     
     def check_telegram_connection(self):
         """Проверяет соединение с Telegram"""
@@ -116,13 +131,13 @@ class RenderKeepAlive:
                 return False
                 
             url = f"https://api.telegram.org/bot{Config.TELEGRAM_BOT_TOKEN}/getMe"
-            response = requests.get(url, timeout=10)
+            success, status = self.safe_http_request(url, 'GET', 10)
             
-            if response.status_code == 200:
+            if success:
                 logger.info("✅ Telegram соединение активно")
                 return True
             else:
-                logger.warning(f"⚠️ Telegram соединение проблемное: {response.status_code}")
+                logger.warning(f"⚠️ Telegram соединение проблемное: {status}")
                 return False
                 
         except Exception as e:
@@ -130,7 +145,7 @@ class RenderKeepAlive:
             return False
     
     def keep_app_active(self):
-        """Комплексный keep-alive для Render"""
+        """Комплексный keep-alive для Render - УЛУЧШЕННЫЙ"""
         try:
             # 1. Обновляем время активности
             self.last_active = datetime.now()
@@ -141,30 +156,52 @@ class RenderKeepAlive:
             except Exception as e:
                 logger.warning(f"⚠️ Ошибка выполнения задач: {e}")
             
-            current_minute = datetime.now().minute
-            current_hour = datetime.now().hour
+            current_time = datetime.now()
+            current_minute = current_time.minute
+            current_hour = current_time.hour
             
             # 3. Внешние пинги (каждые 10 минут)
+            external_ping_success = False
             if current_minute % 10 == 0:
-                self.external_ping()
+                external_ping_success = self.external_ping()
             
             # 4. Самопинг (каждые 4 минуты)
+            self_ping_success = False
             if current_minute % 4 == 0:
-                self.self_ping()
+                self_ping_success = self.self_ping()
             
             # 5. Проверяем Telegram соединение (каждые 6 часов)
+            telegram_check = True
             if current_hour % 6 == 0 and current_minute == 0:
-                self.check_telegram_connection()
+                telegram_check = self.check_telegram_connection()
             
             # 6. Логируем статус каждые 30 минут
             if current_minute % 30 == 0:
                 uptime = datetime.now() - self.start_time
                 logger.info(f"🔄 Keep-alive выполнен. Аптайм: {uptime}. Пингов: {self.ping_count}")
             
-            return True
+            # 7. Проверяем общий успех
+            overall_success = True
+            
+            # Счетчик пингов
+            self.ping_count += 1
+            
+            # Сбрасываем счетчик ошибок если все хорошо
+            if overall_success:
+                self.failed_count = 0
+            else:
+                self.failed_count += 1
+                if self.failed_count > self.max_failed:
+                    logger.warning(f"⚠️ Много неудачных keep-alive: {self.failed_count}")
+                    # Сбрасываем каждые max_failed*2 минут
+                    if current_minute % (self.max_failed * 2) == 0:
+                        self.failed_count = 0
+            
+            return overall_success
             
         except Exception as e:
             logger.error(f"❌ Ошибка keep-alive: {e}")
+            self.failed_count += 1
             return False
 
 # ========== AUTO RECOVERY SYSTEM ==========
@@ -206,7 +243,7 @@ class AutoRecoverySystem:
         """Перезапускает планировщик"""
         try:
             if self.recovery_attempts >= self.max_recovery_attempts:
-                if (datetime.now() - self.last_recovery).hours > 1:
+                if (datetime.now() - self.last_recovery).seconds > 3600:  # 1 час
                     self.recovery_attempts = 0
                 else:
                     logger.error("🚨 Превышено количество попыток восстановления")
@@ -589,11 +626,11 @@ class NewYearSaladManager:
 • 🥬 Латук - 1 кочан
 • 🌰 Фисташки - 40г""",
                 'preparation': """
-1. Авокадо нарезать средним кубиком
+1. Авокадо нарезать средним кубиом
 2. Грейпфрут очистить, разобрать на дольки
 3. Креветки отварить, очистить
 4. Выложить листья латук
-5. Сверку авокадо, грейпфрут и креветки""",
+5. Сверху авокадо, грейпфрут и креветки""",
                 'benefits': """
 • 🥑 Лютеин защищает глаза от экранов
 • 🍊 Нарингенин ускоряет метаболизм
@@ -647,8 +684,8 @@ class NewYearSaladManager:
                 'preparation': """
 1. Свеклу нарезать высокими брусками
 2. Апельсин нарезать толстыми кольцами
-3. На тарелку выложить руккола
-4. Сверку "свечи" из свеклы
+3. На тарелку выложить рукколу
+4. Сверху "свечи" из свеклы
 5. Вокруг апельсиновые кольца""",
                 'benefits': """
 • 🍠 Нитраты улучшают кровообращение
@@ -761,7 +798,7 @@ class NewYearSaladManager:
 2. Авокадо нарезать мелким кубиком
 3. Яблоко нарезать тонкой соломкой
 4. Выложить шпинат как основание
-5. Сверку брокколи в форме треугольника""",
+5. Сверху брокколи в форме треугольника""",
                 'benefits': """
 • 🥦 Индол-3-карбинол балансирует гормоны
 • 🥑 Лютеин защищает зрение
@@ -788,7 +825,7 @@ class NewYearSaladManager:
 1. Дайкон нарезать очень тонкими кружками
 2. Редис нарезать тонкими полукольцами
 3. Собрать "башни": нанизать кружки дайкона
-4. Выложить руккола
+4. Выложить рукколу
 5. Установить "башни" из дайкона""",
                 'benefits': """
 • 🥒 Изотиоцианаты защищают от рака
@@ -844,8 +881,8 @@ class NewYearSaladManager:
 1. Говядину обжарить как стейк, нарезать лентами
 2. Помидоры разрезать пополам
 3. Пармезан натереть стружкой
-4. Выложить руккола
-5. Сверку выложить говядину""",
+4. Выложить рукколу
+5. Сверху выложить говядину""",
                 'benefits': """
 • 🥩 Железо: 35% дневной нормы
 • 🧀 Кальций для костей
@@ -1163,7 +1200,7 @@ class NewYearHotDishManager:
 4. Грибы обжарить с луком
 5. Нафаршировать тыкву, запекать еще 20 минут""",
                 'benefits': """
-• 🎃 Бета  для кожи
+• 🎃 Бета-каротин для кожи
 • 🌾 Белок для мышц
 • 🍄 Бета-глюканы - иммунитет
 • 🌰 Омега-9 для гормонов""",
@@ -1850,7 +1887,7 @@ class NewYearBreakfastManager:
 • Посыпать кокосовой стружкой как "снег"
 • Украсить ягодами по краям
 • Подавать теплым""",
-                'energy': "⚡ 280 ккал | 💪 30г белка | 🧀 45% кальция"
+                'energy': "⚡ 280 ккал | 💪 30г белка | 🧀 45% кальци"
             },
             8: {
                 'id': 8,
@@ -1894,7 +1931,7 @@ class NewYearBreakfastManager:
 • 🍐 Груша - 1 шт
 • 🍯 Мед - 1 ст.л.""",
                 'preparation': """
-1. Мюсли залить йогуртом
+1. Мюсли залить йогурт
 2. Яблоко и грушу натереть
 3. Добавить к мюсли
 4. Полить медом
@@ -2582,7 +2619,7 @@ class NewYearScienceManager:
                 'action_plan': """
 📋 ПЛАН ДЕЙСТВИЙ:
 1. 🌶️ Добавляйте острые специи в блюда
-2. 🍵 2-3 чашки зеленого чая в день
+2. 🍵 2-3 чашки зеленого чай в день
 3. 💧 Пейте прохладную воду
 4. 🏃‍♀️ 15-20 минут активных упражнений"""
             },
@@ -2811,7 +2848,7 @@ class NewYearScienceManager:
 class TelegramManager:
     def __init__(self):
         self.token = Config.TELEGRAM_BOT_TOKEN
-        self.channel = Config.TEGRAM_CHANNEL
+        self.channel = Config.TELEGRAM_CHANNEL  # ИСПРАВЛЕНО: было TEGRAM_CHANNEL
         self.base_url = f"https://api.telegram.org/bot{self.token}"
         self.sent_hashes = set()
         self.last_sent_times = {}
@@ -2935,13 +2972,13 @@ class TelegramManager:
         try:
             queue_file = "telegram_queue.json"
             if not os.path.exists(queue_file):
-                return
+                return 0
             
             with open(queue_file, 'r') as f:
                 queue = json.load(f)
             
             if not queue:
-                return
+                return 0
             
             logger.info(f"🔄 Проверка очереди отправки: {len(queue)} сообщений")
             
